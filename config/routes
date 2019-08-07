@@ -11,3 +11,6 @@
 /index IndexR GET
 /comments CommentR POST
 -- /profile ProfileR GET
+
+
+/users UserR POST PUT

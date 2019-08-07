@@ -51,3 +51,6 @@ stack test --flag inventory-server:library-only --flag inventory-server:dev
 * There are several chatrooms you can ask for help:
 	* For IRC, try Freenode#yesod and Freenode#haskell
 	* [Functional Programming Slack](https://fpchat-invite.herokuapp.com/), in the #haskell, #haskell-beginners, or #yesod channels.
+
+## Build Project
+stack build --extra-include-dirs="C:/Program Files/PostgreSQL/9.6/include" --extra-lib-dirs="C:/Program Files/PostgreSQL/9.6/lib"

@@ -106,6 +106,7 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
+    isAuthorized UserR _ = return Authorized
     isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
@@ -184,7 +185,9 @@ instance YesodAuth App where
             Just (Entity uid _) -> return $ Authenticated uid
             Nothing -> Authenticated <$> insert User
                 { userIdent = credsIdent creds
-                , userPassword = Nothing
+                , userUsername = "janez"
+                , userPassword = "no password"
+                , userEnabled = True
                 }
 
     -- You can add other plugins like Google Email, email or OAuth here
