@@ -14,19 +14,17 @@ module Handler.User where
 import Import
 
 -- CREATE USER ENDPOINT
-postUserR :: Handler Value
-postUserR = do
-            user <- (requireJsonBody :: Handler User)
-            newUser <- runDB $ insertEntity user
-            returnJson newUser
+postCreateUserR :: Handler Value
+postCreateUserR = do
+                    user <- (requireJsonBody :: Handler User)
+                    newUser <- runDB $ insertEntity user
+                    returnJson newUser
 
 -- UPDATE USER ENDPOINT
-putUserR :: Handler Value
-putUserR = do
-            user <- (requireJsonBody :: Handler User)
---             let x :: Key User
---                 x = User
---             userId <- runDB $ insert $ user
---             newUser <- runDB $ updateGet user [UserUsername =. "nueww"]
-            returnJson user
-
+putUpdateUserR :: UserId -> Handler Value
+putUpdateUserR userId= do
+                        user <- (requireJsonBody :: Handler User)
+                        _ <- runDB $ replace userId user
+                        newUser <- runDB $ getJustEntity userId
+                        returnJson newUser
+--                         sendStatusJSON noContent204 (object [])

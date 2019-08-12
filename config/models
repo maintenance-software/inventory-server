@@ -9,8 +9,73 @@ User json sql=t_user
     enabled Bool
     ident Text
     UniqueUser username
-    deriving Typeable
+    deriving Typeable Show
 
+Role json sql=t_role
+    Id sql=role_id
+    name String
+    enabled Bool
+    deriving Show
+
+UserRole json sql=t_user_role
+    Id sql=user_role_id
+    userId UserId
+    roleId RoleId
+    deriving Show
+
+Privilege json sql=t_privilege
+    Id sql=privilege_id
+    name String
+    enabled Bool
+    deriving Show
+
+RolePrivilege json sql=t_role_privilege
+    Id sql=role_privilege_id
+    roleId RoleId
+    privilegeId PrivilegeId
+    deriving Show
+
+Person json sql=t_person
+    Id sql=person_id
+    firstName String
+    lastName String
+    documentType String
+    documentId String
+    userId UserId
+    UniquePerson documentId
+    deriving Typeable Show
+
+Product json sql=t_product
+    Id sql=product_id
+    name String
+    unit String
+    defaultPrice Double
+    description String
+    code String
+    categoryId CategoryId
+    manufacturerId ManufacturerId
+    deriving Typeable Show
+
+Category json sql=t_category
+    Id sql=category_id
+    name String
+    description String
+    deriving Typeable Show
+
+
+Manufacturer json sql=t_manufacturer
+    Id sql=manufacturer_id
+    name String
+    address String
+    deriving Typeable Show
+
+
+Supplier json sql=t_supplier
+    Id sql=supplier_id
+    companyName String
+    address String
+    urlWebSite String
+    deriving Typeable Show
 
 -- User
 --     ident Text

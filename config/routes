@@ -13,4 +13,5 @@
 -- /profile ProfileR GET
 
 
-/users UserR POST PUT
+/users CreateUserR POST
+/users/#UserId  UpdateUserR PUT
