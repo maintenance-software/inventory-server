@@ -108,6 +108,8 @@ instance Yesod App where
     isAuthorized HomeR _ = return Authorized
     isAuthorized CreateUserR _ = return Authorized
     isAuthorized (UpdateUserR _) _ = return Authorized
+    isAuthorized PersonR _ = return Authorized
+    isAuthorized (PersonIdR _) _ = return Authorized
     isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
@@ -181,12 +183,12 @@ instance YesodAuth App where
     authenticate :: (MonadHandler m, HandlerSite m ~ App)
                  => Creds App -> m (AuthenticationResult App)
     authenticate creds = liftHandler $ runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
+        x <- getBy $ UniqueUserUsername $ credsIdent creds
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
             Nothing -> Authenticated <$> insert User
-                { userIdent = credsIdent creds
-                , userUsername = "janez"
+                { userUsername = credsIdent creds
+                , userEmail = "janez@gmail.com"
                 , userPassword = "no password"
                 , userEnabled = True
                 }

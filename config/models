@@ -5,15 +5,16 @@
 User json sql=t_user
     Id sql=user_id
     username Text
+    email Text
     password Text
     enabled Bool
-    ident Text
-    UniqueUser username
+    UniqueUserUsername username
+    UniqueUserEmail email
     deriving Typeable Show
 
 Role json sql=t_role
     Id sql=role_id
-    name String
+    name Text
     enabled Bool
     deriving Show
 
@@ -25,7 +26,7 @@ UserRole json sql=t_user_role
 
 Privilege json sql=t_privilege
     Id sql=privilege_id
-    name String
+    name Text
     enabled Bool
     deriving Show
 
@@ -37,44 +38,73 @@ RolePrivilege json sql=t_role_privilege
 
 Person json sql=t_person
     Id sql=person_id
-    firstName String
-    lastName String
-    documentType String
-    documentId String
-    userId UserId
-    UniquePerson documentId
+    firstName Text
+    lastName Text
+    documentType Text
+    documentId Text
+    userId UserId Maybe
+    UniquePersonDocumentId documentId
     deriving Typeable Show
 
-Product json sql=t_product
-    Id sql=product_id
-    name String
-    unit String
+Address json sql=t_address
+    Id sql=address_id
+    street1 Text
+    street2 Text
+    street3 Text
+    zip Text
+    city Text
+    state Text
+    country Text
+    personId PersonId
+    UniqueAddressPersonId personId
+    deriving Typeable Show
+
+ContactInfo json sql=t_contact_info
+    Id sql=contact_info_id
+    type Text
+    contact Text
+    personId PersonId
+    deriving Typeable Show
+
+Item json sql=t_item
+    Id sql=item_id
+    name Text
+    unit Text
     defaultPrice Double
-    description String
-    code String
+    description Text
+    code Text
     categoryId CategoryId
-    manufacturerId ManufacturerId
     deriving Typeable Show
 
 Category json sql=t_category
     Id sql=category_id
-    name String
-    description String
+    name Text
+    description Text
     deriving Typeable Show
 
-
-Manufacturer json sql=t_manufacturer
-    Id sql=manufacturer_id
-    name String
-    address String
+InventoryItem json sql=t_inventory_item
+    Id sql=inventory_item_id
+    level Int
+    categoryId CategoryId
     deriving Typeable Show
 
+ItemSupplier json sql=t_item_supplier
+    Id sql=item_supplier_id
+    orderQuantity Int
+    standardPrice Double
+    suppliedDate UTCTime
+    deliveredLeadTime Int
+    status Text
+    inventoryItemId InventoryItemId
+    supplierId SupplierId
+    emitterId UserId
+    deriving Typeable Show
 
 Supplier json sql=t_supplier
     Id sql=supplier_id
-    companyName String
-    address String
-    urlWebSite String
+    name Text
+    webpage Text
+    contactId PersonId
     deriving Typeable Show
 
 -- User

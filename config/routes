@@ -13,5 +13,8 @@
 -- /profile ProfileR GET
 
 
-/users CreateUserR POST
+/users CreateUserR GET POST
 /users/#UserId  UpdateUserR PUT
+
+/persons PersonR POST PUT
+/persons/#PersonId PersonIdR GET
