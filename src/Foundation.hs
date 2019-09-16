@@ -25,11 +25,14 @@ import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import OAuthClient
 
--- | The foundation datatype for your application. This can be a good place to
--- keep settings and values requiring initialization before your application
--- starts running, such as database connections. Every handler will have
--- access to the data present here.
+clientId :: Text
+clientId = "app"
+
+clientSecret :: Text
+clientSecret = "appsecret"
+
 data App = App
     { appSettings    :: AppSettings
     , appStatic      :: Static -- ^ Settings for static file serving.
@@ -106,8 +109,8 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
-    isAuthorized CreateUserR _ = return Authorized
-    isAuthorized (UpdateUserR _) _ = return Authorized
+    isAuthorized UserR _ = return Authorized --isAuthenticated
+    isAuthorized (FindByIdR _) _ = return Authorized --isAuthenticated
     isAuthorized PersonR _ = return Authorized
     isAuthorized (PersonIdR _) _ = return Authorized
     isAuthorized IndexR _ = return Authorized
@@ -168,36 +171,24 @@ instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
 instance YesodAuth App where
-    type AuthId App = UserId
+    type AuthId App = Text
 
-    -- Where to send a user after successful login
-    -- loginDest :: App -> Route App
-    -- loginDest _ = HomeR
-    -- Where to send a user after logout
-    -- logoutDest :: App -> Route App
-    -- logoutDest _ = HomeR
-    -- Override the above two destinations when a Referer: header is present
-    redirectToReferer :: App -> Bool
+    loginHandler = defaultLoginHandler
+
+    authenticate = return . Authenticated . credsIdent
     redirectToReferer _ = True
 
-    authenticate :: (MonadHandler m, HandlerSite m ~ App)
-                 => Creds App -> m (AuthenticationResult App)
-    authenticate creds = liftHandler $ runDB $ do
-        x <- getBy $ UniqueUserUsername $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Authenticated uid
-            Nothing -> Authenticated <$> insert User
-                { userUsername = credsIdent creds
-                , userEmail = "janez@gmail.com"
-                , userPassword = "no password"
-                , userEnabled = True
-                }
+    loginDest _ = HomeR
+    logoutDest _ = HomeR
 
-    -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins :: App -> [AuthPlugin App]
-    authPlugins app = [authOpenId Claimed []] ++ extraAuthPlugins
+    authPlugins _ = [ oauth2Client clientId clientSecret ]
+
+    -- The default maybeAuthId assumes a Persistent database. We're going for a
+    -- simpler AuthId, so we'll just do a direct lookup in the session.
+    maybeAuthId = lookupSession "_ID"
+
         -- Enable authDummy login if enabled.
-        where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
+        -- where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
@@ -207,8 +198,7 @@ isAuthenticated = do
         Nothing -> Unauthorized "You must login to access this page"
         Just _ -> Authorized
 
-instance YesodAuthPersist App
-
+-- instance YesodAuthPersist App
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.
 instance RenderMessage App FormMessage where

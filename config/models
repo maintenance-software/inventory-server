@@ -7,7 +7,7 @@ User json sql=t_user
     username Text
     email Text
     password Text
-    enabled Bool
+    active Bool
     UniqueUserUsername username
     UniqueUserEmail email
     deriving Typeable Show
@@ -33,6 +33,13 @@ Privilege json sql=t_privilege
 RolePrivilege json sql=t_role_privilege
     Id sql=role_privilege_id
     roleId RoleId
+    privilegeId PrivilegeId
+    deriving Show
+
+
+UserPrivilege json sql=t_user_privilege
+    Id sql=user_privilege_id
+    userId UserId
     privilegeId PrivilegeId
     deriving Show
 

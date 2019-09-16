@@ -2,24 +2,64 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TypeFamilies #-}
 module Handler.Home where
 
 import Import
 import Text.Hamlet          (hamletFile)
 
-getHomeR :: Handler Html
-getHomeR = homePage
+-- getHomeR :: Handler Html
+-- getHomeR = homePage
 
 getIndexR :: Handler Html
-getIndexR = homePage
+getIndexR = getHomeR
+
+getHomeR :: Handler Html
+getHomeR = do
+        maid <- maybeAuthId
+        defaultLayout
+            [whamlet|
+                <p>Your current auth ID: #{show maid}
+                $maybe _ <- maid
+                    <p>
+                        <a href=@{AuthR LogoutR}>Logout
+                $nothing
+                    <p>
+                        <a href=@{AuthR LoginR}>Go to the login page
+            |]
+ 
+{--
+        case maid of
+             Nothing -> redirect ("auth/page/github/forward" :: Text)
+             Just _ -> defaultLayout
+                            [whamlet|
+                                <p>Your current auth ID: #{show maid}
+                                <p>
+                                    <a href=@{AuthR LogoutR}>Logout
+                            |]
+--}
+        -- redirect $ AuthR LoginR
+   
 
 
+{--
+    defaultLayout
+        [whamlet|
+            <p>Your current auth ID: #{show maid}
+            $maybe _ <- maid
+                <p>
+                    <a href=@{AuthR LogoutR}>Logout
+            $nothing
+                <p>
+                    <a href=@{AuthR LoginR}>Go to the login page
+        |]
+--}
 
-homePage :: Handler Html
-homePage = do
-            master <- getYesod
-            mmsg <- getMessage
-            muser <- maybeAuthPair
-            mcurrentRoute <- getCurrentRoute
-            withUrlRenderer $(hamletFile "src/Views/index.hamlet")
+-- homePage :: Handler Html
+-- homePage = do
+--            master <- getYesod
+--            mmsg <- getMessage
+--            muser <- maybeAuthPair
+--            mcurrentRoute <- getCurrentRoute
+--            withUrlRenderer $(hamletFile "src/Views/index.hamlet")
