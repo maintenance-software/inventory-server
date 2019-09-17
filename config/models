@@ -15,7 +15,8 @@ User json sql=t_user
 Role json sql=t_role
     Id sql=role_id
     name Text
-    enabled Bool
+    description Text Maybe
+    active Bool
     deriving Show
 
 UserRole json sql=t_user_role
@@ -27,7 +28,8 @@ UserRole json sql=t_user_role
 Privilege json sql=t_privilege
     Id sql=privilege_id
     name Text
-    enabled Bool
+    description Text Maybe
+    active Bool
     deriving Show
 
 RolePrivilege json sql=t_role_privilege

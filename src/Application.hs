@@ -44,6 +44,8 @@ import Handler.Common
 import Handler.Home
 import Handler.Comment
 import Handler.User
+import Handler.Role
+import Handler.Privilege
 import Handler.Person
 -- import Handler.Profile
 

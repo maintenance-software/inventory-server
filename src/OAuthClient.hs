@@ -46,6 +46,9 @@ oauth2ClientScoped scopes clientId clientSecret =
         }
 
 {--
+
+https://pbrisbin.com/tags/yesod/
+
 DB CONNECT
 ==========
 $> psql -U inventory_user -h 192.168.0.100 -d inventory_db

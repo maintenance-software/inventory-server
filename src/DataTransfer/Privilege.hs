@@ -10,7 +10,7 @@ import Data.Text (Text)
 
 data Privilege = Privilege {  privilegeId :: Int
                             , privilegeName :: Text
-                            , description :: Text
+                            , description :: Maybe Text
                             , active :: Bool
                            } deriving (Generic, Show)
 

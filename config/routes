@@ -14,7 +14,16 @@
 
 
 /users UserR GET POST PUT
-/users/#UserId  FindByIdR GET
+/users/#UserId  UserIdR GET DELETE
+/users/#UserId/roles  UserRoleR GET POST DELETE
+/users/#UserId/privileges  UserPrivilegeR GET POST DELETE
+
+/roles RoleR GET POST PUT
+/roles/#RoleId  RoleIdR GET DELETE
+/roles/#RoleId/privileges  RolePrivilegeR GET POST DELETE
+
+/privileges PrivilegeR GET POST PUT
+/privileges/#PrivilegeId  PrivilegeIdR GET DELETE
 
 /persons PersonR POST PUT
 /persons/#PersonId PersonIdR GET

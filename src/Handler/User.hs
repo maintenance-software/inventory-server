@@ -11,6 +11,8 @@
 
 module Handler.User where
 
+import qualified Prelude as P
+import qualified Data.Set as S
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Crypto.BCrypt
 import qualified Data.Text as T
@@ -21,17 +23,17 @@ import qualified DataTransfer.User as U
 
 
 
--- GETUSER
--- getCreateUserR :: Handler Value
--- getCreateUserR = do
---                    returnJson (DT.Person Nothing "nss" "ss" "sss" "ssa" Nothing [DT.Contact Nothing "asda" "sss"])
-
 -- GET USER BY ID
-getFindByIdR :: UserId -> Handler Value
-getFindByIdR userId = do
+getUserIdR :: UserId -> Handler Value
+getUserIdR userId = do
                 user <- runDB $ getJustEntity userId
                 returnJson $ buildUserResponse user
 
+-- DELETE USER BY ID
+deleteUserIdR :: UserId -> Handler Value
+deleteUserIdR userId = do
+                        _ <- runDB $ delete userId
+                        sendResponseStatus status200 ("DELETED" :: Text)
 
 -- LIST USERS ENDPOINT
 getUserR :: Handler Value
@@ -59,8 +61,66 @@ putUserR = do
                             userEncrypeted <- liftIO $ encryptPassword $ fromUserDT user
                             userKey <- runDB $ insert userEncrypeted
                             return userKey
-            response <- getFindByIdR userId
+            response <- getUserIdR userId
             returnJson response
+
+-- GET ROLES FOR USER
+getUserRoleR :: UserId -> Handler Value
+getUserRoleR userId = do
+                        entityUserRoles <- runDB $ selectList ([UserRoleUserId ==. userId] :: [Filter UserRole]) []
+                        let roleIds = P.map (\(Entity _ (UserRole _ roleId)) -> roleId) entityUserRoles
+                        entityRoles <- runDB $ selectList ([RoleId <-. roleIds] :: [Filter Role]) []
+                        returnJson entityRoles
+
+-- ADD ROLES TO USER
+postUserRoleR :: UserId -> Handler Value
+postUserRoleR userId = do
+                        requestRoleIds <- requireCheckJsonBody :: Handler [RoleId]
+                        entityUserRoles <- runDB $ selectList ([UserRoleUserId ==. userId] :: [Filter UserRole]) []
+                        let existingRoleIds = P.map (\(Entity _ (UserRole _ roleId)) -> roleId) entityUserRoles
+                        let removableIds = S.toList $ S.difference (S.fromList existingRoleIds) (S.fromList requestRoleIds)
+                        let newIds = S.toList $ S.difference (S.fromList requestRoleIds) (S.fromList existingRoleIds)
+                        _ <- runDB $ deleteWhere  ([UserRoleRoleId <-. removableIds] :: [Filter UserRole])
+                        _ <- runDB $ insertMany $ P.map (\roleId -> (UserRole userId roleId)) newIds
+                        roles <- getUserRoleR userId
+                        returnJson roles
+
+-- DELETE ROLES FOR USER
+deleteUserRoleR :: UserId -> Handler Value
+deleteUserRoleR userId = do
+                        requestRoleIds <- requireCheckJsonBody :: Handler [RoleId]
+                        _ <- runDB $ deleteWhere  ([UserRoleRoleId <-. requestRoleIds] :: [Filter UserRole])
+                        roles <- getUserRoleR userId
+                        returnJson roles
+
+-- GET PRIVILEGES FOR USER
+getUserPrivilegeR :: UserId -> Handler Value
+getUserPrivilegeR userId = do
+                            entityUserPrivileges <- runDB $ selectList ([UserPrivilegeUserId ==. userId] :: [Filter UserPrivilege]) []
+                            let privilegeIds = P.map (\(Entity _ (UserPrivilege _ privilegeId)) -> privilegeId) entityUserPrivileges
+                            entityPrivileges <- runDB $ selectList ([PrivilegeId <-. privilegeIds] :: [Filter Privilege]) []
+                            returnJson entityPrivileges
+
+-- ADD PRIVILEGES TO USER
+postUserPrivilegeR :: UserId -> Handler Value
+postUserPrivilegeR userId = do
+                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [PrivilegeId]
+                            entityUserPrivileges <- runDB $ selectList ([UserPrivilegeUserId ==. userId] :: [Filter UserPrivilege]) []
+                            let existingPrivilegeIds = P.map (\(Entity _ (UserPrivilege _ privilegeId)) -> privilegeId) entityUserPrivileges
+                            let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList requestPrivilegeIds)
+                            let newIds = S.toList $ S.difference (S.fromList requestPrivilegeIds) (S.fromList existingPrivilegeIds)
+                            _ <- runDB $ deleteWhere  ([UserPrivilegePrivilegeId <-. removableIds] :: [Filter UserPrivilege])
+                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (UserPrivilege userId privilegeId)) newIds
+                            privileges <- getUserPrivilegeR userId
+                            returnJson privileges
+
+-- DELETE PRIVILEGES FOR USER
+deleteUserPrivilegeR :: UserId -> Handler Value
+deleteUserPrivilegeR userId = do
+                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [PrivilegeId]
+                            _ <- runDB $ deleteWhere  ([UserPrivilegePrivilegeId <-. requestPrivilegeIds] :: [Filter UserPrivilege])
+                            privileges <- getUserPrivilegeR userId
+                            returnJson privileges
 
 -- User username password enabled ident
 encryptPassword:: User -> IO User

@@ -12,7 +12,7 @@ import DataTransfer.Privilege (Privilege)
 
 data Role = Role {  roleId :: Int
                   , roleName :: Text
-                  , description :: Text
+                  , description :: Maybe Text
                   , active :: Bool
                   , privileges :: [Privilege]
                  } deriving (Generic, Show)

@@ -109,8 +109,19 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
+
     isAuthorized UserR _ = return Authorized --isAuthenticated
-    isAuthorized (FindByIdR _) _ = return Authorized --isAuthenticated
+    isAuthorized (UserIdR _) _ = return Authorized --isAuthenticated
+    isAuthorized (UserRoleR _) _ = return Authorized
+    isAuthorized (UserPrivilegeR _) _ = return Authorized
+
+    isAuthorized RoleR _ = return Authorized --isAuthenticated
+    isAuthorized (RoleIdR _) _ = return Authorized --isAuthenticated
+    isAuthorized (RolePrivilegeR _) _ = return Authorized
+
+    isAuthorized PrivilegeR _ = return Authorized --isAuthenticated
+    isAuthorized (PrivilegeIdR _) _ = return Authorized --isAuthenticated
+
     isAuthorized PersonR _ = return Authorized
     isAuthorized (PersonIdR _) _ = return Authorized
     isAuthorized IndexR _ = return Authorized
