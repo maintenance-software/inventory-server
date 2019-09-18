@@ -11,6 +11,7 @@
 
 module Handler.Privilege where
 
+import qualified Prelude as PP
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified DataTransfer.Privilege as P
 import Import
@@ -31,7 +32,7 @@ deletePrivilegeIdR privilegeId = do
 getPrivilegeR :: Handler Value
 getPrivilegeR = do
                 privileges <- runDB $ selectList ([] :: [Filter Privilege]) []
-                returnJson privileges
+                returnJson $ PP.map buildPrivilegeResponse privileges
 
 -- CREATE PRIVILEGE ENDPOINT
 postPrivilegeR :: Handler Value

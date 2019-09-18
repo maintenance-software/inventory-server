@@ -22,7 +22,7 @@ import Import
 getRoleIdR :: RoleId -> Handler Value
 getRoleIdR roleId = do
                     role <- runDB $ getJustEntity roleId
-                    returnJson $ buildUserResponse role
+                    returnJson $ buildRoleResponse role
 
 -- DELETE ROLE BY ID
 deleteRoleIdR :: RoleId -> Handler Value
@@ -34,7 +34,7 @@ deleteRoleIdR roleId = do
 getRoleR :: Handler Value
 getRoleR = do
             roles <- runDB $ selectList ([] :: [Filter Role]) []
-            returnJson roles
+            returnJson $ P.map buildRoleResponse roles
 
 -- CREATE ROLE ENDPOINT
 postRoleR :: Handler Value
@@ -86,8 +86,8 @@ deleteRolePrivilegeR roleId = do
                             privileges <- getRolePrivilegeR roleId
                             returnJson privileges
 
-buildUserResponse :: Entity Role -> R.Role
-buildUserResponse (Entity roleId role) = R.Role {  roleId = fromIntegral $ fromSqlKey roleId
+buildRoleResponse :: Entity Role -> R.Role
+buildRoleResponse (Entity roleId role) = R.Role {  roleId = fromIntegral $ fromSqlKey roleId
                                                  , roleName = a
                                                  , description = b
                                                  , active = c

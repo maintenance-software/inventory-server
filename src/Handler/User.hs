@@ -39,7 +39,7 @@ deleteUserIdR userId = do
 getUserR :: Handler Value
 getUserR = do
             users <- runDB $ selectList [] [Asc UserId]
-            returnJson users
+            returnJson $ P.map buildUserResponse users
 
 -- CREATE USER ENDPOINT
 postUserR :: Handler Value
