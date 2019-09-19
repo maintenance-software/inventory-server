@@ -13,17 +13,17 @@
 -- /profile ProfileR GET
 
 
-/users UserR GET POST PUT
-/users/#UserId  UserIdR GET DELETE
-/users/#UserId/roles  UserRoleR GET POST DELETE
-/users/#UserId/privileges  UserPrivilegeR GET POST DELETE
+/api/users UserR GET POST PUT
+/api/users/#UserId  UserIdR GET DELETE
+/api/users/#UserId/roles  UserRoleR GET POST DELETE
+/api/users/#UserId/privileges  UserPrivilegeR GET POST DELETE
 
-/roles RoleR GET POST PUT
-/roles/#RoleId  RoleIdR GET DELETE
-/roles/#RoleId/privileges  RolePrivilegeR GET POST DELETE
+/api/roles RoleR GET POST PUT
+/api/roles/#RoleId  RoleIdR GET DELETE
+/api/roles/#RoleId/privileges  RolePrivilegeR GET POST DELETE
 
-/privileges PrivilegeR GET POST PUT
-/privileges/#PrivilegeId  PrivilegeIdR GET DELETE
+/api/privileges PrivilegeR GET POST PUT
+/api/privileges/#PrivilegeId  PrivilegeIdR GET DELETE
 
-/persons PersonR POST PUT
-/persons/#PersonId PersonIdR GET
+/api/persons PersonR POST PUT
+/api/persons/#PersonId PersonIdR GET
