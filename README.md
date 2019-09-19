@@ -54,3 +54,6 @@ stack test --flag inventory-server:library-only --flag inventory-server:dev
 
 ## Build Project
 stack build --extra-include-dirs="C:/Program Files/PostgreSQL/9.6/include" --extra-lib-dirs="C:/Program Files/PostgreSQL/9.6/lib"
+
+set binary
+stack build --copy-bins --local-bin-path ~/outputpath
