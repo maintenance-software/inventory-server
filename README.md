@@ -57,3 +57,6 @@ stack build --extra-include-dirs="C:/Program Files/PostgreSQL/9.6/include" --ext
 
 set binary
 stack build --copy-bins --local-bin-path ~/outputpath
+
+build ui
+cp -a ui-home/build/. webapps/dist
