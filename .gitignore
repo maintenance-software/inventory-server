@@ -23,3 +23,4 @@ cabal.sandbox.config
 \#*
 inventory-server.cabal
 webapps/dist
+ui-home/

@@ -7,22 +7,24 @@ module DataTransfer.Person where
 import GHC.Generics
 import Data.Aeson
 import Data.Text (Text)
+import DataTransfer.User
 
-data Person = Person {  personId :: Maybe Int
+data Person = Person {  personId :: Int
                       , firstName :: Text
                       , lastName :: Text
                       , documentType :: Text
                       , documentId :: Text
                       , address :: Maybe Address
                       , contactInfo :: [Contact]
+                      , account :: Maybe User
                      } deriving (Generic, Show)
 
-data Contact = Contact {  contactId :: Maybe Int
+data Contact = Contact {  contactId :: Int
                         , contact :: Text
                         , contactType :: Text
                        } deriving (Generic, Show)
 
-data Address = Address {  addressId :: Maybe Int
+data Address = Address {  addressId :: Int
                         , street1 :: Text
                         , street2 :: Text
                         , street3 :: Text

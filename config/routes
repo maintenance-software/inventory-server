@@ -25,5 +25,5 @@
 /api/privileges PrivilegeR GET POST PUT
 /api/privileges/#PrivilegeId  PrivilegeIdR GET DELETE
 
-/api/persons PersonR POST PUT
+/api/persons PersonR GET POST PUT
 /api/persons/#PersonId PersonIdR GET
