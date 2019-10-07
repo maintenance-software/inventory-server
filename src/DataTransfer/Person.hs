@@ -51,6 +51,7 @@ getDocumentType Person {..} = documentType
 getDocumentId Person {..} = documentId
 getAddress Person {..} = address
 getContactInfo Person {..} = contactInfo
+getAccount Person {..} = account
 
 --ADDRESS GETTERS
 getAddressId Address {..} = addressId

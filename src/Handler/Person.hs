@@ -13,7 +13,7 @@ module Handler.Person where
 
 import qualified DataTransfer.Person as DT
 import Import
-import Business.PersonBizFunc (getPersonByIdBizFunc, listPersonsBizFunc, createOrUpdatePersonBizFunc)
+import Business.PersonBizFunc (getPersonByIdBizFunc, listPersonsBizFunc, createOrUpdatePersonBizFunc, listPersonsUsersBizFunc)
 
 -- GET PERSON BY ID
 getPersonIdR :: PersonId -> Handler Value
@@ -24,7 +24,7 @@ getPersonIdR personId = do
 -- LIST PERSONS ENDPOINT
 getPersonR :: Handler Value
 getPersonR = do
-              persons <- listPersonsBizFunc
+              persons <- listPersonsUsersBizFunc
               returnJson persons
 
 -- CREATE OR UPDATE PERSON
