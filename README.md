@@ -60,3 +60,6 @@ stack build --copy-bins --local-bin-path ~/outputpath
 
 build ui
 cp -a ui-home/build/. webapps/dist
+
+db connection
+psql -h 192.168.0.100 -U inventory_user -d inventory_db

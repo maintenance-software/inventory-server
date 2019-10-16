@@ -70,7 +70,6 @@ toPersonEntity ((personEntity, userEntity): xs) = itemResponse: toPersonEntity x
 -- CREATE OR UPDATE PERSON
 createOrUpdatePersonBizFunc :: DT.Person -> Handler DT.Person
 createOrUpdatePersonBizFunc person = do
-                                       person <- (requireCheckJsonBody :: Handler DT.Person)
                                        let personId' = DT.getPersonId person
                                        personId <- if personId' > 0 then
                                                     do
@@ -124,7 +123,7 @@ updateContact [] = return ()
 updateContact (x:xs)= do
                         let key = DT.getContactId x
                         let contactId = (toSqlKey $ fromIntegral key)::ContactInfoId
-                        _ <- runDB $ update contactId [  ContactInfoType =. DT.getContactType x , ContactInfoContact =. DT.getContact x]
+                        _ <- runDB $ update contactId [  ContactInfoContactType =. DT.getContactType x , ContactInfoContact =. DT.getContact x]
                         _ <- updateContact xs
                         return ()
 

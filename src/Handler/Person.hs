@@ -34,7 +34,7 @@ postPersonR = putPersonR
 -- CREATE OR UPDATE PERSON
 putPersonR :: Handler Value
 putPersonR = do
-               person <- (requireCheckJsonBody :: Handler DT.Person)
+               person <- requireCheckJsonBody :: Handler DT.Person
                response <- createOrUpdatePersonBizFunc person
                returnJson response
 

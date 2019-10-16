@@ -22,5 +22,5 @@ cabal.sandbox.config
 *~
 \#*
 inventory-server.cabal
-webapps/dist
+webapps/dist/**
 ui-home/

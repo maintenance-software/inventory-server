@@ -70,7 +70,7 @@ Address json sql=t_address
 
 ContactInfo json sql=t_contact_info
     Id sql=contact_info_id
-    type Text
+    contactType Text
     contact Text
     personId PersonId
     deriving Typeable Show
