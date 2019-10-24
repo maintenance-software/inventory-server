@@ -12,6 +12,7 @@ dependencies:
 - yesod-static >=1.6 && <1.7
 - yesod-form >=1.6 && <1.7
 - yesod-auth-oauth2 # >=0.5 && <0.7
+- morpheus-graphql
 - hoauth2 # >=1.3.0 && <1.9
 - bcrypt
 - raw-strings-qq

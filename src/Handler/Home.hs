@@ -8,26 +8,21 @@ module Handler.Home where
 
 import Import
 import Text.Hamlet          (hamletFile)
+import Handler.GraphqlTest (api)
 
 -- getHomeR :: Handler Html
 -- getHomeR = homePage
 
-getIndexR :: Handler Html
+getIndexR :: Handler TypedContent
 getIndexR = getHomeR
 
-getHomeR :: Handler Html
+jsonType :: ContentType
+jsonType = "application/json"
+
+getHomeR :: Handler TypedContent
 getHomeR = do
-        maid <- maybeAuthId
-        defaultLayout
-            [whamlet|
-                <p>Your current auth ID: #{show maid}
-                $maybe _ <- maid
-                    <p>
-                        <a href=@{AuthR LogoutR}>Logout
-                $nothing
-                    <p>
-                        <a href=@{AuthR LoginR}>Go to the login page
-            |]
+          result <- liftIO $ api "query GetDeity { deity (name: \"Morpheus\") { fullName power } }"
+          return $ TypedContent jsonType $ toContent $ result
  
 {--
         case maid of
