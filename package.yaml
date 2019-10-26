@@ -21,6 +21,8 @@ dependencies:
 - classy-prelude-conduit # >=1.4 && <1.5
 - classy-prelude-yesod # >=1.4 && <1.5
 - bytestring >=0.9 && <0.11
+- wai-conduit
+- conduit-extra
 - text >=0.11 && <2.0
 - persistent # >=2.8 && <2.9
 - persistent-postgresql # >=2.8 && <2.9
