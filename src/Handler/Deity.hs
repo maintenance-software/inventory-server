@@ -12,6 +12,9 @@ import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Morpheus.Types    (GQLType (..))
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
+import           Database.Persist.Sql (toSqlKey, fromSqlKey)
+import           Import
+-- import Application (handler)
 
 data Deity = Deity
   { fullName :: Text -- Non-Nullable Field
@@ -23,4 +26,17 @@ instance GQLType Deity where
   description _ = Just "Custom Description for Client Defined User Type"
 
 dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
-dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting"}
+dbDeity name _ = do
+                 let userId = (toSqlKey 3)::UserId
+--                  user <- runDB $ getJustEntity userId
+                 return $ Right $ Deity {fullName = "Hi, " <> name, power = Just "Shapeshifting"}
+
+toUser :: Entity User -> Deity
+toUser _ = Deity {fullName = "Hi, ", power = Just "Shapeshifting"}
+
+fetchDeity :: Handler Deity
+fetchDeity = do
+              let userId = (toSqlKey 3)::UserId
+              user <- runDB $ getJustEntity userId
+              return $ Deity {fullName = "dummy", power = Just "Shapeshifting"}
+

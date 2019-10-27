@@ -17,14 +17,14 @@ module Handler.GraphqlTest (api) where
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import           GHC.Generics
+import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (queryResolver, Resolver (..), GQLRootResolver (..), IORes, GQLType (..))
+import           Data.Morpheus.Types        (queryResolver, resolver, Resolver (..), GQLRootResolver (..), IORes, GQLType (..))
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
 import           Handler.Deity  (Deity (..), dbDeity)
-
 
 -- importGQLDocumentWithNamespace "schema.gql"
 
@@ -45,8 +45,11 @@ data DeityArgs = DeityArgs
 -- resolveDeity :: DeityArgs -> IORes Deity
 -- resolveDeity args = queryResolver $ dbDeity  (name args) (mythology args)
 
+resolveDeity :: DeityArgs -> IORes Deity
+resolveDeity DeityArgs{name, mythology} = resolver $ dbDeity name mythology
+
 rootResolver :: GQLRootResolver IO () () Query () ()
-rootResolver = GQLRootResolver { queryResolver = return Query {deity}
+rootResolver = GQLRootResolver { queryResolver = return Query {deity = resolveDeity}
                                , mutationResolver = return ()
                                , subscriptionResolver = return ()
                                }

@@ -23,6 +23,7 @@ dependencies:
 - bytestring >=0.9 && <0.11
 - wai-conduit
 - conduit-extra
+- mtl
 - text >=0.11 && <2.0
 - persistent # >=2.8 && <2.9
 - persistent-postgresql # >=2.8 && <2.9
