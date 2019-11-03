@@ -9,7 +9,7 @@ module Handler.Deity
   ) where
 
 import           Data.Morpheus.Kind     (OBJECT)
-import           Data.Morpheus.Types    (GQLType (..))
+import           Data.Morpheus.Types    (GQLType (..), liftM)
 import           Data.Text              (Text)
 import           GHC.Generics           (Generic)
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)

@@ -20,7 +20,7 @@ import           GHC.Generics
 import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (queryResolver, resolver, Resolver (..), GQLRootResolver (..), IORes, GQLType (..))
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEitherM)
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
@@ -28,36 +28,20 @@ import           Handler.Deity  (Deity (..), dbDeity)
 
 -- importGQLDocumentWithNamespace "schema.gql"
 
-data Query = Query
-  { deity :: DeityArgs -> IORes Deity
-  } deriving (Generic)
-
-instance GQLType Query where
-  type KIND Query = OBJECT
-  description _ = Just "Custom Description for Client Defined User Type"
-
-data DeityArgs = DeityArgs
-  { name      :: Text  -- Required Argument
-  , mythology :: Maybe Text  -- Optional Argument
-  } deriving (Generic)
-
+data Query m = Query { deity :: DeityArgs -> m Deity } deriving (Generic, GQLType)
+data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
 -- resolveDeity :: DeityArgs -> IORes Deity
 -- resolveDeity args = queryResolver $ dbDeity  (name args) (mythology args)
 
-resolveDeity :: DeityArgs -> IORes Deity
-resolveDeity DeityArgs{name, mythology} = resolver $ dbDeity name mythology
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
 
-rootResolver :: GQLRootResolver IO () () Query () ()
-rootResolver = GQLRootResolver { queryResolver = return Query {deity = resolveDeity}
-                               , mutationResolver = return ()
-                               , subscriptionResolver = return ()
+rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver = GQLRootResolver { queryResolver = Query {deity = resolveDeity}
+                               , mutationResolver = Undefined
+                               , subscriptionResolver = Undefined
                                }
-            where
-                deity DeityArgs{name, mythology} = pure Deity {fullName, power}
-                  where
-                          fullName = "Hi" <> name
-                          power = Just "Shapeshifting"
 
 api :: ByteString -> IO ByteString
 api = interpreter rootResolver
