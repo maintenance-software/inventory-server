@@ -20,15 +20,16 @@ import           GHC.Generics
 import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEitherM)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEitherM, liftM)
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
 import           Handler.Deity  (Deity (..), dbDeity)
-
+import           Database.Persist.Sql (toSqlKey, fromSqlKey)
+import           Import hiding (liftM)
 -- importGQLDocumentWithNamespace "schema.gql"
 
-data Query m = Query { deity :: DeityArgs -> m Deity } deriving (Generic, GQLType)
+data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity } deriving (Generic, GQLType)
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
 -- resolveDeity :: DeityArgs -> IORes Deity
@@ -37,8 +38,8 @@ data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (G
 resolveDeity :: DeityArgs -> IORes e Deity
 resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
-rootResolver = GQLRootResolver { queryResolver = Query {deity = resolveDeity}
+rootResolver :: GQLRootResolver IO () QueryQL Undefined Undefined
+rootResolver = GQLRootResolver { queryResolver = QueryQL {deity = resolveDeity}
                                , mutationResolver = Undefined
                                , subscriptionResolver = Undefined
                                }
