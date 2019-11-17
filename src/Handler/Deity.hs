@@ -6,6 +6,7 @@
 module Handler.Deity
   ( Deity(..)
   , dbDeity
+  , fetchDeity
   ) where
 
 import           Data.Morpheus.Kind     (OBJECT)
@@ -25,11 +26,11 @@ instance GQLType Deity where
   type KIND Deity = OBJECT
   description _ = Just "Custom Description for Client Defined User Type"
 
-dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
+dbDeity :: Text -> Maybe Text -> IO Deity
 dbDeity name _ = do
                  let userId = (toSqlKey 3)::UserId
 --                  user <- runDB $ getJustEntity userId
-                 return $ Right $ Deity {fullName = "Hi, " <> name, power = Just "Shapeshifting"}
+                 return $ Deity {fullName = "Hi, " <> name, power = Just "Shapeshifting"}
 
 toUser :: Entity User -> Deity
 toUser _ = Deity {fullName = "Hi, ", power = Just "Shapeshifting"}

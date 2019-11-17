@@ -24,7 +24,7 @@ import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLTyp
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
-import           Handler.Deity  (Deity (..), dbDeity)
+import           Handler.Deity  (Deity (..), dbDeity, fetchDeity)
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import hiding (liftM)
 -- importGQLDocumentWithNamespace "schema.gql"
@@ -36,7 +36,7 @@ data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (G
 -- resolveDeity args = queryResolver $ dbDeity  (name args) (mythology args)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } = liftEitherM $ dbDeity name mythology
+resolveDeity DeityArgs { name, mythology } = liftM $ dbDeity name mythology
 
 rootResolver :: GQLRootResolver IO () QueryQL Undefined Undefined
 rootResolver = GQLRootResolver { queryResolver = QueryQL {deity = resolveDeity}
