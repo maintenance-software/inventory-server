@@ -20,7 +20,7 @@ import           GHC.Generics
 import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEitherM, liftM)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift)
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
@@ -36,7 +36,7 @@ data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (G
 -- resolveDeity args = queryResolver $ dbDeity  (name args) (mythology args)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } = liftM $ dbDeity name mythology
+resolveDeity DeityArgs { name, mythology } = lift $ dbDeity name mythology
 
 rootResolver :: GQLRootResolver IO () QueryQL Undefined Undefined
 rootResolver = GQLRootResolver { queryResolver = QueryQL {deity = resolveDeity}
