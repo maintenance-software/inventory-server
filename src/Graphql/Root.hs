@@ -25,9 +25,12 @@ import           Data.ByteString
 import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity)
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import
+import           Graphql.Privilege
 -- importGQLDocumentWithNamespace "schema.gql"
 
-data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity } deriving (Generic, GQLType)
+data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
+                         , privilege :: PrivilegeArgs -> m PrivilegeQL
+                         } deriving (Generic, GQLType)
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
 -- BASE EXAMPLE
@@ -43,7 +46,7 @@ resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
-resolveQuery = QueryQL {  deity = resolveDeity }
+resolveQuery = QueryQL {  deity = resolveDeity, privilege = resolvePrivilege }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Undefined Undefined
 rootResolver = GQLRootResolver { queryResolver = resolveQuery
