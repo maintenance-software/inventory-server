@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Handler.Deity
+module Graphql.Deity
   ( Deity(..)
   , dbDeity
   , fetchDeity

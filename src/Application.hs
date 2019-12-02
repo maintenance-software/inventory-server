@@ -47,6 +47,7 @@ import Handler.User
 import Handler.Role
 import Handler.Privilege
 import Handler.Person
+import Handler.Graphql
 -- import Handler.Profile
 
 -- This line actually creates our YesodDispatch instance. It is the second half

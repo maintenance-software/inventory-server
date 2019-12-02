@@ -110,6 +110,8 @@ instance Yesod App where
     isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
 
+    isAuthorized GraphqlR _ = return Authorized
+
     isAuthorized UserR _ = return Authorized --isAuthenticated
     isAuthorized (UserIdR _) _ = return Authorized --isAuthenticated
     isAuthorized (UserRoleR _) _ = return Authorized

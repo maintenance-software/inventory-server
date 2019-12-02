@@ -11,38 +11,47 @@
 {-# LANGUAGE QuasiQuotes           #-}
 
 
-module Handler.GraphqlTest (api) where
-
+module Graphql.Root (api) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-
 import           GHC.Generics
 import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift, Res, GQLRequest, GQLResponse)
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
-import           Handler.Deity  (Deity (..), dbDeity, fetchDeity)
+import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity)
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)
-import           Import hiding (liftM)
+import           Import
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity } deriving (Generic, GQLType)
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
--- resolveDeity :: DeityArgs -> IORes Deity
--- resolveDeity args = queryResolver $ dbDeity  (name args) (mythology args)
+-- BASE EXAMPLE
+-- https://github.com/dnulnets/haccessability
+dbFetchDeity:: Text -> Handler Deity
+dbFetchDeity name = do
+                     let userId = (toSqlKey 3)::UserId
+                     deity <- runDB $ getEntity userId
+                     return $ Deity {fullName = "dummy", power = Just "Shapeshifting"}
 
-resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } = lift $ dbDeity name mythology
+resolveDeity :: DeityArgs -> Res e Handler Deity
+resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 
-rootResolver :: GQLRootResolver IO () QueryQL Undefined Undefined
-rootResolver = GQLRootResolver { queryResolver = QueryQL {deity = resolveDeity}
+-- | The query resolver
+resolveQuery::QueryQL (Res () Handler)
+resolveQuery = QueryQL {  deity = resolveDeity }
+
+rootResolver :: GQLRootResolver Handler () QueryQL Undefined Undefined
+rootResolver = GQLRootResolver { queryResolver = resolveQuery
                                , mutationResolver = Undefined
                                , subscriptionResolver = Undefined
                                }
 
-api :: ByteString -> IO ByteString
-api = interpreter rootResolver
+-- | Compose the graphQL api
+api:: GQLRequest -> Handler GQLResponse
+api r = do
+         interpreter rootResolver r
