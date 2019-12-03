@@ -7,7 +7,7 @@
 module Handler.Graphql where
 
 import Import
-import Graphql.Root (api)
+import Graphql.Root (api, apiDoc)
 import Data.Morpheus.Types (GQLRequest)
 
 postGraphqlR :: Handler Value
@@ -15,6 +15,14 @@ postGraphqlR = do
                 request <- requireCheckJsonBody::Handler GQLRequest
                 response <- api request
                 sendStatusJSON status200 response
+
+jsonType :: ContentType
+jsonType = "text/plain"
+
+getGraphqlR :: Handler TypedContent
+getGraphqlR = do
+                let result = apiDoc
+                return $ TypedContent jsonType $ toContent $ result
 
 
 --postHomeR :: Handler TypedContent

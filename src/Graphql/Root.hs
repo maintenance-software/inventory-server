@@ -11,7 +11,7 @@
 {-# LANGUAGE QuasiQuotes           #-}
 
 
-module Graphql.Root (api) where
+module Graphql.Root (api, apiDoc) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
 import           GHC.Generics
@@ -20,6 +20,7 @@ import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
 import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift, Res, MutRes, GQLRequest, GQLResponse)
 import           Data.Morpheus.Kind     (OBJECT)
+import           Data.Morpheus.Document (toGraphQLDocument)
 import           Data.Text                  (Text)
 import           Data.ByteString
 import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity)
@@ -68,3 +69,5 @@ rootResolver = GQLRootResolver { queryResolver = resolveQuery
 api:: GQLRequest -> Handler GQLResponse
 api r = do
          interpreter rootResolver r
+
+apiDoc = toGraphQLDocument $ Just rootResolver
