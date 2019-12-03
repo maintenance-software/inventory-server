@@ -18,7 +18,7 @@ import           GHC.Generics
 import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift, Res, GQLRequest, GQLResponse)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift, Res, MutRes, GQLRequest, GQLResponse)
 import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Text                  (Text)
 import           Data.ByteString
@@ -31,7 +31,17 @@ import           Graphql.Privilege
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , privileges :: AbstractPrivilegeQL (Res () Handler)
                          } deriving (Generic, GQLType)
+
+newtype Mutation m = Mutation {
+    savePrivilege :: PrivilegeQL -> m PrivilegeQL
+  } deriving (Generic, GQLType)
+
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
+
+
+resolveMutation::Mutation (MutRes () Handler)
+resolveMutation = Mutation { savePrivilege = resolveSavePrivilege }
+
 
 -- BASE EXAMPLE
 -- https://github.com/dnulnets/haccessability
@@ -48,9 +58,9 @@ resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 resolveQuery::QueryQL (Res () Handler)
 resolveQuery = QueryQL {  deity = resolveDeity, privileges = resolvePrivilege }
 
-rootResolver :: GQLRootResolver Handler () QueryQL Undefined Undefined
+rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
 rootResolver = GQLRootResolver { queryResolver = resolveQuery
-                               , mutationResolver = Undefined
+                               , mutationResolver = resolveMutation
                                , subscriptionResolver = Undefined
                                }
 

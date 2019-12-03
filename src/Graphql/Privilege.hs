@@ -10,13 +10,14 @@
 {-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE RecordWildCards #-}
 
-module Graphql.Privilege (AbstractPrivilegeQL, resolvePrivilege) where
+module Graphql.Privilege (AbstractPrivilegeQL, PrivilegeQL, resolvePrivilege, resolveSavePrivilege) where
 
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res)
+import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Utils
@@ -60,7 +61,27 @@ listResolver listArgs = lift $ dbFetchPrivileges listArgs
 resolvePrivilege :: AbstractPrivilegeQL (Res () Handler)
 resolvePrivilege = AbstractPrivilegeQL {  findById = findByIdResolver, list = listResolver }
 
-{- Converters -}
+-- MUTATION resolvers
+resolveSavePrivilege :: PrivilegeQL -> MutRes e Handler PrivilegeQL
+resolveSavePrivilege arg = lift $ createOrUpdatePrivilege arg
+
+createOrUpdatePrivilege :: PrivilegeQL -> Handler PrivilegeQL
+createOrUpdatePrivilege privilege = do
+                let PrivilegeQL a b c d = privilege
+                privilegeId <- if a > 0 then
+                                do
+                                  let privilegeKey = (toSqlKey $ fromIntegral $ a)::PrivilegeId
+                                  _ <- runDB $ update privilegeKey [ PrivilegeName =. b
+                                                                   , PrivilegeActive =. d
+                                                                   ]
+                                  return privilegeKey
+                               else do
+                                  privilegeKey <- runDB $ insert $ fromPrivilegeQL privilege
+                                  return privilegeKey
+                response <- dbFetchPrivilegeById privilegeId
+                return response
+
+-- CONVERTERS
 toPrivilegeQL :: Entity Privilege -> PrivilegeQL
 toPrivilegeQL (Entity privilegeId privilege) = PrivilegeQL { privilegeId = fromIntegral $ fromSqlKey privilegeId
                                                            , name = a
@@ -69,3 +90,6 @@ toPrivilegeQL (Entity privilegeId privilege) = PrivilegeQL { privilegeId = fromI
                                                            }
                                                       where
                                                         Privilege a b c = privilege
+
+fromPrivilegeQL :: PrivilegeQL -> Privilege
+fromPrivilegeQL PrivilegeQL {..} = Privilege name description active
