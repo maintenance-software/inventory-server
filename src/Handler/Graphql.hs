@@ -10,8 +10,8 @@ import Import
 import Graphql.Root (api)
 import Data.Morpheus.Types (GQLRequest)
 
-getGraphqlR :: Handler Value
-getGraphqlR = do
+postGraphqlR :: Handler Value
+postGraphqlR = do
                 request <- requireCheckJsonBody::Handler GQLRequest
                 response <- api request
                 sendStatusJSON status200 response

@@ -28,4 +28,4 @@
 /api/persons PersonR GET POST PUT
 /api/persons/#PersonId PersonIdR GET
 
-/graphql GraphqlR GET
+/graphql GraphqlR POST

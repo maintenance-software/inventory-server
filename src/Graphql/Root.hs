@@ -29,7 +29,7 @@ import           Graphql.Privilege
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
-                         , privilege :: PrivilegeArgs -> m PrivilegeQL
+                         , privileges :: AbstractPrivilegeQL (Res () Handler)
                          } deriving (Generic, GQLType)
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
@@ -46,7 +46,7 @@ resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
-resolveQuery = QueryQL {  deity = resolveDeity, privilege = resolvePrivilege }
+resolveQuery = QueryQL {  deity = resolveDeity, privileges = resolvePrivilege }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Undefined Undefined
 rootResolver = GQLRootResolver { queryResolver = resolveQuery
