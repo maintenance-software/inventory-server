@@ -2,7 +2,7 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 
-User json sql=t_user
+User_ json sql=t_user
     Id sql=user_id
     username Text
     email Text
@@ -12,50 +12,50 @@ User json sql=t_user
     UniqueUserEmail email
     deriving Typeable Show
 
-Role json sql=t_role
+Role_ json sql=t_role
     Id sql=role_id
     name Text
     description Text Maybe
     active Bool
     deriving Show
 
-UserRole json sql=t_user_role
+UserRole_ json sql=t_user_role
     Id sql=user_role_id
-    userId UserId
-    roleId RoleId
+    userId User_Id
+    roleId Role_Id
     deriving Show
 
-Privilege json sql=t_privilege
+Privilege_ json sql=t_privilege
     Id sql=privilege_id
     name Text
     description Text Maybe
     active Bool
     deriving Show
 
-RolePrivilege json sql=t_role_privilege
+RolePrivilege_ json sql=t_role_privilege
     Id sql=role_privilege_id
-    roleId RoleId
-    privilegeId PrivilegeId
+    roleId Role_Id
+    privilegeId Privilege_Id
     deriving Show
 
 
-UserPrivilege json sql=t_user_privilege
+UserPrivilege_ json sql=t_user_privilege
     Id sql=user_privilege_id
-    userId UserId
-    privilegeId PrivilegeId
+    userId User_Id
+    privilegeId Privilege_Id
     deriving Show
 
-Person json sql=t_person
+Person_ json sql=t_person
     Id sql=person_id
     firstName Text
     lastName Text
     documentType Text
     documentId Text
-    userId UserId Maybe
+    userId User_Id Maybe
     UniquePersonDocumentId documentId
     deriving Typeable Show
 
-Address json sql=t_address
+Address_ json sql=t_address
     Id sql=address_id
     street1 Text
     street2 Text
@@ -64,56 +64,56 @@ Address json sql=t_address
     city Text
     state Text
     country Text
-    personId PersonId
+    personId Person_Id
     UniqueAddressPersonId personId
     deriving Typeable Show
 
-ContactInfo json sql=t_contact_info
+ContactInfo_ json sql=t_contact_info
     Id sql=contact_info_id
     contactType Text
     contact Text
-    personId PersonId
+    personId Person_Id
     deriving Typeable Show
 
-Item json sql=t_item
+Item_ json sql=t_item
     Id sql=item_id
     name Text
     unit Text
     defaultPrice Double
     description Text
     code Text
-    categoryId CategoryId
+    categoryId Category_Id
     deriving Typeable Show
 
-Category json sql=t_category
+Category_ json sql=t_category
     Id sql=category_id
     name Text
     description Text
     deriving Typeable Show
 
-InventoryItem json sql=t_inventory_item
+InventoryItem_ json sql=t_inventory_item
     Id sql=inventory_item_id
     level Int
-    categoryId CategoryId
+    categoryId Category_Id
     deriving Typeable Show
 
-ItemSupplier json sql=t_item_supplier
+ItemSupplier_ json sql=t_item_supplier
     Id sql=item_supplier_id
     orderQuantity Int
     standardPrice Double
     suppliedDate UTCTime
     deliveredLeadTime Int
     status Text
-    inventoryItemId InventoryItemId
-    supplierId SupplierId
-    emitterId UserId
+    inventoryItemId InventoryItem_Id
+    supplierId Supplier_Id
+    emitterId User_Id
     deriving Typeable Show
 
-Supplier json sql=t_supplier
+Supplier_ json sql=t_supplier
     Id sql=supplier_id
     name Text
     webpage Text
-    contactId PersonId
+    contactId Person_Id
     deriving Typeable Show
 
 -- User
@@ -129,6 +129,6 @@ Supplier json sql=t_supplier
 
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
     message Text
-    userId UserId Maybe
+    userId User_Id Maybe
     deriving Eq
     deriving Show

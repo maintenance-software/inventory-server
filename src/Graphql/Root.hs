@@ -30,11 +30,11 @@ import           Graphql.Privilege
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
-                         , privileges :: AbstractPrivilegeQL (Res () Handler)
+                         , privileges :: Privileges (Res () Handler)
                          } deriving (Generic, GQLType)
 
 newtype Mutation m = Mutation {
-    savePrivilege :: PrivilegeQL -> m PrivilegeQL
+    savePrivilege :: Privilege -> m Privilege
   } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
@@ -48,7 +48,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege }
 -- https://github.com/dnulnets/haccessability
 dbFetchDeity:: Text -> Handler Deity
 dbFetchDeity name = do
-                     let userId = (toSqlKey 3)::UserId
+                     let userId = (toSqlKey 3)::User_Id
                      deity <- runDB $ getEntity userId
                      return $ Deity {fullName = "dummy", power = Just "Shapeshifting"}
 

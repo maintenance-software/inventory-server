@@ -23,13 +23,13 @@ import qualified DataTransfer.User as U
 
 
 -- GET USER BY ID
-getUserByIdBizFunc :: UserId -> Handler U.User
+getUserByIdBizFunc :: User_Id -> Handler U.User
 getUserByIdBizFunc userId = do
                               user <- runDB $ getJustEntity userId
                               return $ buildUserResponse user
 
 -- DELETE USER BY ID
-deleteUserBizFunc :: UserId -> Handler Bool
+deleteUserBizFunc :: User_Id -> Handler Bool
 deleteUserBizFunc userId = do
                             _ <- runDB $ delete userId
                             return True
@@ -37,7 +37,7 @@ deleteUserBizFunc userId = do
 -- LIST USERS
 listUsersBizFunc :: Handler [U.User]
 listUsersBizFunc = do
-                    users <- runDB $ selectList [] [Asc UserId]
+                    users <- runDB $ selectList [] [Asc User_Id]
                     return $ P.map buildUserResponse users
 
 -- CREATE OR UPDATE USER
@@ -45,10 +45,10 @@ createOrUpdateUserBizFunc :: U.User -> Handler U.User
 createOrUpdateUserBizFunc user = do
                                   userId <- if (U.getUserId user) > 0 then
                                               do
-                                               let userKey = (toSqlKey $ fromIntegral $ U.getUserId user)::UserId
-                                               _ <- runDB $ update userKey [  UserUsername =. U.getUsername user
-                                                                            , UserEmail =. U.getEmail user
-                                                                            , UserActive =. U.getActive user
+                                               let userKey = (toSqlKey $ fromIntegral $ U.getUserId user)::User_Id
+                                               _ <- runDB $ update userKey [  User_Username =. U.getUsername user
+                                                                            , User_Email =. U.getEmail user
+                                                                            , User_Active =. U.getActive user
                                                                            ]
                                                return userKey
                                             else do
@@ -59,64 +59,64 @@ createOrUpdateUserBizFunc user = do
                                   return response
 
 -- GET ROLES FOR USER
-listUserRolesBizFunc :: UserId -> Handler [Entity Role]
+listUserRolesBizFunc :: User_Id -> Handler [Entity Role_]
 listUserRolesBizFunc userId = do
-                                entityUserRoles <- runDB $ selectList ([UserRoleUserId ==. userId] :: [Filter UserRole]) []
-                                let roleIds = P.map (\(Entity _ (UserRole _ roleId)) -> roleId) entityUserRoles
-                                entityRoles <- runDB $ selectList ([RoleId <-. roleIds] :: [Filter Role]) []
+                                entityUserRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
+                                let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) entityUserRoles
+                                entityRoles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
                                 return entityRoles
 
 -- ADD ROLES TO USER
-addUserRoleBizFunc :: UserId -> [RoleId] -> Handler [Entity Role]
+addUserRoleBizFunc :: User_Id -> [Role_Id] -> Handler [Entity Role_]
 addUserRoleBizFunc userId requestRoleIds = do
-                                            entityUserRoles <- runDB $ selectList ([UserRoleUserId ==. userId] :: [Filter UserRole]) []
-                                            let existingRoleIds = P.map (\(Entity _ (UserRole _ roleId)) -> roleId) entityUserRoles
+                                            entityUserRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
+                                            let existingRoleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) entityUserRoles
                                             let removableIds = S.toList $ S.difference (S.fromList existingRoleIds) (S.fromList requestRoleIds)
                                             let newIds = S.toList $ S.difference (S.fromList requestRoleIds) (S.fromList existingRoleIds)
-                                            _ <- runDB $ deleteWhere  ([UserRoleRoleId <-. removableIds] :: [Filter UserRole])
-                                            _ <- runDB $ insertMany $ P.map (\roleId -> (UserRole userId roleId)) newIds
+                                            _ <- runDB $ deleteWhere  ([UserRole_RoleId <-. removableIds] :: [Filter UserRole_])
+                                            _ <- runDB $ insertMany $ P.map (\roleId -> (UserRole_ userId roleId)) newIds
                                             roles <- listUserRolesBizFunc userId
                                             return roles
 
 -- DELETE ROLES FOR USER
-deleteUserRoleBizFunc :: UserId -> [RoleId] -> Handler [Entity Role]
+deleteUserRoleBizFunc :: User_Id -> [Role_Id] -> Handler [Entity Role_]
 deleteUserRoleBizFunc userId requestRoleIds = do
-                                                _ <- runDB $ deleteWhere  ([UserRoleRoleId <-. requestRoleIds] :: [Filter UserRole])
+                                                _ <- runDB $ deleteWhere  ([UserRole_RoleId <-. requestRoleIds] :: [Filter UserRole_])
                                                 roles <- listUserRolesBizFunc userId
                                                 return roles
 
 -- GET PRIVILEGES FOR USER
-listUserPrivilegeBizFunc :: UserId -> Handler [Entity Privilege]
+listUserPrivilegeBizFunc :: User_Id -> Handler [Entity Privilege_]
 listUserPrivilegeBizFunc userId = do
-                                    entityUserPrivileges <- runDB $ selectList ([UserPrivilegeUserId ==. userId] :: [Filter UserPrivilege]) []
-                                    let privilegeIds = P.map (\(Entity _ (UserPrivilege _ privilegeId)) -> privilegeId) entityUserPrivileges
-                                    entityPrivileges <- runDB $ selectList ([PrivilegeId <-. privilegeIds] :: [Filter Privilege]) []
+                                    entityUserPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
+                                    let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) entityUserPrivileges
+                                    entityPrivileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                     return entityPrivileges
 
 -- ADD PRIVILEGES TO USER
-addUserPrivilegeBizFunc :: UserId -> [PrivilegeId] -> Handler [Entity Privilege]
+addUserPrivilegeBizFunc :: User_Id -> [Privilege_Id] -> Handler [Entity Privilege_]
 addUserPrivilegeBizFunc userId requestPrivilegeIds = do
-                                                      entityUserPrivileges <- runDB $ selectList ([UserPrivilegeUserId ==. userId] :: [Filter UserPrivilege]) []
-                                                      let existingPrivilegeIds = P.map (\(Entity _ (UserPrivilege _ privilegeId)) -> privilegeId) entityUserPrivileges
+                                                      entityUserPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
+                                                      let existingPrivilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) entityUserPrivileges
                                                       let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList requestPrivilegeIds)
                                                       let newIds = S.toList $ S.difference (S.fromList requestPrivilegeIds) (S.fromList existingPrivilegeIds)
-                                                      _ <- runDB $ deleteWhere  ([UserPrivilegePrivilegeId <-. removableIds] :: [Filter UserPrivilege])
-                                                      _ <- runDB $ insertMany $ P.map (\privilegeId -> (UserPrivilege userId privilegeId)) newIds
+                                                      _ <- runDB $ deleteWhere  ([UserPrivilege_PrivilegeId <-. removableIds] :: [Filter UserPrivilege_])
+                                                      _ <- runDB $ insertMany $ P.map (\privilegeId -> (UserPrivilege_ userId privilegeId)) newIds
                                                       privileges <- listUserPrivilegeBizFunc userId
                                                       return privileges
 
 -- DELETE PRIVILEGES FOR USER
-deleteUserPrivilegeBizFunc :: UserId -> [PrivilegeId] -> Handler [Entity Privilege]
+deleteUserPrivilegeBizFunc :: User_Id -> [Privilege_Id] -> Handler [Entity Privilege_]
 deleteUserPrivilegeBizFunc userId requestPrivilegeIds = do
-                                                          _ <- runDB $ deleteWhere  ([UserPrivilegePrivilegeId <-. requestPrivilegeIds] :: [Filter UserPrivilege])
+                                                          _ <- runDB $ deleteWhere  ([UserPrivilege_PrivilegeId <-. requestPrivilegeIds] :: [Filter UserPrivilege_])
                                                           privileges <- listUserPrivilegeBizFunc userId
                                                           return privileges
 
 -- User username password enabled ident
-encryptPassword:: User -> IO User
-encryptPassword (User a b c d) = do
+encryptPassword:: User_ -> IO User_
+encryptPassword (User_ a b c d) = do
                                     p <- liftIO $ getPasswordIO c
-                                    return (User a b p d)
+                                    return (User_ a b p d)
 
 getPasswordIO:: Text->IO Text
 getPasswordIO password = do
@@ -127,7 +127,7 @@ getPasswordIO password = do
                             )
 
 
-buildUserResponse :: Entity User -> U.User
+buildUserResponse :: Entity User_ -> U.User
 buildUserResponse (Entity userId user) = U.User {  userId = fromIntegral $ fromSqlKey userId
                                                  , username = a
                                                  , email = b
@@ -137,11 +137,11 @@ buildUserResponse (Entity userId user) = U.User {  userId = fromIntegral $ fromS
                                                  , privileges = []
                                                 }
                                   where
-                                    User a b _ d = user
+                                    User_ a b _ d = user
 
 
-fromUserDT :: U.User -> User
-fromUserDT U.User {..} = User username email password active
+fromUserDT :: U.User -> User_
+fromUserDT U.User {..} = User_ username email password active
 
 
 

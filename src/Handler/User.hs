@@ -25,13 +25,13 @@ import Business.UserBizFunc (   getUserByIdBizFunc
                             )
 
 -- GET USER BY ID
-getUserIdR :: UserId -> Handler Value
+getUserIdR :: User_Id -> Handler Value
 getUserIdR userId = do
                 user <- getUserByIdBizFunc userId
                 returnJson user
 
 -- DELETE USER BY ID
-deleteUserIdR :: UserId -> Handler Value
+deleteUserIdR :: User_Id -> Handler Value
 deleteUserIdR userId = do
                         _ <- deleteUserBizFunc userId
                         sendResponseStatus status200 ("DELETED" :: Text)
@@ -54,42 +54,42 @@ putUserR = do
             returnJson response
 
 -- GET ROLES FOR USER
-getUserRoleR :: UserId -> Handler Value
+getUserRoleR :: User_Id -> Handler Value
 getUserRoleR userId = do
                         roles <- listUserRolesBizFunc userId
                         returnJson roles
 
 -- ADD ROLES TO USER
-postUserRoleR :: UserId -> Handler Value
+postUserRoleR :: User_Id -> Handler Value
 postUserRoleR userId = do
-                        requestRoleIds <- requireCheckJsonBody :: Handler [RoleId]
+                        requestRoleIds <- requireCheckJsonBody :: Handler [Role_Id]
                         roles <- addUserRoleBizFunc userId requestRoleIds
                         returnJson roles
 
 -- DELETE ROLES FOR USER
-deleteUserRoleR :: UserId -> Handler Value
+deleteUserRoleR :: User_Id -> Handler Value
 deleteUserRoleR userId = do
-                        requestRoleIds <- requireCheckJsonBody :: Handler [RoleId]
+                        requestRoleIds <- requireCheckJsonBody :: Handler [Role_Id]
                         roles <- deleteUserRoleBizFunc userId requestRoleIds
                         returnJson roles
 
 -- GET PRIVILEGES FOR USER
-getUserPrivilegeR :: UserId -> Handler Value
+getUserPrivilegeR :: User_Id -> Handler Value
 getUserPrivilegeR userId = do
                             privileges <- listUserPrivilegeBizFunc userId
                             returnJson privileges
 
 -- ADD PRIVILEGES TO USER
-postUserPrivilegeR :: UserId -> Handler Value
+postUserPrivilegeR :: User_Id -> Handler Value
 postUserPrivilegeR userId = do
-                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [PrivilegeId]
+                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [Privilege_Id]
                             privileges <- deleteUserPrivilegeBizFunc userId requestPrivilegeIds
                             returnJson privileges
 
 -- DELETE PRIVILEGES FOR USER
-deleteUserPrivilegeR :: UserId -> Handler Value
+deleteUserPrivilegeR :: User_Id -> Handler Value
 deleteUserPrivilegeR userId = do
-                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [PrivilegeId]
+                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [Privilege_Id]
                             privileges <- deleteUserPrivilegeBizFunc userId requestPrivilegeIds
                             returnJson privileges
 

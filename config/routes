@@ -14,18 +14,18 @@
 
 
 /api/users UserR GET POST PUT
-/api/users/#UserId  UserIdR GET DELETE
-/api/users/#UserId/roles  UserRoleR GET POST DELETE
-/api/users/#UserId/privileges  UserPrivilegeR GET POST DELETE
+/api/users/#User_Id  UserIdR GET DELETE
+/api/users/#User_Id/roles  UserRoleR GET POST DELETE
+/api/users/#User_Id/privileges  UserPrivilegeR GET POST DELETE
 
 /api/roles RoleR GET POST PUT
-/api/roles/#RoleId  RoleIdR GET DELETE
-/api/roles/#RoleId/privileges  RolePrivilegeR GET POST DELETE
+/api/roles/#Role_Id  RoleIdR GET DELETE
+/api/roles/#Role_Id/privileges  RolePrivilegeR GET POST DELETE
 
 /api/privileges PrivilegeR GET POST PUT
-/api/privileges/#PrivilegeId  PrivilegeIdR GET DELETE
+/api/privileges/#Privilege_Id  PrivilegeIdR GET DELETE
 
 /api/persons PersonR GET POST PUT
-/api/persons/#PersonId PersonIdR GET
+/api/persons/#Person_Id PersonIdR GET
 
 /graphql GraphqlR GET POST

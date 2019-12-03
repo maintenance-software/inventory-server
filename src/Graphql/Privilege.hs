@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Graphql.Privilege (AbstractPrivilegeQL, PrivilegeQL, resolvePrivilege, resolveSavePrivilege) where
+module Graphql.Privilege (Privileges, Privilege, resolvePrivilege, resolveSavePrivilege) where
 
 import Import
 import GHC.Generics
@@ -22,57 +22,57 @@ import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Utils
 
-data PrivilegeQL = PrivilegeQL { privilegeId :: Int
+data Privilege = Privilege { privilegeId :: Int
                                , name :: Text
                                , description :: Maybe Text
                                , active :: Bool
                                } deriving (Generic, GQLType)
 
-data AbstractPrivilegeQL m = AbstractPrivilegeQL { findById :: FindByIdArgs -> m PrivilegeQL
-                                                 , list :: ListArgs -> m [PrivilegeQL]
+data Privileges m = Privileges { findById :: FindByIdArgs -> m Privilege
+                                                 , list :: ListArgs -> m [Privilege]
                                                  } deriving (Generic, GQLType)
 
 data FindByIdArgs = FindByIdArgs { privilegeId :: Int } deriving (Generic)
 
 data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
-dbFetchPrivilegeById:: PrivilegeId -> Handler PrivilegeQL
+dbFetchPrivilegeById:: Privilege_Id -> Handler Privilege
 dbFetchPrivilegeById privilegeId = do
                                       privilege <- runDB $ getJustEntity privilegeId
                                       return $ toPrivilegeQL privilege
 
-dbFetchPrivileges:: ListArgs -> Handler [PrivilegeQL]
+dbFetchPrivileges:: ListArgs -> Handler [Privilege]
 dbFetchPrivileges ListArgs { queryString, pageable } = do
-                                                        privileges <- runDB $ selectList [] [Asc PrivilegeId, LimitTo size, OffsetBy $ (page - 1) * size]
+                                                        privileges <- runDB $ selectList [] [Asc Privilege_Id, LimitTo size, OffsetBy $ (page - 1) * size]
                                                         return $ P.map toPrivilegeQL privileges
                                                   where
                                                     (page, size) = case pageable of
                                                                     Just (Pageable x y) -> (x, y)
                                                                     Nothing -> (1, 10)
 
-findByIdResolver :: FindByIdArgs -> Res e Handler PrivilegeQL
+findByIdResolver :: FindByIdArgs -> Res e Handler Privilege
 findByIdResolver FindByIdArgs { privilegeId } = lift $ dbFetchPrivilegeById privilegeKey
                                               where
-                                                privilegeKey = (toSqlKey $ fromIntegral $ privilegeId)::PrivilegeId
+                                                privilegeKey = (toSqlKey $ fromIntegral $ privilegeId)::Privilege_Id
 
-listResolver :: ListArgs -> Res e Handler [PrivilegeQL]
+listResolver :: ListArgs -> Res e Handler [Privilege]
 listResolver listArgs = lift $ dbFetchPrivileges listArgs
 
-resolvePrivilege :: AbstractPrivilegeQL (Res () Handler)
-resolvePrivilege = AbstractPrivilegeQL {  findById = findByIdResolver, list = listResolver }
+resolvePrivilege :: Privileges (Res () Handler)
+resolvePrivilege = Privileges {  findById = findByIdResolver, list = listResolver }
 
 -- MUTATION resolvers
-resolveSavePrivilege :: PrivilegeQL -> MutRes e Handler PrivilegeQL
+resolveSavePrivilege :: Privilege -> MutRes e Handler Privilege
 resolveSavePrivilege arg = lift $ createOrUpdatePrivilege arg
 
-createOrUpdatePrivilege :: PrivilegeQL -> Handler PrivilegeQL
+createOrUpdatePrivilege :: Privilege -> Handler Privilege
 createOrUpdatePrivilege privilege = do
-                let PrivilegeQL a b c d = privilege
+                let Privilege a b c d = privilege
                 privilegeId <- if a > 0 then
                                 do
-                                  let privilegeKey = (toSqlKey $ fromIntegral $ a)::PrivilegeId
-                                  _ <- runDB $ update privilegeKey [ PrivilegeName =. b
-                                                                   , PrivilegeActive =. d
+                                  let privilegeKey = (toSqlKey $ fromIntegral $ a)::Privilege_Id
+                                  _ <- runDB $ update privilegeKey [ Privilege_Name =. b
+                                                                   , Privilege_Active =. d
                                                                    ]
                                   return privilegeKey
                                else do
@@ -82,14 +82,14 @@ createOrUpdatePrivilege privilege = do
                 return response
 
 -- CONVERTERS
-toPrivilegeQL :: Entity Privilege -> PrivilegeQL
-toPrivilegeQL (Entity privilegeId privilege) = PrivilegeQL { privilegeId = fromIntegral $ fromSqlKey privilegeId
+toPrivilegeQL :: Entity Privilege_ -> Privilege
+toPrivilegeQL (Entity privilegeId privilege) = Privilege { privilegeId = fromIntegral $ fromSqlKey privilegeId
                                                            , name = a
                                                            , description = b
                                                            , active = c
                                                            }
                                                       where
-                                                        Privilege a b c = privilege
+                                                        Privilege_ a b c = privilege
 
-fromPrivilegeQL :: PrivilegeQL -> Privilege
-fromPrivilegeQL PrivilegeQL {..} = Privilege name description active
+fromPrivilegeQL :: Privilege -> Privilege_
+fromPrivilegeQL Privilege {..} = Privilege_ name description active

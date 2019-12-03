@@ -28,16 +28,16 @@ instance GQLType Deity where
 
 dbDeity :: Text -> Maybe Text -> IO Deity
 dbDeity name _ = do
-                 let userId = (toSqlKey 3)::UserId
+                 let userId = (toSqlKey 3)::User_Id
 --                  user <- runDB $ getJustEntity userId
                  return $ Deity {fullName = "Hi, " <> name, power = Just "Shapeshifting"}
 
-toUser :: Entity User -> Deity
+toUser :: Entity User_ -> Deity
 toUser _ = Deity {fullName = "Hi, ", power = Just "Shapeshifting"}
 
 fetchDeity :: Handler Deity
 fetchDeity = do
-              let userId = (toSqlKey 3)::UserId
+              let userId = (toSqlKey 3)::User_Id
               user <- runDB $ getJustEntity userId
               return $ Deity {fullName = "dummy", power = Just "Shapeshifting"}
 

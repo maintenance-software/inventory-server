@@ -17,13 +17,13 @@ import qualified DataTransfer.Privilege as P
 import Import
 
 -- GET PRIVILEGE BY ID
-getPrivilegeIdR :: PrivilegeId -> Handler Value
+getPrivilegeIdR :: Privilege_Id -> Handler Value
 getPrivilegeIdR privilegeId = do
                                 privilege <- runDB $ getJustEntity privilegeId
                                 returnJson $ buildPrivilegeResponse privilege
 
 -- DELETE PRIVILEGE BY ID
-deletePrivilegeIdR :: PrivilegeId -> Handler Value
+deletePrivilegeIdR :: Privilege_Id -> Handler Value
 deletePrivilegeIdR privilegeId = do
                                 _ <- runDB $ delete privilegeId
                                 sendResponseStatus status200 ("DELETED" :: Text)
@@ -31,7 +31,7 @@ deletePrivilegeIdR privilegeId = do
 -- LIST PRIVILEGES ENDPOINT
 getPrivilegeR :: Handler Value
 getPrivilegeR = do
-                privileges <- runDB $ selectList ([] :: [Filter Privilege]) []
+                privileges <- runDB $ selectList ([] :: [Filter Privilege_]) []
                 returnJson $ PP.map buildPrivilegeResponse privileges
 
 -- CREATE PRIVILEGE ENDPOINT
@@ -44,9 +44,9 @@ putPrivilegeR = do
                 privilege <- requireCheckJsonBody :: Handler P.Privilege
                 privilegeId <- if (P.getPrivilegeId privilege) > 0 then
                                 do
-                                  let privilegeKey = (toSqlKey $ fromIntegral $ P.getPrivilegeId privilege)::PrivilegeId
-                                  _ <- runDB $ update privilegeKey [  PrivilegeName =. P.getPrivilegeName privilege
-                                                                      , PrivilegeActive =. P.getActive privilege
+                                  let privilegeKey = (toSqlKey $ fromIntegral $ P.getPrivilegeId privilege)::Privilege_Id
+                                  _ <- runDB $ update privilegeKey [  Privilege_Name =. P.getPrivilegeName privilege
+                                                                      , Privilege_Active =. P.getActive privilege
                                                                      ]
                                   return privilegeKey
                                else do
@@ -55,15 +55,15 @@ putPrivilegeR = do
                 response <- getPrivilegeIdR privilegeId
                 returnJson response
 
-buildPrivilegeResponse :: Entity Privilege -> P.Privilege
+buildPrivilegeResponse :: Entity Privilege_ -> P.Privilege
 buildPrivilegeResponse (Entity privilegeId privilege) = P.Privilege {  privilegeId = fromIntegral $ fromSqlKey privilegeId
                                                                      , privilegeName = a
                                                                      , description = b
                                                                      , active = c
                                                                     }
                                                       where
-                                                        Privilege a b c = privilege
+                                                        Privilege_ a b c = privilege
 
 
-fromPrivilegeDT :: P.Privilege -> Privilege
-fromPrivilegeDT P.Privilege {..} = Privilege privilegeName description active
+fromPrivilegeDT :: P.Privilege -> Privilege_
+fromPrivilegeDT P.Privilege {..} = Privilege_ privilegeName description active

@@ -16,7 +16,7 @@ import Import
 import Business.PersonBizFunc (getPersonByIdBizFunc, listPersonsBizFunc, createOrUpdatePersonBizFunc, listPersonsUsersBizFunc)
 
 -- GET PERSON BY ID
-getPersonIdR :: PersonId -> Handler Value
+getPersonIdR :: Person_Id -> Handler Value
 getPersonIdR personId = do
                         person <- getPersonByIdBizFunc personId
                         returnJson person

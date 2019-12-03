@@ -19,13 +19,13 @@ import Import
 
 
 -- GET ROLE BY ID
-getRoleIdR :: RoleId -> Handler Value
+getRoleIdR :: Role_Id -> Handler Value
 getRoleIdR roleId = do
                     role <- runDB $ getJustEntity roleId
                     returnJson $ buildRoleResponse role
 
 -- DELETE ROLE BY ID
-deleteRoleIdR :: RoleId -> Handler Value
+deleteRoleIdR :: Role_Id -> Handler Value
 deleteRoleIdR roleId = do
                         _ <- runDB $ delete roleId
                         sendResponseStatus status200 ("DELETED" :: Text)
@@ -33,7 +33,7 @@ deleteRoleIdR roleId = do
 -- LIST ROLES ENDPOINT
 getRoleR :: Handler Value
 getRoleR = do
-            roles <- runDB $ selectList ([] :: [Filter Role]) []
+            roles <- runDB $ selectList ([] :: [Filter Role_]) []
             returnJson $ P.map buildRoleResponse roles
 
 -- CREATE ROLE ENDPOINT
@@ -46,9 +46,9 @@ putRoleR = do
             role <- requireCheckJsonBody :: Handler R.Role
             roleId <- if (R.getRoleId role) > 0 then
                         do
-                         let roleKey = (toSqlKey $ fromIntegral $ R.getRoleId role)::RoleId
-                         _ <- runDB $ update roleKey [  RoleName =. R.getRoleName role
-                                                      , RoleActive =. R.getActive role
+                         let roleKey = (toSqlKey $ fromIntegral $ R.getRoleId role)::Role_Id
+                         _ <- runDB $ update roleKey [  Role_Name =. R.getRoleName role
+                                                      , Role_Active =. R.getActive role
                                                      ]
                          return roleKey
                       else do
@@ -58,35 +58,35 @@ putRoleR = do
             returnJson response
 
 -- GET PRIVILEGES FOR ROLE
-getRolePrivilegeR :: RoleId -> Handler Value
+getRolePrivilegeR :: Role_Id -> Handler Value
 getRolePrivilegeR roleId = do
-                            entityRolePrivileges <- runDB $ selectList ([RolePrivilegeRoleId ==. roleId] :: [Filter RolePrivilege]) []
-                            let privilegeIds = P.map (\(Entity _ (RolePrivilege _ privilegeId)) -> privilegeId) entityRolePrivileges
-                            entityPrivileges <- runDB $ selectList ([PrivilegeId <-. privilegeIds] :: [Filter Privilege]) []
+                            entityRolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
+                            let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) entityRolePrivileges
+                            entityPrivileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                             returnJson entityPrivileges
 
 -- ADD PRIVILEGES TO ROLE
-postRolePrivilegeR :: RoleId -> Handler Value
+postRolePrivilegeR :: Role_Id -> Handler Value
 postRolePrivilegeR roleId = do
-                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [PrivilegeId]
-                            entityRolePrivileges <- runDB $ selectList ([RolePrivilegeRoleId ==. roleId] :: [Filter RolePrivilege]) []
-                            let existingPrivilegeIds = P.map (\(Entity _ (RolePrivilege _ privilegeId)) -> privilegeId) entityRolePrivileges
+                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [Privilege_Id]
+                            entityRolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
+                            let existingPrivilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) entityRolePrivileges
                             let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList requestPrivilegeIds)
                             let newIds = S.toList $ S.difference (S.fromList requestPrivilegeIds) (S.fromList existingPrivilegeIds)
-                            _ <- runDB $ deleteWhere  ([RolePrivilegePrivilegeId <-. removableIds] :: [Filter RolePrivilege])
-                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (RolePrivilege roleId privilegeId)) newIds
+                            _ <- runDB $ deleteWhere  ([RolePrivilege_PrivilegeId <-. removableIds] :: [Filter RolePrivilege_])
+                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (RolePrivilege_ roleId privilegeId)) newIds
                             privileges <- getRolePrivilegeR roleId
                             returnJson privileges
 
 -- DELETE PRIVILEGES FOR ROLE
-deleteRolePrivilegeR :: RoleId -> Handler Value
+deleteRolePrivilegeR :: Role_Id -> Handler Value
 deleteRolePrivilegeR roleId = do
-                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [PrivilegeId]
-                            _ <- runDB $ deleteWhere  ([RolePrivilegePrivilegeId <-. requestPrivilegeIds] :: [Filter RolePrivilege])
+                            requestPrivilegeIds <- requireCheckJsonBody :: Handler [Privilege_Id]
+                            _ <- runDB $ deleteWhere  ([RolePrivilege_PrivilegeId <-. requestPrivilegeIds] :: [Filter RolePrivilege_])
                             privileges <- getRolePrivilegeR roleId
                             returnJson privileges
 
-buildRoleResponse :: Entity Role -> R.Role
+buildRoleResponse :: Entity Role_ -> R.Role
 buildRoleResponse (Entity roleId role) = R.Role {  roleId = fromIntegral $ fromSqlKey roleId
                                                  , roleName = a
                                                  , description = b
@@ -94,8 +94,8 @@ buildRoleResponse (Entity roleId role) = R.Role {  roleId = fromIntegral $ fromS
                                                  , privileges = []
                                                 }
                                   where
-                                    Role a b c = role
+                                    Role_ a b c = role
 
 
-fromRoleDT :: R.Role -> Role
-fromRoleDT R.Role {..} = Role roleName description active
+fromRoleDT :: R.Role -> Role_
+fromRoleDT R.Role {..} = Role_ roleName description active

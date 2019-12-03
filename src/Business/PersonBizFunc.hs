@@ -30,29 +30,29 @@ personSql = [r|
 |]
 
 -- GET PERSON BY ID
-getPersonByIdBizFunc :: PersonId -> Handler DT.Person
+getPersonByIdBizFunc :: Person_Id -> Handler DT.Person
 getPersonByIdBizFunc personId = do
                                   person <- runDB $ getJustEntity personId
-                                  address <- runDB $ selectFirst [AddressPersonId ==. personId] []
-                                  contacts <- runDB $ selectList [ContactInfoPersonId ==. personId] []
+                                  address <- runDB $ selectFirst [Address_PersonId ==. personId] []
+                                  contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                   let userId = userId' person
                                   user <- runDB $ getEntity userId
                                   let response = buildPersonResponse person user address contacts
                                   return response
                              where
-                                userId' (Entity _ (Person _ _ _ _ Nothing)) = (toSqlKey $ fromIntegral 0)::UserId
-                                userId' (Entity _ (Person _ _ _ _ (Just userId))) = userId
+                                userId' (Entity _ (Person_ _ _ _ _ Nothing)) = (toSqlKey $ fromIntegral 0)::User_Id
+                                userId' (Entity _ (Person_ _ _ _ _ (Just userId))) = userId
 
 -- DELETE PERSON BY ID
-deletePersonBizFunc :: PersonId -> Handler Bool
+deletePersonBizFunc :: Person_Id -> Handler Bool
 deletePersonBizFunc personId = do
                                 _ <- runDB $ delete personId
                                 return True
 
 -- LIST PERSONS ENDPOINT
-listPersonsBizFunc :: Handler [Entity Person]
+listPersonsBizFunc :: Handler [Entity Person_]
 listPersonsBizFunc = do
-                      persons <- runDB $ selectList [PersonUserId !=. Nothing] [Asc PersonId]
+                      persons <- runDB $ selectList [Person_UserId !=. Nothing] [Asc Person_Id]
                       return persons
 
 -- LIST PERSONS ENDPOINT
@@ -61,7 +61,7 @@ listPersonsUsersBizFunc = do
                             persons <- runDB $ rawSql "select ??, ?? from t_person inner join t_user on (t_person.user_id = t_user.user_id)" []
                             return (toPersonEntity persons)
 
-toPersonEntity :: [(Entity Person, Entity User)] -> [DT.Person]
+toPersonEntity :: [(Entity Person_, Entity User_)] -> [DT.Person]
 toPersonEntity [] = []
 toPersonEntity ((personEntity, userEntity): xs) = itemResponse: toPersonEntity xs
                                               where
@@ -73,11 +73,11 @@ createOrUpdatePersonBizFunc person = do
                                        let personId' = DT.getPersonId person
                                        personId <- if personId' > 0 then
                                                     do
-                                                      let personKey = (toSqlKey $ fromIntegral personId')::PersonId
-                                                      _ <- runDB $ update personKey [  PersonFirstName =. DT.getFirstName person
-                                                                                     , PersonLastName =. DT.getLastName person
-                                                                                     , PersonDocumentType =. DT.getDocumentType person
-                                                                                     , PersonDocumentId =. DT.getDocumentId person
+                                                      let personKey = (toSqlKey $ fromIntegral personId')::Person_Id
+                                                      _ <- runDB $ update personKey [  Person_FirstName =. DT.getFirstName person
+                                                                                     , Person_LastName =. DT.getLastName person
+                                                                                     , Person_DocumentType =. DT.getDocumentType person
+                                                                                     , Person_DocumentId =. DT.getDocumentId person
                                                                                     ]
                                                       return personKey
                                                     else
@@ -85,19 +85,19 @@ createOrUpdatePersonBizFunc person = do
                                                         personKey <- runDB $ insert (fromPersonDT person)
                                                         return personKey
                                        addressId <- case DT.getAddress person of
-                                                    Nothing -> do return ((toSqlKey $ fromIntegral 0)::AddressId)
+                                                    Nothing -> do return ((toSqlKey $ fromIntegral 0)::Address_Id)
                                                     Just c -> do
                                                               let key = DT.getAddressId c
                                                               a <- if key > 0 then
                                                                       do
-                                                                        let addressId' = (toSqlKey $ fromIntegral key)::AddressId
-                                                                        _ <- runDB $ update addressId' [  AddressStreet1 =. DT.getStreet1 c
-                                                                                                        , AddressStreet2 =. DT.getStreet2 c
-                                                                                                        , AddressStreet3 =. DT.getStreet3 c
-                                                                                                        , AddressZip =. DT.getZip c
-                                                                                                        , AddressCity =. DT.getCity c
-                                                                                                        , AddressState =. DT.getState c
-                                                                                                        , AddressCountry =. DT.getCountry c
+                                                                        let addressId' = (toSqlKey $ fromIntegral key)::Address_Id
+                                                                        _ <- runDB $ update addressId' [  Address_Street1 =. DT.getStreet1 c
+                                                                                                        , Address_Street2 =. DT.getStreet2 c
+                                                                                                        , Address_Street3 =. DT.getStreet3 c
+                                                                                                        , Address_Zip =. DT.getZip c
+                                                                                                        , Address_City =. DT.getCity c
+                                                                                                        , Address_State =. DT.getState c
+                                                                                                        , Address_Country =. DT.getCountry c
                                                                                                        ]
                                                                         return addressId'
                                                                    else
@@ -113,8 +113,8 @@ createOrUpdatePersonBizFunc person = do
                                               Nothing -> do return Nothing
                                               Just user -> do
                                                             user' <- createOrUpdateUserBizFunc user
-                                                            let userId = (toSqlKey $ fromIntegral (U.getUserId user'))::UserId
-                                                            _ <- runDB $ update personId [ PersonUserId =. Just userId]
+                                                            let userId = (toSqlKey $ fromIntegral (U.getUserId user'))::User_Id
+                                                            _ <- runDB $ update personId [ Person_UserId =. Just userId]
                                                             return Nothing
                                        response <- getPersonByIdBizFunc personId
                                        return response
@@ -122,12 +122,12 @@ createOrUpdatePersonBizFunc person = do
 updateContact [] = return ()
 updateContact (x:xs)= do
                         let key = DT.getContactId x
-                        let contactId = (toSqlKey $ fromIntegral key)::ContactInfoId
-                        _ <- runDB $ update contactId [  ContactInfoContactType =. DT.getContactType x , ContactInfoContact =. DT.getContact x]
+                        let contactId = (toSqlKey $ fromIntegral key)::ContactInfo_Id
+                        _ <- runDB $ update contactId [ ContactInfo_ContactType =. DT.getContactType x , ContactInfo_Contact =. DT.getContact x ]
                         _ <- updateContact xs
                         return ()
 
-buildPersonResponse:: Entity Person -> Maybe (Entity User) -> Maybe (Entity Address) -> [Entity ContactInfo] -> DT.Person
+buildPersonResponse:: Entity Person_ -> Maybe (Entity User_) -> Maybe (Entity Address_) -> [Entity ContactInfo_] -> DT.Person
 buildPersonResponse (Entity personId person) userEntity address contacts = DT.Person {  personId = fromIntegral $ fromSqlKey personId
                                                                                       , firstName = a
                                                                                       , lastName = b
@@ -138,7 +138,7 @@ buildPersonResponse (Entity personId person) userEntity address contacts = DT.Pe
                                                                                       , account = user'
                                                                                      }
                                                                         where
-                                                                          Person a b c d _ = person
+                                                                          Person_ a b c d _ = person
                                                                           address' = case address of
                                                                                      Nothing -> Nothing
                                                                                      Just a -> Just $ (toAddressDT a)
@@ -148,17 +148,17 @@ buildPersonResponse (Entity personId person) userEntity address contacts = DT.Pe
 
 -- street1 street2 street3 zip city state country
 
-fromPersonDT :: DT.Person -> Person
-fromPersonDT DT.Person {..} = Person firstName lastName documentType documentId Nothing
+fromPersonDT :: DT.Person -> Person_
+fromPersonDT DT.Person {..} = Person_ firstName lastName documentType documentId Nothing
 
-fromContactDT :: PersonId -> DT.Contact -> ContactInfo
-fromContactDT personId DT.Contact {..} = ContactInfo contactType contact personId
+fromContactDT :: Person_Id -> DT.Contact -> ContactInfo_
+fromContactDT personId DT.Contact {..} = ContactInfo_ contactType contact personId
 
-fromAddressDT :: PersonId -> DT.Address -> Address
-fromAddressDT personId DT.Address {..} = Address street1 street2 street3 zip city state country personId
+fromAddressDT :: Person_Id -> DT.Address -> Address_
+fromAddressDT personId DT.Address {..} = Address_ street1 street2 street3 zip city state country personId
 
-toContactDT :: Entity ContactInfo -> DT.Contact
-toContactDT (Entity contactId (ContactInfo a b _)) = DT.Contact (fromIntegral $ fromSqlKey contactId) a b
+toContactDT :: Entity ContactInfo_ -> DT.Contact
+toContactDT (Entity contactId (ContactInfo_ a b _)) = DT.Contact (fromIntegral $ fromSqlKey contactId) a b
 
-toAddressDT :: Entity Address -> DT.Address
-toAddressDT (Entity addressId (Address a b c d e f g _)) = DT.Address (fromIntegral $ fromSqlKey addressId) a b c d e f g
+toAddressDT :: Entity Address_ -> DT.Address
+toAddressDT (Entity addressId (Address_ a b c d e f g _)) = DT.Address (fromIntegral $ fromSqlKey addressId) a b c d e f g
