@@ -46,16 +46,24 @@ data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } der
 dbFetchRoleById:: Role_Id -> Handler Role
 dbFetchRoleById roleId = do
                           role <- runDB $ getJustEntity roleId
-                          return $ toRoleQL role
+                          privileges <- dbFetchPrivileges roleId
+                          return $ toRoleQL role privileges
 
-dbFetchPrivileges:: ListArgs -> Handler [Role]
-dbFetchPrivileges ListArgs {..} = do
-                                  roles <- runDB $ selectList [] [Asc Role_Id, LimitTo size, OffsetBy $ (page - 1) * size]
-                                  return $ P.map toRoleQL roles
-                              where
-                                (page, size) = case pageable of
-                                                Just (Pageable x y) -> (x, y)
-                                                Nothing -> (1, 10)
+dbFetchRoles:: ListArgs -> Handler [Role]
+dbFetchRoles ListArgs {..} = do
+                              roles <- runDB $ selectList [] [Asc Role_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+                              return $ P.map (\r -> toRoleQL r []) roles
+                         where
+                          (page, size) = case pageable of
+                                          Just (Pageable x y) -> (x, y)
+                                          Nothing -> (1, 10)
+
+dbFetchPrivileges:: Role_Id -> Handler [Privilege]
+dbFetchPrivileges roleId = do
+                            rolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
+                            let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) rolePrivileges
+                            privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
+                            return $ P.map toPrivilegeQL privileges
 
 -- Query Resolvers
 findByIdResolver :: FindByIdArgs -> Res e Handler Role
@@ -64,7 +72,7 @@ findByIdResolver FindByIdArgs { roleId } = lift $ dbFetchRoleById roleKey
                                                 roleKey = (toSqlKey $ fromIntegral $ roleId)::Role_Id
 
 listResolver :: ListArgs -> Res e Handler [Role]
-listResolver listArgs = lift $ dbFetchPrivileges listArgs
+listResolver listArgs = lift $ dbFetchRoles listArgs
 
 resolveRole :: Roles (Res () Handler)
 resolveRole = Roles {  findById = findByIdResolver, list = listResolver }
@@ -78,21 +86,21 @@ resolveRole = Roles {  findById = findByIdResolver, list = listResolver }
 --     active Bool
 --     createdDate UTCTime
 --     modifiedDate UTCTime
-toRoleQL :: Entity Role_ -> Role
-toRoleQL (Entity roleId role) = Role { roleId = fromIntegral $ fromSqlKey roleId
-                                          , key = role_Key
-                                          , name = role_Name
-                                          , description = role_Description
-                                          , active = role_Active
-                                          , createdDate = Just $ fromString $ show role_CreatedDate
-                                          , modifiedDate = m
-                                          , privileges = []
-                                          }
-                                where
-                                  Role_ {..} = role
-                                  m = case role_ModifiedDate of
-                                        Just d -> Just $ fromString $ show d
-                                        Nothing -> Nothing
+toRoleQL :: Entity Role_ -> [Privilege] -> Role
+toRoleQL (Entity roleId role) privileges = Role { roleId = fromIntegral $ fromSqlKey roleId
+                                                , key = role_Key
+                                                , name = role_Name
+                                                , description = role_Description
+                                                , active = role_Active
+                                                , createdDate = Just $ fromString $ show role_CreatedDate
+                                                , modifiedDate = m
+                                                , privileges = privileges
+                                                }
+                                        where
+                                          Role_ {..} = role
+                                          m = case role_ModifiedDate of
+                                                Just d -> Just $ fromString $ show d
+                                                Nothing -> Nothing
 
 fromPrivilegeQL :: Role -> UTCTime -> Maybe UTCTime -> Role_
 fromPrivilegeQL (Role {..}) cd md = Role_ { role_Key = key

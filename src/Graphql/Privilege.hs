@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Privilege (Privileges, Privilege, resolvePrivilege, resolveSavePrivilege) where
+module Graphql.Privilege (Privileges, Privilege, resolvePrivilege, resolveSavePrivilege, toPrivilegeQL) where
 
 import Import
 import GHC.Generics
