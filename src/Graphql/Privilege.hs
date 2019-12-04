@@ -21,12 +21,16 @@ import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Utils
+import Data.Time
 
 data Privilege = Privilege { privilegeId :: Int
-                               , name :: Text
-                               , description :: Maybe Text
-                               , active :: Bool
-                               } deriving (Generic, GQLType)
+                           , key :: Text
+                           , name :: Text
+                           , description :: Maybe Text
+                           , active :: Bool
+                           , createdDate :: Maybe Text
+                           , modifiedDate :: Maybe Text
+                           } deriving (Generic, GQLType)
 
 data Privileges m = Privileges { findById :: FindByIdArgs -> m Privilege
                                                  , list :: ListArgs -> m [Privilege]
@@ -67,29 +71,42 @@ resolveSavePrivilege arg = lift $ createOrUpdatePrivilege arg
 
 createOrUpdatePrivilege :: Privilege -> Handler Privilege
 createOrUpdatePrivilege privilege = do
-                let Privilege a b c d = privilege
+                let Privilege a b c d e f g = privilege
                 privilegeId <- if a > 0 then
                                 do
                                   let privilegeKey = (toSqlKey $ fromIntegral $ a)::Privilege_Id
-                                  _ <- runDB $ update privilegeKey [ Privilege_Name =. b
-                                                                   , Privilege_Active =. d
+                                  _ <- runDB $ update privilegeKey [ Privilege_Name =. c
+                                                                   , Privilege_Active =. e
                                                                    ]
                                   return privilegeKey
                                else do
-                                  privilegeKey <- runDB $ insert $ fromPrivilegeQL privilege
+                                  time <- liftIO getCurrentTime
+                                  privilegeKey <- runDB $ insert $ fromPrivilegeQL privilege time
                                   return privilegeKey
                 response <- dbFetchPrivilegeById privilegeId
                 return response
 
 -- CONVERTERS
+--     Id sql=privilege_id
+--     key Text
+--     name Text
+--     description Text Maybe
+--     active Bool
+--     createdDate UTCTime
+--     modifiedDate UTCTime
 toPrivilegeQL :: Entity Privilege_ -> Privilege
 toPrivilegeQL (Entity privilegeId privilege) = Privilege { privilegeId = fromIntegral $ fromSqlKey privilegeId
-                                                           , name = a
-                                                           , description = b
-                                                           , active = c
+                                                           , name = b
+                                                           , description = c
+                                                           , active = d
+                                                           , createdDate = Just $ fromString $ show e
                                                            }
                                                       where
-                                                        Privilege_ a b c = privilege
+                                                        Privilege_ a b c d e f = privilege
 
-fromPrivilegeQL :: Privilege -> Privilege_
-fromPrivilegeQL Privilege {..} = Privilege_ name description active
+fromPrivilegeQL :: Privilege -> UTCTime -> Privilege_
+fromPrivilegeQL Privilege {..} date = Privilege_ key name description active date  (Just date)
+
+
+localDay :: IO Day
+localDay = fmap utctDay getCurrentTime

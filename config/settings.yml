@@ -29,9 +29,9 @@ ip-from-header: "_env:YESOD_IP_FROM_HEADER:false"
 # See https://github.com/yesodweb/yesod/wiki/Configuration#parsing-numeric-values-as-strings
 
 database:
-  user:     "_env:YESOD_PGUSER:inventory_user"
-  password: "_env:YESOD_PGPASS:inventory_password"
-  host:     "_env:YESOD_PGHOST:192.168.0.100"
+  user:     "_env:YESOD_PGUSER:postgres"
+  password: "_env:YESOD_PGPASS:admin"
+  host:     "_env:YESOD_PGHOST:localhost"
   port:     "_env:YESOD_PGPORT:5432"
   # See config/test-settings.yml for an override during tests
   database: "_env:YESOD_PGDATABASE:inventory_db"

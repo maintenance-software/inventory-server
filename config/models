@@ -14,9 +14,12 @@ User_ json sql=t_user
 
 Role_ json sql=t_role
     Id sql=role_id
+    key Text
     name Text
     description Text Maybe
     active Bool
+    createdDate UTCTime
+    modifiedDate UTCTime
     deriving Show
 
 UserRole_ json sql=t_user_role
@@ -27,9 +30,12 @@ UserRole_ json sql=t_user_role
 
 Privilege_ json sql=t_privilege
     Id sql=privilege_id
+    key Text
     name Text
     description Text Maybe
     active Bool
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Show
 
 RolePrivilege_ json sql=t_role_privilege

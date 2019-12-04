@@ -112,20 +112,6 @@ instance Yesod App where
 
     isAuthorized GraphqlR _ = return Authorized
 
-    isAuthorized UserR _ = return Authorized --isAuthenticated
-    isAuthorized (UserIdR _) _ = return Authorized --isAuthenticated
-    isAuthorized (UserRoleR _) _ = return Authorized
-    isAuthorized (UserPrivilegeR _) _ = return Authorized
-
-    isAuthorized RoleR _ = return Authorized --isAuthenticated
-    isAuthorized (RoleIdR _) _ = return Authorized --isAuthenticated
-    isAuthorized (RolePrivilegeR _) _ = return Authorized
-
-    isAuthorized PrivilegeR _ = return Authorized --isAuthenticated
-    isAuthorized (PrivilegeIdR _) _ = return Authorized --isAuthenticated
-
-    isAuthorized PersonR _ = return Authorized
-    isAuthorized (PersonIdR _) _ = return Authorized
     isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
