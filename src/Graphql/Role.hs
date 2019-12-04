@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Role (Roles, Role, resolveRole) where
+module Graphql.Role (Roles, Role, RoleArg, resolveRole, resolveSaveRole) where
 
 import Import
 import GHC.Generics
@@ -20,6 +20,7 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
+import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Privilege
@@ -41,6 +42,14 @@ data Roles m = Roles { findById :: FindByIdArgs -> m Role
 data FindByIdArgs = FindByIdArgs { roleId :: Int } deriving (Generic)
 
 data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
+
+data RoleArg = RoleArg { roleId :: Int
+                       , key :: Text
+                       , name :: Text
+                       , description :: Maybe Text
+                       , active :: Bool
+                       , privileges :: [Int]
+                       } deriving (Generic, GQLType)
 
 -- DB ACTIONS
 dbFetchRoleById:: Role_Id -> Handler Role
@@ -77,6 +86,36 @@ listResolver listArgs = lift $ dbFetchRoles listArgs
 resolveRole :: Roles (Res () Handler)
 resolveRole = Roles {  findById = findByIdResolver, list = listResolver }
 
+-- Mutation Resolvers
+resolveSaveRole :: RoleArg -> MutRes e Handler Role
+resolveSaveRole arg = lift $ createOrUpdateRole arg
+
+createOrUpdateRole :: RoleArg -> Handler Role
+createOrUpdateRole role = do
+                            let RoleArg {..} = role
+                            now <- liftIO getCurrentTime
+                            roleEntityId <- if roleId > 0 then
+                                        do
+                                         let roleKey = (toSqlKey $ fromIntegral $ roleId)::Role_Id
+                                         _ <- runDB $ update roleKey [ Role_Key =. key
+                                                                     , Role_Name =. name
+                                                                     , Role_Description =. description
+                                                                     , Role_Active =. active
+                                                                     , Role_ModifiedDate =. Just now
+                                                                     ]
+                                         return roleKey
+                                      else do
+                                            roleKey <- runDB $ insert $ fromRoleArg role now Nothing
+                                            return roleKey
+                            let requestPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) privileges
+                            entityRolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleEntityId] :: [Filter RolePrivilege_]) []
+                            let existingPrivilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) entityRolePrivileges
+                            let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList requestPrivilegeIds)
+                            let newIds = S.toList $ S.difference (S.fromList requestPrivilegeIds) (S.fromList existingPrivilegeIds)
+                            _ <- runDB $ deleteWhere  ([RolePrivilege_PrivilegeId <-. removableIds] :: [Filter RolePrivilege_])
+                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (RolePrivilege_ roleEntityId privilegeId)) newIds
+                            response <- dbFetchRoleById roleEntityId
+                            return response
 
 -- CONVERTERS
 --     Id sql=role_id
@@ -102,11 +141,20 @@ toRoleQL (Entity roleId role) privileges = Role { roleId = fromIntegral $ fromSq
                                                 Just d -> Just $ fromString $ show d
                                                 Nothing -> Nothing
 
-fromPrivilegeQL :: Role -> UTCTime -> Maybe UTCTime -> Role_
-fromPrivilegeQL (Role {..}) cd md = Role_ { role_Key = key
+fromRoleQL :: Role -> UTCTime -> Maybe UTCTime -> Role_
+fromRoleQL (Role {..}) cd md = Role_ { role_Key = key
                                           , role_Name = name
                                           , role_Description = description
                                           , role_Active = active
                                           , role_CreatedDate = cd
                                           , role_ModifiedDate = md
                                           }
+
+fromRoleArg :: RoleArg -> UTCTime -> Maybe UTCTime -> Role_
+fromRoleArg (RoleArg {..}) cd md = Role_ { role_Key = key
+                                         , role_Name = name
+                                         , role_Description = description
+                                         , role_Active = active
+                                         , role_CreatedDate = cd
+                                         , role_ModifiedDate = md
+                                         }

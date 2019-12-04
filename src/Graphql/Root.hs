@@ -35,15 +35,15 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , roles :: Roles (Res () Handler)
                          } deriving (Generic, GQLType)
 
-newtype Mutation m = Mutation {
-    savePrivilege :: Privilege -> m Privilege
-  } deriving (Generic, GQLType)
+data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
+                           , saveRole :: RoleArg -> m Role
+                           } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
 
 resolveMutation::Mutation (MutRes () Handler)
-resolveMutation = Mutation { savePrivilege = resolveSavePrivilege }
+resolveMutation = Mutation { savePrivilege = resolveSavePrivilege, saveRole =  resolveSaveRole}
 
 
 -- BASE EXAMPLE
