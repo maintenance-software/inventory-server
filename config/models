@@ -19,7 +19,7 @@ Role_ json sql=t_role
     description Text Maybe
     active Bool
     createdDate UTCTime
-    modifiedDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Show
 
 UserRole_ json sql=t_user_role
