@@ -41,7 +41,7 @@ data Roles m = Roles { findById :: FindByIdArgs -> m Role
 
 data FindByIdArgs = FindByIdArgs { roleId :: Int } deriving (Generic)
 
-data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
+-- data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
 data RoleArg = RoleArg { roleId :: Int
                        , key :: Text

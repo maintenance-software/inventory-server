@@ -8,6 +8,7 @@ User_ json sql=t_user
     email Text
     password Text
     active Bool
+    personId Person_Id
     UniqueUserUsername username
     UniqueUserEmail email
     deriving Typeable Show
@@ -57,7 +58,6 @@ Person_ json sql=t_person
     lastName Text
     documentType Text
     documentId Text
-    userId User_Id Maybe
     UniquePersonDocumentId documentId
     deriving Typeable Show
 

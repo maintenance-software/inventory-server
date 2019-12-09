@@ -38,7 +38,7 @@ data Privileges m = Privileges { findById :: FindByIdArgs -> m Privilege
 
 data FindByIdArgs = FindByIdArgs { privilegeId :: Int } deriving (Generic)
 
-data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
+-- data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
 -- DB ACTIONS
 dbFetchPrivilegeById:: Privilege_Id -> Handler Privilege

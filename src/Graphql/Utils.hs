@@ -25,6 +25,7 @@ instance GQLType Pageable where
     type  KIND Pageable = INPUT_OBJECT
     description = const $ Just $ pack "The item that holds the pageable information"
 
+data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
 localDay :: IO Day
 localDay = fmap utctDay getCurrentTime

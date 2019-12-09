@@ -28,11 +28,13 @@ import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import
 import           Graphql.Privilege
 import           Graphql.Role
+import           Graphql.Person
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , privileges :: Privileges (Res () Handler)
                          , roles :: Roles (Res () Handler)
+                         , persons :: Persons (Res () Handler)
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
@@ -59,7 +61,11 @@ resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
-resolveQuery = QueryQL {  deity = resolveDeity, privileges = resolvePrivilege, roles = resolveRole }
+resolveQuery = QueryQL { deity = resolveDeity
+                       , privileges = resolvePrivilege
+                       , roles = resolveRole
+                       , persons = resolvePerson
+                       }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
 rootResolver = GQLRootResolver { queryResolver = resolveQuery
