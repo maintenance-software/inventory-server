@@ -23,7 +23,7 @@ import           Data.Morpheus.Kind     (OBJECT)
 import           Data.Morpheus.Document (toGraphQLDocument)
 import           Data.Text                  (Text)
 import           Data.ByteString
-import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity)
+import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity, NoDeity(..), TestArg(..))
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import
 import           Graphql.Privilege
@@ -54,10 +54,13 @@ dbFetchDeity:: Text -> Handler Deity
 dbFetchDeity name = do
                      let userId = (toSqlKey 3)::User_Id
                      deity <- runDB $ getEntity userId
-                     return $ Deity {fullName = "dummy", power = Just "Shapeshifting"}
+                     return $ Deity {fullName = "dummy", power = Just "Shapeshifting", tests = testsResolver}
 
 resolveDeity :: DeityArgs -> Res e Handler Deity
 resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
+
+testsResolver :: TestArg -> Res e Handler NoDeity
+testsResolver TestArg {yourFullName } = pure NoDeity {noFullName = "Test no full am", nopower = Just "no power"}
 
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
