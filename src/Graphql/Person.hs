@@ -24,8 +24,6 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 
-data DummyArg = DummyArg {} deriving (Generic)
-
 data Person = Person { personId :: Int
                      , firstName :: Text
                      , lastName :: Text

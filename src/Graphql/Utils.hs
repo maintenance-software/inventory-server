@@ -29,5 +29,7 @@ data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } der
 
 data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
 
+data DummyArg = DummyArg {} deriving (Generic)
+
 localDay :: IO Day
 localDay = fmap utctDay getCurrentTime
