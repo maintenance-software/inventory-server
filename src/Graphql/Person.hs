@@ -24,13 +24,15 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 
+data DummyArg = DummyArg {} deriving (Generic)
+
 data Person = Person { personId :: Int
                      , firstName :: Text
                      , lastName :: Text
                      , documentType :: Text
                      , documentId :: Text
-                     , address :: Maybe Address
-                     , contactInfo :: [ContactInfo]
+                     , address :: DummyArg -> Res () Handler (Maybe Address)
+                     , contactInfo :: DummyArg -> Res () Handler [ContactInfo]
                      } deriving (Generic, GQLType)
 
 data ContactInfo = ContactInfo { contactId :: Int
@@ -49,43 +51,44 @@ data Address = Address {  addressId :: Int
                        } deriving (Generic, GQLType)
 
 data Persons m = Persons { findById :: FindPersonByIdArgs -> m Person
-                         , list :: ListArgs -> m [Person]
+--                         , list :: ListArgs -> m [Person]
                          } deriving (Generic, GQLType)
 
 data FindPersonByIdArgs = FindPersonByIdArgs { personId :: Int } deriving (Generic)
 
-
--- DB ACTIONS
-dbFetchPersonById:: Person_Id -> Handler Person
-dbFetchPersonById personId = do
-                              person <- runDB $ getJustEntity personId
-                              address <- runDB $ selectFirst [Address_PersonId ==. personId] []
-                              contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
-                              let response = toPersonQL person address contacts
-                              return response
-
-dbFetchPersons:: ListArgs -> Handler [Person]
-dbFetchPersons ListArgs {..} = do
-                              persons <- runDB $ selectList [] [Asc Person_Id, LimitTo size, OffsetBy $ (page - 1) * size]
-                              return $ P.map (\p -> toPersonQL p Nothing []) persons
-                         where
-                          (page, size) = case pageable of
-                                          Just (Pageable x y) -> (x, y)
-                                          Nothing -> (1, 10)
-
-
-
 -- Query Resolvers
 findByIdResolver :: FindPersonByIdArgs -> Res e Handler Person
-findByIdResolver FindPersonByIdArgs { personId } = lift $ dbFetchPersonById roleKey
-                                              where
-                                                roleKey = (toSqlKey $ fromIntegral $ personId)::Person_Id
+findByIdResolver FindPersonByIdArgs {..} = lift $ do
+                                      let personEntityId = (toSqlKey $ fromIntegral $ personId)::Person_Id
+                                      person <- runDB $ getJustEntity personEntityId
+                                      let Entity _ Person_ {..} = person
+                                      return Person { personId = fromIntegral $ fromSqlKey personEntityId
+                                                    , firstName = person_FirstName
+                                                    , lastName = person_LastName
+                                                    , documentType = person_DocumentType
+                                                    , documentId = person_DocumentId
+                                                    , address = resolveAddress personEntityId
+                                                    , contactInfo = resolveContactInfo personEntityId
+                                                    }
 
-listResolver :: ListArgs -> Res e Handler [Person]
-listResolver listArgs = lift $ dbFetchPersons listArgs
+resolveAddress :: Person_Id -> DummyArg -> Res e Handler (Maybe Address)
+resolveAddress personId arg = lift $ do
+                    addressMaybe <- runDB $ selectFirst [Address_PersonId ==. personId] []
+                    let address = case addressMaybe of
+                                    Nothing -> Nothing
+                                    Just a -> Just $ toAddressQL a
+                    return address
+
+resolveContactInfo :: Person_Id -> DummyArg -> Res e Handler [ContactInfo]
+resolveContactInfo personId arg = lift $ do
+                                      contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
+                                      return $ P.map toContactQL contacts
+
+-- listResolver :: ListArgs -> Res e Handler [Person]
+-- listResolver listArgs = lift $ dbFetchPersons listArgs
 
 resolvePerson :: Persons (Res () Handler)
-resolvePerson = Persons {  findById = findByIdResolver, list = listResolver }
+resolvePerson = Persons {  findById = findByIdResolver}
 
 -- CONVERTERS
 --     Id sql=role_id
@@ -115,21 +118,6 @@ fromRoleArg (RoleArg {..}) cd md = Role_ { role_Key = key
                                          }
 -}
 
-toPersonQL:: Entity Person_ -> Maybe (Entity Address_) -> [Entity ContactInfo_] -> Person
-toPersonQL (Entity personId person) address contacts = Person { personId = fromIntegral $ fromSqlKey personId
-                                                              , firstName = person_FirstName
-                                                              , lastName = person_LastName
-                                                              , documentType = person_DocumentType
-                                                              , documentId = person_DocumentId
-                                                              , address = address'
-                                                              , contactInfo = P.map toContactQL contacts
-                                                              }
-                                                    where
-                                                      Person_ {..} = person
-                                                      address' = case address of
-                                                                 Nothing -> Nothing
-                                                                 Just a -> Just $ (toAddressQL a)
-
 toContactQL :: Entity ContactInfo_ -> ContactInfo
 toContactQL (Entity contactId contact) = ContactInfo { contactId = fromIntegral $ fromSqlKey contactId
                                                      , contact = contactInfo_Contact
@@ -140,25 +128,25 @@ toContactQL (Entity contactId contact) = ContactInfo { contactId = fromIntegral 
 
 toAddressQL :: Entity Address_ -> Address
 toAddressQL (Entity addressId address) = Address { addressId = fromIntegral $ fromSqlKey addressId
-                                                         , street1 = address_Street1
-                                                         , street2 = address_Street2
-                                                         , street3 = address_Street3
-                                                         , zip = address_Zip
-                                                         , city = address_City
-                                                         , state = address_State
-                                                         , country = address_Country
-                                                         }
+                                                 , street1 = address_Street1
+                                                 , street2 = address_Street2
+                                                 , street3 = address_Street3
+                                                 , zip = address_Zip
+                                                 , city = address_City
+                                                 , state = address_State
+                                                 , country = address_Country
+                                                 }
                                              where
                                                 Address_ {..} = address
 
-fromPersonQL :: Person -> Person_
-fromPersonQL Person {..} = Person_ firstName lastName documentType documentId
+--fromPersonQL :: Person -> Person_
+--fromPersonQL Person {..} = Person_ firstName lastName documentType documentId
 
-fromAddressQL :: Person_Id -> Address -> Address_
-fromAddressQL personId Address {..} = Address_ street1 street2 street3 zip city state country personId
+--fromAddressQL :: Person_Id -> Address -> Address_
+--fromAddressQL personId Address {..} = Address_ street1 street2 street3 zip city state country personId
 
-fromContactQL :: Person_Id -> ContactInfo -> ContactInfo_
-fromContactQL personId ContactInfo {..} = ContactInfo_ contactType contact personId
+--fromContactQL :: Person_Id -> ContactInfo -> ContactInfo_
+--fromContactQL personId ContactInfo {..} = ContactInfo_ contactType contact personId
 
 -- Person Graphql Arguments
 data PersonArg = PersonArg { personId :: Int
@@ -203,28 +191,19 @@ resolveSavePerson_ arg = lift $ do
                                 person <- runDB $ getJustEntity personId
                                 let Entity _ Person_ {..} = person
                                 return PersonMut { personId = fromIntegral $ fromSqlKey personId
-                                                , firstName = person_FirstName
-                                                , lastName = person_LastName
-                                                , documentType = person_DocumentType
-                                                , documentId = person_DocumentId
-                                                , address = resolveSaveAddress personId
-                                                , contactInfo = resolveSaveContactInfo personId
-                                                }
+                                                 , firstName = person_FirstName
+                                                 , lastName = person_LastName
+                                                 , documentType = person_DocumentType
+                                                 , documentId = person_DocumentId
+                                                 , address = resolveSaveAddress personId
+                                                 , contactInfo = resolveSaveContactInfo personId
+                                                 }
 
 resolveSaveAddress :: Person_Id -> AddressArg -> MutRes e Handler Address
 resolveSaveAddress personId arg = lift $ do
                                           addressId <- createOrUpdateAddress personId arg
-                                          address <- runDB $ getJustEntity addressId
-                                          let Entity _ Address_ {..} = address
-                                          return Address { addressId = fromIntegral $ fromSqlKey addressId
-                                                         , street1 = address_Street1
-                                                         , street2 = address_Street2
-                                                         , street3 = address_Street3
-                                                         , zip = address_Zip
-                                                         , city = address_City
-                                                         , state = address_State
-                                                         , country = address_Country
-                                                         }
+                                          addressEntity <- runDB $ getJustEntity addressId
+                                          return $ toAddressQL addressEntity
 
 resolveSaveContactInfo :: Person_Id -> ContactInfoArgWrapper -> MutRes e Handler [ContactInfo]
 resolveSaveContactInfo personId ContactInfoArgWrapper {..} = lift $ do
