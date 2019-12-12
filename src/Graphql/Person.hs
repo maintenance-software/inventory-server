@@ -50,16 +50,16 @@ data Address = Address {  addressId :: Int
                         , country :: Text
                        } deriving (Generic, GQLType)
 
-data Persons m = Persons { findById :: FindPersonByIdArgs -> m Person
+data Persons m = Persons { person :: GetEntityByIdArg -> m Person
 --                         , list :: ListArgs -> m [Person]
                          } deriving (Generic, GQLType)
 
-data FindPersonByIdArgs = FindPersonByIdArgs { personId :: Int } deriving (Generic)
+-- data FindPersonByIdArgs = FindPersonByIdArgs { personId :: Int } deriving (Generic)
 
 -- Query Resolvers
-findByIdResolver :: FindPersonByIdArgs -> Res e Handler Person
-findByIdResolver FindPersonByIdArgs {..} = lift $ do
-                                      let personEntityId = (toSqlKey $ fromIntegral $ personId)::Person_Id
+findByIdResolver :: GetEntityByIdArg -> Res e Handler Person
+findByIdResolver GetEntityByIdArg {..} = lift $ do
+                                      let personEntityId = (toSqlKey $ fromIntegral $ entityId)::Person_Id
                                       person <- runDB $ getJustEntity personEntityId
                                       let Entity _ Person_ {..} = person
                                       return Person { personId = fromIntegral $ fromSqlKey personEntityId
@@ -88,7 +88,7 @@ resolveContactInfo personId arg = lift $ do
 -- listResolver listArgs = lift $ dbFetchPersons listArgs
 
 resolvePerson :: Persons (Res () Handler)
-resolvePerson = Persons {  findById = findByIdResolver}
+resolvePerson = Persons {  person = findByIdResolver}
 
 -- CONVERTERS
 --     Id sql=role_id

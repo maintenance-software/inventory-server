@@ -27,5 +27,7 @@ instance GQLType Pageable where
 
 data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
+data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
+
 localDay :: IO Day
 localDay = fmap utctDay getCurrentTime

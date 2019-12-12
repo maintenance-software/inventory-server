@@ -35,11 +35,11 @@ data Role = Role { roleId :: Int
                  , privileges :: [Privilege]
                  } deriving (Generic, GQLType)
 
-data Roles m = Roles { findById :: FindByIdArgs -> m Role
+data Roles m = Roles { role :: GetEntityByIdArg -> m Role
                      , list :: ListArgs -> m [Role]
                      } deriving (Generic, GQLType)
 
-data FindByIdArgs = FindByIdArgs { roleId :: Int } deriving (Generic)
+-- data FindByIdArgs = FindByIdArgs { roleId :: Int } deriving (Generic)
 
 -- data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
@@ -75,16 +75,16 @@ dbFetchPrivileges roleId = do
                             return $ P.map toPrivilegeQL privileges
 
 -- Query Resolvers
-findByIdResolver :: FindByIdArgs -> Res e Handler Role
-findByIdResolver FindByIdArgs { roleId } = lift $ dbFetchRoleById roleKey
+findByIdResolver :: GetEntityByIdArg -> Res e Handler Role
+findByIdResolver GetEntityByIdArg {..} = lift $ dbFetchRoleById roleKey
                                               where
-                                                roleKey = (toSqlKey $ fromIntegral $ roleId)::Role_Id
+                                                roleKey = (toSqlKey $ fromIntegral $ entityId)::Role_Id
 
 listResolver :: ListArgs -> Res e Handler [Role]
 listResolver listArgs = lift $ dbFetchRoles listArgs
 
 resolveRole :: Roles (Res () Handler)
-resolveRole = Roles {  findById = findByIdResolver, list = listResolver }
+resolveRole = Roles {  role = findByIdResolver, list = listResolver }
 
 -- Mutation Resolvers
 resolveSaveRole :: RoleArg -> MutRes e Handler Role
