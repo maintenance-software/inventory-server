@@ -39,13 +39,17 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
 
 data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
                            , saveRole :: RoleArg -> m Role
+                           , savePerson :: PersonArg -> m PersonMut
                            } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
 
 resolveMutation::Mutation (MutRes () Handler)
-resolveMutation = Mutation { savePrivilege = resolveSavePrivilege, saveRole =  resolveSaveRole}
+resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
+                           , saveRole =  resolveSaveRole
+                           , savePerson = resolveSavePerson_
+                           }
 
 
 -- BASE EXAMPLE

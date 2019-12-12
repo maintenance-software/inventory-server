@@ -12,12 +12,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Person (Persons, Person, resolvePerson) where
+module Graphql.Person (Persons, Person, resolvePerson, PersonMut, PersonArg, resolveSavePerson_) where
 
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import qualified Data.Set as S
@@ -87,64 +87,6 @@ listResolver listArgs = lift $ dbFetchPersons listArgs
 resolvePerson :: Persons (Res () Handler)
 resolvePerson = Persons {  findById = findByIdResolver, list = listResolver }
 
--- Mutation Resolvers
-
-resolveSavePerson :: Person -> MutRes e Handler Person
-resolveSavePerson arg = lift $ createOrUpdatePerson arg
-
--- CREATE OR UPDATE PERSON
-createOrUpdatePerson :: Person -> Handler Person
-createOrUpdatePerson person = do
-                               let Person{..} = person
-                               personEntityId <- if personId > 0 then
-                                            do
-                                              let personKey = (toSqlKey $ fromIntegral personId)::Person_Id
-                                              _ <- runDB $ update personKey [  Person_FirstName =. firstName
-                                                                             , Person_LastName =. lastName
-                                                                             , Person_DocumentType =. documentType
-                                                                             , Person_DocumentId =. documentId
-                                                                            ]
-                                              return personKey
-                                            else
-                                              do
-                                                personKey <- runDB $ insert (fromPersonQL person)
-                                                return personKey
-                               addressId <- case address of
-                                            Nothing -> do return ((toSqlKey $ fromIntegral 0)::Address_Id)
-                                            Just c -> do
-                                                      -- let key = DT.getAddressId c
-                                                      let Address {..} = c
-                                                      a <- if addressId > 0 then
-                                                              do
-                                                                let addressId' = (toSqlKey $ fromIntegral addressId)::Address_Id
-                                                                _ <- runDB $ update addressId' [  Address_Street1 =. street1
-                                                                                                , Address_Street2 =. street2
-                                                                                                , Address_Street3 =. street3
-                                                                                                , Address_Zip =. zip
-                                                                                                , Address_City =. city
-                                                                                                , Address_State =. state
-                                                                                                , Address_Country =. country
-                                                                                               ]
-                                                                return addressId'
-                                                           else
-                                                              do
-                                                                addressId' <- runDB $ insert (fromAddressQL personEntityId c)
-                                                                return addressId'
-                                                      return a
-                               let c1 = P.filter (\c -> (contactId c) <= 0)  $ contactInfo
-                               let c2 = P.filter (\c -> (contactId c) > 0)  $ contactInfo
-                               contactIds <- runDB $ insertMany  $ [fromContactQL personEntityId c | c <- c1]
-                               _ <- updateContact c2
-                               response <- dbFetchPersonById personEntityId
-                               return response
-
-updateContact [] = return ()
-updateContact (x:xs)= do
-                        let ContactInfo {..} = x
-                        let entityContactId = (toSqlKey $ fromIntegral contactId)::ContactInfo_Id
-                        _ <- runDB $ update entityContactId [  ContactInfo_ContactType =. contactType, ContactInfo_Contact =. contact]
-                        _ <- updateContact xs
-                        return ()
 -- CONVERTERS
 --     Id sql=role_id
 --     key Text
@@ -217,3 +159,139 @@ fromAddressQL personId Address {..} = Address_ street1 street2 street3 zip city 
 
 fromContactQL :: Person_Id -> ContactInfo -> ContactInfo_
 fromContactQL personId ContactInfo {..} = ContactInfo_ contactType contact personId
+
+-- Person Graphql Arguments
+data PersonArg = PersonArg { personId :: Int
+                           , firstName :: Text
+                           , lastName :: Text
+                           , documentType :: Text
+                           , documentId :: Text
+                           } deriving (Generic)
+
+data AddressArg = AddressArg { addressId :: Int
+                             , street1 :: Text
+                             , street2 :: Text
+                             , street3 :: Text
+                             , zip :: Text
+                             , city :: Text
+                             , state :: Text
+                             , country :: Text
+                             } deriving (Generic)
+
+data ContactInfoArg = ContactInfoArg { contactId :: Int
+                                     , contact :: Text
+                                     , contactType :: Text
+                                     } deriving (Generic)
+instance GQLType ContactInfoArg where
+    type  KIND ContactInfoArg = INPUT_OBJECT
+    description = const $ Just $ pack "The item that holds the contact Info information"
+
+newtype ContactInfoArgWrapper = ContactInfoArgWrapper { contactInfo :: [ContactInfoArg] } deriving (Generic)
+
+data PersonMut = PersonMut { personId :: Int
+                         , firstName :: Text
+                         , lastName :: Text
+                         , documentType :: Text
+                         , documentId :: Text
+                         , address :: AddressArg -> MutRes () Handler Address
+                         , contactInfo :: ContactInfoArgWrapper -> MutRes () Handler [ContactInfo]
+                         } deriving (Generic, GQLType)
+
+resolveSavePerson_ :: PersonArg -> MutRes e Handler PersonMut
+resolveSavePerson_ arg = lift $ do
+                                personId <- createOrUpdatePerson_ arg
+                                person <- runDB $ getJustEntity personId
+                                let Entity _ Person_ {..} = person
+                                return PersonMut { personId = fromIntegral $ fromSqlKey personId
+                                                , firstName = person_FirstName
+                                                , lastName = person_LastName
+                                                , documentType = person_DocumentType
+                                                , documentId = person_DocumentId
+                                                , address = resolveSaveAddress personId
+                                                , contactInfo = resolveSaveContactInfo personId
+                                                }
+
+resolveSaveAddress :: Person_Id -> AddressArg -> MutRes e Handler Address
+resolveSaveAddress personId arg = lift $ do
+                                          addressId <- createOrUpdateAddress personId arg
+                                          address <- runDB $ getJustEntity addressId
+                                          let Entity _ Address_ {..} = address
+                                          return Address { addressId = fromIntegral $ fromSqlKey addressId
+                                                         , street1 = address_Street1
+                                                         , street2 = address_Street2
+                                                         , street3 = address_Street3
+                                                         , zip = address_Zip
+                                                         , city = address_City
+                                                         , state = address_State
+                                                         , country = address_Country
+                                                         }
+
+resolveSaveContactInfo :: Person_Id -> ContactInfoArgWrapper -> MutRes e Handler [ContactInfo]
+resolveSaveContactInfo personId ContactInfoArgWrapper {..} = lift $ do
+                                          () <- createOrUpdateContactInfo personId contactInfo
+                                          contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
+                                          return $ P.map toContactQL contacts
+
+createOrUpdatePerson_ :: PersonArg -> Handler Person_Id
+createOrUpdatePerson_ personArg = do
+                               let PersonArg{..} = personArg
+                               personEntityId <- if personId > 0 then
+                                            do
+                                              let personKey = (toSqlKey $ fromIntegral personId)::Person_Id
+                                              _ <- runDB $ update personKey [  Person_FirstName =. firstName
+                                                                             , Person_LastName =. lastName
+                                                                             , Person_DocumentType =. documentType
+                                                                             , Person_DocumentId =. documentId
+                                                                            ]
+                                              return personKey
+                                            else
+                                              do
+                                                personKey <- runDB $ insert (fromPersonQL_ personArg)
+                                                return personKey
+                               return personEntityId
+
+createOrUpdateAddress :: Person_Id -> AddressArg -> Handler Address_Id
+createOrUpdateAddress personId address = do
+                               let AddressArg {..} = address
+                               addressEntityId <- if addressId > 0 then
+                                                   do
+                                                     let addressId' = (toSqlKey $ fromIntegral addressId)::Address_Id
+                                                     _ <- runDB $ update addressId' [  Address_Street1 =. street1
+                                                                                     , Address_Street2 =. street2
+                                                                                     , Address_Street3 =. street3
+                                                                                     , Address_Zip =. zip
+                                                                                     , Address_City =. city
+                                                                                     , Address_State =. state
+                                                                                     , Address_Country =. country
+                                                                                    ]
+                                                     return addressId'
+                                                  else
+                                                   do
+                                                     addressId' <- runDB $ insert (fromAddressQL_ personId address)
+                                                     return addressId'
+                               return addressEntityId
+
+createOrUpdateContactInfo :: Person_Id -> [ContactInfoArg] -> Handler ()
+createOrUpdateContactInfo personId  contactInfo = do
+                               let c1 = P.filter (\ContactInfoArg {..} -> contactId <= 0)  $ contactInfo
+                               let c2 = P.filter (\ContactInfoArg {..} -> contactId > 0)  $ contactInfo
+                               contactIds <- runDB $ insertMany  $ [fromContactQL_ personId c | c <- c1]
+                               _ <- updateContact_ c2
+                               return ()
+
+updateContact_ [] = return ()
+updateContact_ (x:xs)= do
+                        let ContactInfoArg {..} = x
+                        let entityContactId = (toSqlKey $ fromIntegral contactId)::ContactInfo_Id
+                        _ <- runDB $ update entityContactId [  ContactInfo_ContactType =. contactType, ContactInfo_Contact =. contact]
+                        _ <- updateContact_ xs
+                        return ()
+
+fromPersonQL_ :: PersonArg -> Person_
+fromPersonQL_ PersonArg {..} = Person_ firstName lastName documentType documentId
+
+fromAddressQL_ :: Person_Id -> AddressArg -> Address_
+fromAddressQL_ personId AddressArg {..} = Address_ street1 street2 street3 zip city state country personId
+
+fromContactQL_ :: Person_Id -> ContactInfoArg -> ContactInfo_
+fromContactQL_ personId ContactInfoArg {..} = ContactInfo_ contactType contact personId
