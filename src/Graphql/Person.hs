@@ -31,6 +31,8 @@ data Person = Person { personId :: Int
                      , lastName :: Text
                      , documentType :: Text
                      , documentId :: Text
+                     , createdDate :: Text
+                     , modifiedDate :: Maybe Text
                      , address :: DummyArg -> Res () Handler (Maybe Address)
                      , contactInfo :: DummyArg -> Res () Handler [ContactInfo]
                      } deriving (Generic, GQLType)
@@ -38,6 +40,8 @@ data Person = Person { personId :: Int
 data ContactInfo = ContactInfo { contactId :: Int
                                , contact :: Text
                                , contactType :: Text
+                               , createdDate :: Text
+                               , modifiedDate :: Maybe Text
                                } deriving (Generic, GQLType)
 
 data Address = Address {  addressId :: Int
@@ -48,6 +52,8 @@ data Address = Address {  addressId :: Int
                         , city :: Text
                         , state :: Text
                         , country :: Text
+                        , createdDate :: Text
+                        , modifiedDate :: Maybe Text
                        } deriving (Generic, GQLType)
 
 data Persons m = Persons { person :: GetEntityByIdArg -> m Person
@@ -55,6 +61,9 @@ data Persons m = Persons { person :: GetEntityByIdArg -> m Person
                          } deriving (Generic, GQLType)
 
 -- Query Resolvers
+resolvePerson :: Persons (Res () Handler)
+resolvePerson = Persons {  person = findByIdResolver, list = listResolver}
+
 findByIdResolver :: GetEntityByIdArg -> Res e Handler Person
 findByIdResolver GetEntityByIdArg {..} = lift $ do
                                       let personEntityId = (toSqlKey $ fromIntegral $ entityId)::Person_Id
@@ -83,56 +92,35 @@ listResolver ListArgs{..} = lift $ do
                                           Just (Pageable x y) -> (x, y)
                                           Nothing -> (1, 10)
 
-resolvePerson :: Persons (Res () Handler)
-resolvePerson = Persons {  person = findByIdResolver, list = listResolver}
-
--- CONVERTERS
---     Id sql=role_id
---     key Text
---     name Text
---     description Text Maybe
---     active Bool
---     createdDate UTCTime
---     modifiedDate UTCTime
-{--
-fromRoleQL :: Person -> UTCTime -> Maybe UTCTime -> Role_
-fromRoleQL (Person {..}) cd md = Role_ { role_Key = key
-                                          , role_Name = name
-                                          , role_Description = description
-                                          , role_Active = active
-                                          , role_CreatedDate = cd
-                                          , role_ModifiedDate = md
-                                          }
-
-fromRoleArg :: RoleArg -> UTCTime -> Maybe UTCTime -> Role_
-fromRoleArg (RoleArg {..}) cd md = Role_ { role_Key = key
-                                         , role_Name = name
-                                         , role_Description = description
-                                         , role_Active = active
-                                         , role_CreatedDate = cd
-                                         , role_ModifiedDate = md
-                                         }
--}
-
 toPersonQL :: Entity Person_ -> Person
 toPersonQL (Entity personId person) = Person { personId = fromIntegral $ fromSqlKey personId
                                              , firstName = person_FirstName
                                              , lastName = person_LastName
                                              , documentType = person_DocumentType
                                              , documentId = person_DocumentId
+                                             , createdDate = fromString $ show person_CreatedDate
+                                             , modifiedDate = md
                                              , address = resolveAddress personId
                                              , contactInfo = resolveContactInfo personId
                                              }
                                  where
                                   Person_ {..} = person
+                                  md = case person_ModifiedDate of
+                                        Just d -> Just $ fromString $ show d
+                                        Nothing -> Nothing
 
 toContactQL :: Entity ContactInfo_ -> ContactInfo
 toContactQL (Entity contactId contact) = ContactInfo { contactId = fromIntegral $ fromSqlKey contactId
                                                      , contact = contactInfo_Contact
                                                      , contactType = contactInfo_ContactType
+                                                     , createdDate = fromString $ show contactInfo_CreatedDate
+                                                     , modifiedDate = md
                                                      }
                                     where
                                       ContactInfo_ {..} = contact
+                                      md = case contactInfo_ModifiedDate of
+                                            Just d -> Just $ fromString $ show d
+                                            Nothing -> Nothing
 
 toAddressQL :: Entity Address_ -> Address
 toAddressQL (Entity addressId address) = Address { addressId = fromIntegral $ fromSqlKey addressId
@@ -143,9 +131,14 @@ toAddressQL (Entity addressId address) = Address { addressId = fromIntegral $ fr
                                                  , city = address_City
                                                  , state = address_State
                                                  , country = address_Country
+                                                 , createdDate = fromString $ show address_CreatedDate
+                                                 , modifiedDate = md
                                                  }
                                              where
                                                 Address_ {..} = address
+                                                md = case address_ModifiedDate of
+                                                      Just d -> Just $ fromString $ show d
+                                                      Nothing -> Nothing
 
 -- Person Graphql Arguments
 data PersonArg = PersonArg { personId :: Int
@@ -180,6 +173,8 @@ data PersonMut = PersonMut { personId :: Int
                            , lastName :: Text
                            , documentType :: Text
                            , documentId :: Text
+                           , createdDate :: Text
+                           , modifiedDate :: Maybe Text
                            , address :: AddressArg -> MutRes () Handler Address
                            , contactInfo :: ContactInfoArgWrapper -> MutRes () Handler [ContactInfo]
                            } deriving (Generic, GQLType)
@@ -189,11 +184,16 @@ resolveSavePerson_ arg = lift $ do
                                 personId <- createOrUpdatePerson_ arg
                                 person <- runDB $ getJustEntity personId
                                 let Entity _ Person_ {..} = person
+                                let md = case person_ModifiedDate of
+                                          Just d -> Just $ fromString $ show d
+                                          Nothing -> Nothing
                                 return PersonMut { personId = fromIntegral $ fromSqlKey personId
                                                  , firstName = person_FirstName
                                                  , lastName = person_LastName
                                                  , documentType = person_DocumentType
                                                  , documentId = person_DocumentId
+                                                 , createdDate = fromString $ show person_CreatedDate
+                                                 , modifiedDate = md
                                                  , address = resolveSaveAddress personId
                                                  , contactInfo = resolveSaveContactInfo personId
                                                  }
@@ -213,6 +213,7 @@ resolveSaveContactInfo personId ContactInfoArgWrapper {..} = lift $ do
 createOrUpdatePerson_ :: PersonArg -> Handler Person_Id
 createOrUpdatePerson_ personArg = do
                                let PersonArg{..} = personArg
+                               now <- liftIO getCurrentTime
                                personEntityId <- if personId > 0 then
                                             do
                                               let personKey = (toSqlKey $ fromIntegral personId)::Person_Id
@@ -220,17 +221,19 @@ createOrUpdatePerson_ personArg = do
                                                                              , Person_LastName =. lastName
                                                                              , Person_DocumentType =. documentType
                                                                              , Person_DocumentId =. documentId
+                                                                             , Person_ModifiedDate =. Just now
                                                                             ]
                                               return personKey
                                             else
                                               do
-                                                personKey <- runDB $ insert (fromPersonQL_ personArg)
+                                                personKey <- runDB $ insert (fromPersonQL_ personArg now Nothing)
                                                 return personKey
                                return personEntityId
 
 createOrUpdateAddress :: Person_Id -> AddressArg -> Handler Address_Id
 createOrUpdateAddress personId address = do
                                let AddressArg {..} = address
+                               now <- liftIO getCurrentTime
                                addressEntityId <- if addressId > 0 then
                                                    do
                                                      let addressId' = (toSqlKey $ fromIntegral addressId)::Address_Id
@@ -241,35 +244,92 @@ createOrUpdateAddress personId address = do
                                                                                      , Address_City =. city
                                                                                      , Address_State =. state
                                                                                      , Address_Country =. country
+                                                                                     , Address_ModifiedDate =. Just now
                                                                                     ]
                                                      return addressId'
                                                   else
                                                    do
-                                                     addressId' <- runDB $ insert (fromAddressQL_ personId address)
+                                                     addressId' <- runDB $ insert (fromAddressQL_ personId address now Nothing)
                                                      return addressId'
                                return addressEntityId
 
 createOrUpdateContactInfo :: Person_Id -> [ContactInfoArg] -> Handler ()
 createOrUpdateContactInfo personId  contactInfo = do
+                               now <- liftIO getCurrentTime
                                let c1 = P.filter (\ContactInfoArg {..} -> contactId <= 0)  $ contactInfo
                                let c2 = P.filter (\ContactInfoArg {..} -> contactId > 0)  $ contactInfo
-                               contactIds <- runDB $ insertMany  $ [fromContactQL_ personId c | c <- c1]
+                               contactIds <- runDB $ insertMany  $ [fromContactQL_ personId c now Nothing | c <- c1]
                                _ <- updateContact_ c2
                                return ()
 
 updateContact_ [] = return ()
 updateContact_ (x:xs)= do
                         let ContactInfoArg {..} = x
+                        now <- liftIO getCurrentTime
                         let entityContactId = (toSqlKey $ fromIntegral contactId)::ContactInfo_Id
-                        _ <- runDB $ update entityContactId [  ContactInfo_ContactType =. contactType, ContactInfo_Contact =. contact]
+                        _ <- runDB $ update entityContactId [ ContactInfo_ContactType =. contactType
+                                                            , ContactInfo_Contact =. contact
+                                                            , ContactInfo_ModifiedDate =. Just now
+                                                            ]
                         _ <- updateContact_ xs
                         return ()
 
-fromPersonQL_ :: PersonArg -> Person_
-fromPersonQL_ PersonArg {..} = Person_ firstName lastName documentType documentId
+fromPersonQL_ :: PersonArg -> UTCTime -> Maybe UTCTime -> Person_
+fromPersonQL_ PersonArg {..} cd md = Person_ firstName lastName documentType documentId cd md
 
-fromAddressQL_ :: Person_Id -> AddressArg -> Address_
-fromAddressQL_ personId AddressArg {..} = Address_ street1 street2 street3 zip city state country personId
+fromAddressQL_ :: Person_Id -> AddressArg -> UTCTime -> Maybe UTCTime -> Address_
+fromAddressQL_ personId AddressArg {..} cd md = Address_ street1 street2 street3 zip city state country personId cd md
 
-fromContactQL_ :: Person_Id -> ContactInfoArg -> ContactInfo_
-fromContactQL_ personId ContactInfoArg {..} = ContactInfo_ contactType contact personId
+fromContactQL_ :: Person_Id -> ContactInfoArg -> UTCTime -> Maybe UTCTime -> ContactInfo_
+fromContactQL_ personId ContactInfoArg {..} cd md = ContactInfo_ contactType contact personId cd md
+
+
+{-
+
+query {
+  persons {
+    person(entityId: 16) {
+    personId
+    firstName
+    lastName
+    createdDate
+    modifiedDate
+    address {
+      addressId
+      city
+      country
+      state
+    }
+
+    contactInfo {
+      contactId
+      contact
+      contactType
+    }
+    }
+  }
+}
+
+
+mutation {
+  savePerson(personId:16, firstName: "test", lastName: "sss", documentType: "sss", documentId: "98789") {
+    personId
+    firstName
+    lastName
+    createdDate
+    modifiedDate
+    address(addressId: 1, street1: "street1", street2: "street2", street3: "street1", zip:"ss", city: "OR", state: "s", country:"ssss") {
+      addressId
+      city
+      country
+      state
+    }
+
+    contactInfo(contactInfo: [{contactId: 1, contact: "mss", contactType: "mail"}]) {
+      contactId
+      contact
+      contactType
+    }
+  }
+}
+-}

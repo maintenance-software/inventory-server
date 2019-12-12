@@ -58,6 +58,8 @@ Person_ json sql=t_person
     lastName Text
     documentType Text
     documentId Text
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     UniquePersonDocumentId documentId
     deriving Typeable Show
 
@@ -71,6 +73,8 @@ Address_ json sql=t_address
     state Text
     country Text
     personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     UniqueAddressPersonId personId
     deriving Typeable Show
 
@@ -79,6 +83,8 @@ ContactInfo_ json sql=t_contact_info
     contactType Text
     contact Text
     personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 Item_ json sql=t_item
