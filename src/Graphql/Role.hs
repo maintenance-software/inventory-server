@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Role (Roles, Role, RoleArg, resolveRole, resolveSaveRole) where
+module Graphql.Role (Roles, Role, RoleArg, resolveRole, RoleMut, resolveSaveRole) where
 
 import Import
 import GHC.Generics
@@ -30,67 +30,102 @@ data Role = Role { roleId :: Int
                  , name :: Text
                  , description :: Maybe Text
                  , active :: Bool
-                 , createdDate :: Maybe Text
+                 , createdDate :: Text
                  , modifiedDate :: Maybe Text
-                 , privileges :: [Privilege]
+                 , privileges :: DummyArg -> Res () Handler [Privilege]
                  } deriving (Generic, GQLType)
 
 data Roles m = Roles { role :: GetEntityByIdArg -> m Role
                      , list :: ListArgs -> m [Role]
                      } deriving (Generic, GQLType)
 
--- data FindByIdArgs = FindByIdArgs { roleId :: Int } deriving (Generic)
-
--- data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
-
 data RoleArg = RoleArg { roleId :: Int
                        , key :: Text
                        , name :: Text
                        , description :: Maybe Text
                        , active :: Bool
-                       , privileges :: [Int]
                        } deriving (Generic, GQLType)
 
--- DB ACTIONS
-dbFetchRoleById:: Role_Id -> Handler Role
-dbFetchRoleById roleId = do
-                          role <- runDB $ getJustEntity roleId
-                          privileges <- dbFetchPrivileges roleId
-                          return $ toRoleQL role privileges
+-- Query Resolvers
+findByIdResolver :: GetEntityByIdArg -> Res e Handler Role
+findByIdResolver GetEntityByIdArg {..} = lift $ do
+                                              let roleId = (toSqlKey $ fromIntegral $ entityId)::Role_Id
+                                              role <- runDB $ getJustEntity roleId
+                                              return $ toRoleQL role
 
-dbFetchRoles:: ListArgs -> Handler [Role]
-dbFetchRoles ListArgs {..} = do
-                              roles <- runDB $ selectList [] [Asc Role_Id, LimitTo size, OffsetBy $ (page - 1) * size]
-                              return $ P.map (\r -> toRoleQL r []) roles
+listResolver :: ListArgs -> Res e Handler [Role]
+listResolver ListArgs {..} = lift $ do
+                        roles <- runDB $ selectList [] [Asc Role_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+                        return $ P.map (\r -> toRoleQL r) roles
                          where
                           (page, size) = case pageable of
                                           Just (Pageable x y) -> (x, y)
                                           Nothing -> (1, 10)
 
-dbFetchPrivileges:: Role_Id -> Handler [Privilege]
-dbFetchPrivileges roleId = do
-                            rolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
-                            let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) rolePrivileges
-                            privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
-                            return $ P.map toPrivilegeQL privileges
-
--- Query Resolvers
-findByIdResolver :: GetEntityByIdArg -> Res e Handler Role
-findByIdResolver GetEntityByIdArg {..} = lift $ dbFetchRoleById roleKey
-                                              where
-                                                roleKey = (toSqlKey $ fromIntegral $ entityId)::Role_Id
-
-listResolver :: ListArgs -> Res e Handler [Role]
-listResolver listArgs = lift $ dbFetchRoles listArgs
-
 resolveRole :: Roles (Res () Handler)
 resolveRole = Roles {  role = findByIdResolver, list = listResolver }
 
--- Mutation Resolvers
-resolveSaveRole :: RoleArg -> MutRes e Handler Role
-resolveSaveRole arg = lift $ createOrUpdateRole arg
+resolvePrivileges :: Role_Id -> DummyArg -> Res e Handler [Privilege]
+resolvePrivileges roleId arg = lift $ do
+                                      rolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
+                                      let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) rolePrivileges
+                                      privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
+                                      return $ P.map toPrivilegeQL privileges
 
-createOrUpdateRole :: RoleArg -> Handler Role
+toRoleQL :: Entity Role_ -> Role
+toRoleQL (Entity roleId role) = Role { roleId = fromIntegral $ fromSqlKey roleId
+                                     , key = role_Key
+                                     , name = role_Name
+                                     , description = role_Description
+                                     , active = role_Active
+                                     , createdDate = fromString $ show role_CreatedDate
+                                     , modifiedDate = m
+                                     , privileges = resolvePrivileges roleId
+                                     }
+                            where
+                              Role_ {..} = role
+                              m = case role_ModifiedDate of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
+
+data RoleMut = RoleMut { roleId :: Int
+                       , key :: Text
+                       , name :: Text
+                       , description :: Maybe Text
+                       , active :: Bool
+                       , createdDate :: Text
+                       , modifiedDate :: Maybe Text
+                       , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
+                       } deriving (Generic, GQLType)
+
+-- Mutation Resolvers
+resolveSaveRole :: RoleArg -> MutRes e Handler RoleMut
+resolveSaveRole arg = lift $ do
+                              roleId <- createOrUpdateRole arg
+                              role <- runDB $ getJustEntity roleId
+                              let Entity _ Role_ {..} = role
+                              let md = case role_ModifiedDate of
+                                        Just d -> Just $ fromString $ show d
+                                        Nothing -> Nothing
+                              return RoleMut { roleId = fromIntegral $ fromSqlKey roleId
+                                             , key = role_Key
+                                             , name = role_Name
+                                             , description = role_Description
+                                             , active = role_Active
+                                             , createdDate = fromString $ show role_CreatedDate
+                                             , modifiedDate = md
+                                             , privileges = resolveSaveRolePrivileges roleId
+                                             }
+
+resolveSaveRolePrivileges :: Role_Id -> EntityIdsArg -> MutRes e Handler [Privilege]
+resolveSaveRolePrivileges roleId EntityIdsArg {..} = lift $ do
+                                          () <- createOrUpdateRolePrivilege roleId entityIds
+                                          rolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
+                                          let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) rolePrivileges
+                                          privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
+                                          return $ P.map toPrivilegeQL privileges
+
+createOrUpdateRole :: RoleArg -> Handler Role_Id
 createOrUpdateRole role = do
                             let RoleArg {..} = role
                             now <- liftIO getCurrentTime
@@ -105,56 +140,69 @@ createOrUpdateRole role = do
                                                                      ]
                                          return roleKey
                                       else do
-                                            roleKey <- runDB $ insert $ fromRoleArg role now Nothing
+                                            roleKey <- runDB $ insert $ fromRoleQL role now Nothing
                                             return roleKey
-                            let requestPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) privileges
-                            entityRolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleEntityId] :: [Filter RolePrivilege_]) []
+                            return roleEntityId
+
+createOrUpdateRolePrivilege :: Role_Id -> [Int] -> Handler ()
+createOrUpdateRolePrivilege roleId privileges = do
+                            let entityPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) privileges
+                            entityRolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
                             let existingPrivilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) entityRolePrivileges
-                            let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList requestPrivilegeIds)
-                            let newIds = S.toList $ S.difference (S.fromList requestPrivilegeIds) (S.fromList existingPrivilegeIds)
+                            let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList entityPrivilegeIds)
+                            let newIds = S.toList $ S.difference (S.fromList entityPrivilegeIds) (S.fromList existingPrivilegeIds)
                             _ <- runDB $ deleteWhere  ([RolePrivilege_PrivilegeId <-. removableIds] :: [Filter RolePrivilege_])
-                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (RolePrivilege_ roleEntityId privilegeId)) newIds
-                            response <- dbFetchRoleById roleEntityId
-                            return response
+                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (RolePrivilege_ roleId privilegeId)) newIds
+                            return ()
 
--- CONVERTERS
---     Id sql=role_id
---     key Text
---     name Text
---     description Text Maybe
---     active Bool
---     createdDate UTCTime
---     modifiedDate UTCTime
-toRoleQL :: Entity Role_ -> [Privilege] -> Role
-toRoleQL (Entity roleId role) privileges = Role { roleId = fromIntegral $ fromSqlKey roleId
-                                                , key = role_Key
-                                                , name = role_Name
-                                                , description = role_Description
-                                                , active = role_Active
-                                                , createdDate = Just $ fromString $ show role_CreatedDate
-                                                , modifiedDate = m
-                                                , privileges = privileges
-                                                }
-                                        where
-                                          Role_ {..} = role
-                                          m = case role_ModifiedDate of
-                                                Just d -> Just $ fromString $ show d
-                                                Nothing -> Nothing
+fromRoleQL :: RoleArg -> UTCTime -> Maybe UTCTime -> Role_
+fromRoleQL (RoleArg {..}) cd md = Role_ { role_Key = key
+                                        , role_Name = name
+                                        , role_Description = description
+                                        , role_Active = active
+                                        , role_CreatedDate = cd
+                                        , role_ModifiedDate = md
+                                        }
 
-fromRoleQL :: Role -> UTCTime -> Maybe UTCTime -> Role_
-fromRoleQL (Role {..}) cd md = Role_ { role_Key = key
-                                          , role_Name = name
-                                          , role_Description = description
-                                          , role_Active = active
-                                          , role_CreatedDate = cd
-                                          , role_ModifiedDate = md
-                                          }
+{-
+query {
+  roles {
+     role(entityId: 1) {
+      roleId
+      key
+      description
+      active
+      createdDate
+      modifiedDate
+    }
+    list(queryString: "") {
+      roleId
+      key
+      description
+      active
+      createdDate
+      modifiedDate
+    }
+  }
+}
 
-fromRoleArg :: RoleArg -> UTCTime -> Maybe UTCTime -> Role_
-fromRoleArg (RoleArg {..}) cd md = Role_ { role_Key = key
-                                         , role_Name = name
-                                         , role_Description = description
-                                         , role_Active = active
-                                         , role_CreatedDate = cd
-                                         , role_ModifiedDate = md
-                                         }
+mutation {
+  saveRole(roleId:10, key: "test12", name: "sloss", description: "option" active: true) {
+    roleId
+    key
+    description
+    active
+    createdDate
+    modifiedDate
+    privileges(entityIds: [16]) {
+      privilegeId
+      key
+      description
+      active
+      createdDate
+      modifiedDate
+    }
+  }
+}
+
+-}

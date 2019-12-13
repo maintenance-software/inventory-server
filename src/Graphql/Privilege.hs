@@ -32,13 +32,9 @@ data Privilege = Privilege { privilegeId :: Int
                            , modifiedDate :: Maybe Text
                            } deriving (Generic, GQLType)
 
-data Privileges m = Privileges { findById :: FindByIdArgs -> m Privilege
+data Privileges m = Privileges { privilege :: GetEntityByIdArg -> m Privilege
                                , list :: ListArgs -> m [Privilege]
                                } deriving (Generic, GQLType)
-
-data FindByIdArgs = FindByIdArgs { privilegeId :: Int } deriving (Generic)
-
--- data ListArgs = ListArgs { queryString :: Text, pageable :: Maybe Pageable } deriving (Generic)
 
 -- DB ACTIONS
 dbFetchPrivilegeById:: Privilege_Id -> Handler Privilege
@@ -56,16 +52,16 @@ dbFetchPrivileges ListArgs {..} = do
                                                 Nothing -> (1, 10)
 
 -- Query Resolvers
-findByIdResolver :: FindByIdArgs -> Res e Handler Privilege
-findByIdResolver FindByIdArgs { privilegeId } = lift $ dbFetchPrivilegeById privilegeKey
+findByIdResolver :: GetEntityByIdArg -> Res e Handler Privilege
+findByIdResolver GetEntityByIdArg {..} = lift $ dbFetchPrivilegeById privilegeId
                                               where
-                                                privilegeKey = (toSqlKey $ fromIntegral $ privilegeId)::Privilege_Id
+                                                privilegeId = (toSqlKey $ fromIntegral $ entityId)::Privilege_Id
 
 listResolver :: ListArgs -> Res e Handler [Privilege]
 listResolver listArgs = lift $ dbFetchPrivileges listArgs
 
 resolvePrivilege :: Privileges (Res () Handler)
-resolvePrivilege = Privileges {  findById = findByIdResolver, list = listResolver }
+resolvePrivilege = Privileges {  privilege = findByIdResolver, list = listResolver }
 
 -- Mutation Resolvers
 resolveSavePrivilege :: Privilege -> MutRes e Handler Privilege
@@ -122,3 +118,37 @@ fromPrivilegeQL (Privilege {..}) cd md = Privilege_ { privilege_Key = key
                                                     , privilege_CreatedDate = cd
                                                     , privilege_ModifiedDate = md
                                                     }
+
+{-
+query {
+  privileges {
+    privilege(entityId: 11) {
+      privilegeId
+      key
+      description
+      active
+      createdDate
+      modifiedDate
+    }
+    list(queryString: "") {
+      privilegeId
+      key
+      description
+      active
+      createdDate
+      modifiedDate
+    }
+  }
+}
+
+mutation {
+  savePrivilege(privilegeId:16, key: "test", name: "sloss", description: "option" active: true) {
+    privilegeId
+    key
+    description
+    active
+    createdDate
+    modifiedDate
+  }
+}
+-}

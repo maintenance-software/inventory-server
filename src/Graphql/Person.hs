@@ -310,20 +310,20 @@ query {
 
 
 mutation {
-  savePerson(personId:16, firstName: "test", lastName: "sss", documentType: "sss", documentId: "98789") {
+  savePerson(personId:0, firstName: "test", lastName: "sss", documentType: "sss", documentId: "0") {
     personId
     firstName
     lastName
     createdDate
     modifiedDate
-    address(addressId: 1, street1: "street1", street2: "street2", street3: "street1", zip:"ss", city: "OR", state: "s", country:"ssss") {
+    address(addressId: 0, street1: "street1", street2: "street2", street3: "street1", zip:"ss", city: "OR", state: "s", country:"ssss") {
       addressId
       city
       country
       state
     }
 
-    contactInfo(contactInfo: [{contactId: 1, contact: "mss", contactType: "mail"}]) {
+    contactInfo(contactInfo: [{contactId: 0, contact: "mss", contactType: "mail"}]) {
       contactId
       contact
       contactType

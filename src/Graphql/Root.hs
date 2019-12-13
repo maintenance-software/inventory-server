@@ -38,7 +38,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
-                           , saveRole :: RoleArg -> m Role
+                           , saveRole :: RoleArg -> m RoleMut
                            , savePerson :: PersonArg -> m PersonMut
                            } deriving (Generic, GQLType)
 
