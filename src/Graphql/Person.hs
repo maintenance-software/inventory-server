@@ -12,16 +12,34 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Person (Persons, Person, resolvePerson, PersonMut, PersonArg, resolveSavePerson_) where
+module Graphql.Person (
+                  Persons
+                , Person
+                , resolvePerson
+                , PersonMut
+                , PersonArg
+                , resolveSavePerson_
+                -- user exports
+                , Users
+                , User
+                , UserMut
+                , UserArg
+                , resolveUser
+                ) where
 
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import Crypto.BCrypt
+import qualified Data.Text as T
+import qualified Data.ByteString.Char8 as B
 import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
+import Graphql.Role
+import Graphql.Privilege
 import Data.Time
 
 data Person = Person { personId :: Int
@@ -31,6 +49,7 @@ data Person = Person { personId :: Int
                      , documentId :: Text
                      , createdDate :: Text
                      , modifiedDate :: Maybe Text
+                     , account :: DummyArg -> Res () Handler (Maybe User)
                      , address :: DummyArg -> Res () Handler (Maybe Address)
                      , contactInfo :: DummyArg -> Res () Handler [ContactInfo]
                      } deriving (Generic, GQLType)
@@ -60,13 +79,21 @@ data Persons m = Persons { person :: GetEntityByIdArg -> m Person
 
 -- Query Resolvers
 resolvePerson :: Persons (Res () Handler)
-resolvePerson = Persons {  person = findByIdResolver, list = listResolver}
+resolvePerson = Persons {  person = getPersonByIdResolver, list = listPersonResolver}
 
-findByIdResolver :: GetEntityByIdArg -> Res e Handler Person
-findByIdResolver GetEntityByIdArg {..} = lift $ do
+getPersonByIdResolver :: GetEntityByIdArg -> Res e Handler Person
+getPersonByIdResolver GetEntityByIdArg {..} = lift $ do
                                       let personEntityId = (toSqlKey $ fromIntegral $ entityId)::Person_Id
                                       person <- runDB $ getJustEntity personEntityId
                                       return $ toPersonQL person
+
+getPersonUserByIdResolver :: Person_Id -> DummyArg -> Res e Handler (Maybe User)
+getPersonUserByIdResolver  personId _ = lift $ do
+                                      userMaybe <- runDB $ selectFirst [User_PersonId ==. personId] []
+                                      let user = case userMaybe of
+                                                  Nothing -> Nothing
+                                                  Just a -> Just $ toUserQL a
+                                      return user
 
 resolveAddress :: Person_Id -> DummyArg -> Res e Handler (Maybe Address)
 resolveAddress personId arg = lift $ do
@@ -81,8 +108,8 @@ resolveContactInfo personId arg = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
-listResolver :: ListArgs -> Res e Handler [Person]
-listResolver ListArgs{..} = lift $ do
+listPersonResolver :: ListArgs -> Res e Handler [Person]
+listPersonResolver ListArgs{..} = lift $ do
                                 persons <- runDB $ selectList [] [Asc Person_Id, LimitTo size, OffsetBy $ (page - 1) * size]
                                 return $ P.map (\p -> toPersonQL p) persons
                          where
@@ -98,6 +125,7 @@ toPersonQL (Entity personId person) = Person { personId = fromIntegral $ fromSql
                                              , documentId = person_DocumentId
                                              , createdDate = fromString $ show person_CreatedDate
                                              , modifiedDate = md
+                                             , account = getPersonUserByIdResolver personId
                                              , address = resolveAddress personId
                                              , contactInfo = resolveContactInfo personId
                                              }
@@ -175,6 +203,7 @@ data PersonMut = PersonMut { personId :: Int
                            , modifiedDate :: Maybe Text
                            , address :: AddressArg -> MutRes () Handler Address
                            , contactInfo :: ContactInfoArgWrapper -> MutRes () Handler [ContactInfo]
+                           , account :: UserArg -> MutRes () Handler UserMut
                            } deriving (Generic, GQLType)
 
 resolveSavePerson_ :: PersonArg -> MutRes e Handler PersonMut
@@ -194,6 +223,7 @@ resolveSavePerson_ arg = lift $ do
                                                  , modifiedDate = md
                                                  , address = resolveSaveAddress personId
                                                  , contactInfo = resolveSaveContactInfo personId
+                                                 , account = resolveSaveUser personId
                                                  }
 
 resolveSaveAddress :: Person_Id -> AddressArg -> MutRes e Handler Address
@@ -331,3 +361,127 @@ mutation {
   }
 }
 -}
+
+data User = User { userId :: Int
+                 , username :: Text
+                 , email :: Text
+                 , password :: Text
+                 , active :: Bool
+                 , createdDate :: Text
+                 , modifiedDate :: Maybe Text
+                 , person :: DummyArg -> Res () Handler Person
+                 , privileges :: DummyArg -> Res () Handler [Privilege]
+                 , roles :: DummyArg -> Res () Handler [Role]
+                 } deriving (Generic, GQLType)
+
+data Users m = Users { user :: GetEntityByIdArg -> m User
+                     , list :: ListArgs -> m [User]
+                     } deriving (Generic, GQLType)
+
+-- Query Resolvers
+resolveUser :: Users (Res () Handler)
+resolveUser = Users {  user = getUserByIdResolver, list = listUserResolver}
+
+getUserByIdResolver :: GetEntityByIdArg -> Res e Handler User
+getUserByIdResolver GetEntityByIdArg {..} = lift $ do
+                                      let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
+                                      user <- runDB $ getJustEntity userEntityId
+                                      return $ toUserQL user
+
+getUserPersonByIdResolver :: Person_Id -> DummyArg -> Res e Handler Person
+getUserPersonByIdResolver personId _ = lift $ do
+                                      person <- runDB $ getJustEntity personId
+                                      return $ toPersonQL person
+
+listUserResolver :: ListArgs -> Res e Handler [User]
+listUserResolver ListArgs{..} = lift $ do
+                                users <- runDB $ selectList [] [Asc User_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+                                return $ P.map (\p -> toUserQL p) users
+                         where
+                          (page, size) = case pageable of
+                                          Just (Pageable x y) -> (x, y)
+                                          Nothing -> (1, 10)
+
+toUserQL :: Entity User_ -> User
+toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
+                                     , username = user_Username
+                                     , email = user_Email
+                                     , password = "********"
+                                     , active = user_Active
+                                     , createdDate = fromString $ show user_CreatedDate
+                                     , modifiedDate = md
+                                     , person = getUserPersonByIdResolver user_PersonId
+--                                      , privileges = privilegeResolver
+--                                      , roles = roleResolver
+                                     }
+                                 where
+                                  User_ {..} = user
+                                  md = case user_ModifiedDate of
+                                        Just d -> Just $ fromString $ show d
+                                        Nothing -> Nothing
+
+
+-- User Graphql Arguments
+data UserArg = UserArg { userId :: Int
+                       , username :: Text
+                       , email :: Text
+                       , password :: Text
+                       , active :: Bool
+                       } deriving (Generic)
+
+data UserMut = UserMut { userId :: Int
+                       , username :: Text
+                       , email :: Text
+                       , password :: Text
+                       , active :: Bool
+                       , createdDate :: Text
+                       , modifiedDate :: Maybe Text
+--                        , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
+--                        , roles :: EntityIdsArg -> MutRes () Handler [Role]
+                       } deriving (Generic, GQLType)
+
+resolveSaveUser :: Person_Id -> UserArg -> MutRes e Handler UserMut
+resolveSaveUser personId arg = lift $ do
+                                userId <- createOrUpdateUser personId arg
+                                user <- runDB $ getJustEntity userId
+                                let Entity _ User_ {..} = user
+                                let md = case user_ModifiedDate of
+                                          Just d -> Just $ fromString $ show d
+                                          Nothing -> Nothing
+                                return UserMut { userId = fromIntegral $ fromSqlKey userId
+                                               , username = user_Username
+                                               , email = user_Email
+                                               , password = "********"
+                                               , active = user_Active
+                                               , createdDate = fromString $ show user_CreatedDate
+                                               , modifiedDate = md
+--                                                , privileges = resolveSaveRoles userId
+--                                                , roles = resolveSaveRoles userId
+                                               }
+
+createOrUpdateUser :: Person_Id -> UserArg -> Handler User_Id
+createOrUpdateUser personId userArg = do
+                               let UserArg{..} = userArg
+                               now <- liftIO getCurrentTime
+                               userEntityId <- if userId > 0 then
+                                            do
+                                              let userKey = (toSqlKey $ fromIntegral userId)::User_Id
+                                              _ <- runDB $ update userKey [ User_Username =. username
+                                                                          , User_Email =. email
+                                                                          , User_Active =. active
+                                                                          , User_ModifiedDate =. Just now
+                                                                          ]
+                                              return userKey
+                                            else
+                                              do
+--                                                 let personId = (toSqlKey $ fromIntegral 0)::Person_Id
+                                                p <- liftIO $ hashPasswordUsingPolicy slowerBcryptHashingPolicy $ B.pack $ T.unpack password
+                                                let passwordEncrypted = case p of
+                                                                          Nothing -> ""
+                                                                          Just b -> T.pack $ B.unpack b
+                                                userKey <- runDB $ insert (fromUserQL personId userArg now Nothing passwordEncrypted)
+                                                return userKey
+                               return userEntityId
+
+fromUserQL :: Person_Id -> UserArg -> UTCTime -> Maybe UTCTime -> Text -> User_
+fromUserQL personId UserArg {..} cd md pass= User_ username email pass active personId cd md

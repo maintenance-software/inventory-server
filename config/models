@@ -9,6 +9,8 @@ User_ json sql=t_user
     password Text
     active Bool
     personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     UniqueUserUsername username
     UniqueUserEmail email
     deriving Typeable Show

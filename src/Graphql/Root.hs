@@ -35,6 +35,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , privileges :: Privileges (Res () Handler)
                          , roles :: Roles (Res () Handler)
                          , persons :: Persons (Res () Handler)
+                         , users :: Users (Res () Handler)
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
@@ -72,6 +73,7 @@ resolveQuery = QueryQL { deity = resolveDeity
                        , privileges = resolvePrivilege
                        , roles = resolveRole
                        , persons = resolvePerson
+                       , users = resolveUser
                        }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
