@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Role (Roles, Role, RoleArg, resolveRole, RoleMut, resolveSaveRole) where
+module Graphql.Role (Roles, Role, RoleArg, resolveRole, RoleMut, resolveSaveRole, toRoleQL) where
 
 import Import
 import GHC.Generics

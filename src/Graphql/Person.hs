@@ -22,8 +22,8 @@ module Graphql.Person (
                 -- user exports
                 , Users
                 , User
-                , UserMut
-                , UserArg
+--                 , UserMut
+--                 , UserArg
                 , resolveUser
                 ) where
 
@@ -402,6 +402,20 @@ listUserResolver ListArgs{..} = lift $ do
                                           Just (Pageable x y) -> (x, y)
                                           Nothing -> (1, 10)
 
+userPrivilegeResolver :: User_Id -> DummyArg -> Res e Handler [Privilege]
+userPrivilegeResolver userId _ = lift $ do
+                                      userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
+                                      let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) userPrivileges
+                                      privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
+                                      return $ P.map toPrivilegeQL privileges
+
+userRoleResolver :: User_Id -> DummyArg -> Res e Handler [Role]
+userRoleResolver userId _ = lift $ do
+                                      userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
+                                      let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
+                                      roles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
+                                      return $ P.map toRoleQL roles
+
 toUserQL :: Entity User_ -> User
 toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , username = user_Username
@@ -411,8 +425,8 @@ toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , createdDate = fromString $ show user_CreatedDate
                                      , modifiedDate = md
                                      , person = getUserPersonByIdResolver user_PersonId
---                                      , privileges = privilegeResolver
---                                      , roles = roleResolver
+                                     , privileges = userPrivilegeResolver userId
+                                     , roles = userRoleResolver userId
                                      }
                                  where
                                   User_ {..} = user
@@ -436,7 +450,7 @@ data UserMut = UserMut { userId :: Int
                        , active :: Bool
                        , createdDate :: Text
                        , modifiedDate :: Maybe Text
---                        , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
+                       , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
 --                        , roles :: EntityIdsArg -> MutRes () Handler [Role]
                        } deriving (Generic, GQLType)
 
@@ -455,9 +469,29 @@ resolveSaveUser personId arg = lift $ do
                                                , active = user_Active
                                                , createdDate = fromString $ show user_CreatedDate
                                                , modifiedDate = md
---                                                , privileges = resolveSaveRoles userId
---                                                , roles = resolveSaveRoles userId
+                                               , privileges = resolveSaveUserPrivilege userId
+--                                                , roles = resolveSaveUserRole userId
                                                }
+
+resolveSaveUserRole :: User_Id -> EntityIdsArg -> MutRes e Handler [Role]
+resolveSaveUserRole userId EntityIdsArg {..} = lift $ do
+                                          let entityRoleIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Role_Id) entityIds
+                                          () <- addUserRole userId entityRoleIds
+                                          userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
+                                          let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
+                                          roles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
+                                          return $ P.map toRoleQL roles
+
+
+resolveSaveUserPrivilege :: User_Id -> EntityIdsArg -> MutRes e Handler [Privilege]
+resolveSaveUserPrivilege userId EntityIdsArg {..} = lift $ do
+                                          let entityPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) entityIds
+                                          () <- createOrUpdateUserPrivilege userId entityPrivilegeIds
+                                          userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
+                                          let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) userPrivileges
+                                          privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
+                                          return $ P.map toPrivilegeQL privileges
+
 
 createOrUpdateUser :: Person_Id -> UserArg -> Handler User_Id
 createOrUpdateUser personId userArg = do
@@ -474,7 +508,6 @@ createOrUpdateUser personId userArg = do
                                               return userKey
                                             else
                                               do
---                                                 let personId = (toSqlKey $ fromIntegral 0)::Person_Id
                                                 p <- liftIO $ hashPasswordUsingPolicy slowerBcryptHashingPolicy $ B.pack $ T.unpack password
                                                 let passwordEncrypted = case p of
                                                                           Nothing -> ""
@@ -482,6 +515,26 @@ createOrUpdateUser personId userArg = do
                                                 userKey <- runDB $ insert (fromUserQL personId userArg now Nothing passwordEncrypted)
                                                 return userKey
                                return userEntityId
+
+addUserRole :: User_Id -> [Role_Id] -> Handler ()
+addUserRole userId requestRoleIds = do
+                                     entityUserRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
+                                     let existingRoleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) entityUserRoles
+                                     let removableIds = S.toList $ S.difference (S.fromList existingRoleIds) (S.fromList requestRoleIds)
+                                     let newIds = S.toList $ S.difference (S.fromList requestRoleIds) (S.fromList existingRoleIds)
+                                     _ <- runDB $ deleteWhere  ([UserRole_RoleId <-. removableIds] :: [Filter UserRole_])
+                                     _ <- runDB $ insertMany $ P.map (\roleId -> (UserRole_ userId roleId)) newIds
+                                     return ()
+
+createOrUpdateUserPrivilege :: User_Id -> [Privilege_Id] -> Handler ()
+createOrUpdateUserPrivilege userId entityPrivilegeIds = do
+                            entityUserPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
+                            let existingPrivilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) entityUserPrivileges
+                            let removableIds = S.toList $ S.difference (S.fromList existingPrivilegeIds) (S.fromList entityPrivilegeIds)
+                            let newIds = S.toList $ S.difference (S.fromList entityPrivilegeIds) (S.fromList existingPrivilegeIds)
+                            _ <- runDB $ deleteWhere  ([UserPrivilege_PrivilegeId <-. removableIds] :: [Filter UserPrivilege_])
+                            _ <- runDB $ insertMany $ P.map (\privilegeId -> (UserPrivilege_ userId privilegeId)) newIds
+                            return ()
 
 fromUserQL :: Person_Id -> UserArg -> UTCTime -> Maybe UTCTime -> Text -> User_
 fromUserQL personId UserArg {..} cd md pass= User_ username email pass active personId cd md
