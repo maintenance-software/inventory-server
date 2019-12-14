@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Role (Roles, Role, RoleArg, resolveRole, RoleMut, resolveSaveRole, toRoleQL) where
+module Graphql.Role (Roles, Role, RoleArg, resolveRole, RoleMut, resolveSaveRole, toRoleQL, toRoleMut) where
 
 import Import
 import GHC.Generics
@@ -103,19 +103,7 @@ resolveSaveRole :: RoleArg -> MutRes e Handler RoleMut
 resolveSaveRole arg = lift $ do
                               roleId <- createOrUpdateRole arg
                               role <- runDB $ getJustEntity roleId
-                              let Entity _ Role_ {..} = role
-                              let md = case role_ModifiedDate of
-                                        Just d -> Just $ fromString $ show d
-                                        Nothing -> Nothing
-                              return RoleMut { roleId = fromIntegral $ fromSqlKey roleId
-                                             , key = role_Key
-                                             , name = role_Name
-                                             , description = role_Description
-                                             , active = role_Active
-                                             , createdDate = fromString $ show role_CreatedDate
-                                             , modifiedDate = md
-                                             , privileges = resolveSaveRolePrivileges roleId
-                                             }
+                              return $ toRoleMut role
 
 resolveSaveRolePrivileges :: Role_Id -> EntityIdsArg -> MutRes e Handler [Privilege]
 resolveSaveRolePrivileges roleId EntityIdsArg {..} = lift $ do
@@ -164,6 +152,21 @@ fromRoleQL (RoleArg {..}) cd md = Role_ { role_Key = key
                                         , role_ModifiedDate = md
                                         }
 
+toRoleMut :: Entity Role_ -> RoleMut
+toRoleMut (Entity roleId role) = RoleMut { roleId = fromIntegral $ fromSqlKey roleId
+                                         , key = role_Key
+                                         , name = role_Name
+                                         , description = role_Description
+                                         , active = role_Active
+                                         , createdDate = fromString $ show role_CreatedDate
+                                         , modifiedDate = md
+                                         , privileges = resolveSaveRolePrivileges roleId
+                                         }
+                            where
+                              Role_ {..} = role
+                              md = case role_ModifiedDate of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
 {-
 query {
   roles {
