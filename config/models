@@ -2,12 +2,14 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 
-User_ json sql=t_user
+User_ sql=t_user
     Id sql=user_id
     username Text
     email Text
     password Text
-    active Bool
+    status EntityStatus
+    language Locale
+    expiration Bool
     personId Person_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe

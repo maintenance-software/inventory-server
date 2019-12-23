@@ -41,6 +41,7 @@ import Graphql.Utils
 import Graphql.Role
 import Graphql.Privilege
 import Data.Time
+import Enums
 
 data Person = Person { personId :: Int
                      , firstName :: Text
@@ -366,7 +367,9 @@ data User = User { userId :: Int
                  , username :: Text
                  , email :: Text
                  , password :: Text
-                 , active :: Bool
+                 , status :: EntityStatus
+                 , language :: Text
+                 , expiration :: Bool
                  , createdDate :: Text
                  , modifiedDate :: Maybe Text
                  , person :: DummyArg -> Res () Handler Person
@@ -421,7 +424,9 @@ toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , username = user_Username
                                      , email = user_Email
                                      , password = "********"
-                                     , active = user_Active
+                                     , status = user_Status
+                                     , language = T.pack $ show user_Language
+                                     , expiration = user_Expiration
                                      , createdDate = fromString $ show user_CreatedDate
                                      , modifiedDate = md
                                      , person = getUserPersonByIdResolver user_PersonId
@@ -440,14 +445,18 @@ data UserArg = UserArg { userId :: Int
                        , username :: Text
                        , email :: Text
                        , password :: Text
-                       , active :: Bool
+                       , status :: EntityStatus
+                       , language :: Text
+                       , expiration :: Bool
                        } deriving (Generic)
 
 data UserMut = UserMut { userId :: Int
                        , username :: Text
                        , email :: Text
                        , password :: Text
-                       , active :: Bool
+                       , status :: EntityStatus
+                       , language :: Text
+                       , expiration :: Bool
                        , createdDate :: Text
                        , modifiedDate :: Maybe Text
                        , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
@@ -466,7 +475,9 @@ resolveSaveUser personId arg = lift $ do
                                                , username = user_Username
                                                , email = user_Email
                                                , password = "********"
-                                               , active = user_Active
+                                               , status = user_Status
+                                               , language = T.pack $ show user_Language
+                                               , expiration = user_Expiration
                                                , createdDate = fromString $ show user_CreatedDate
                                                , modifiedDate = md
                                                , privileges = resolveSaveUserPrivilege userId
@@ -502,7 +513,9 @@ createOrUpdateUser personId userArg = do
                                               let userKey = (toSqlKey $ fromIntegral userId)::User_Id
                                               _ <- runDB $ update userKey [ User_Username =. username
                                                                           , User_Email =. email
-                                                                          , User_Active =. active
+                                                                          , User_Status =. status
+                                                                          , User_Language =. readLocale language
+                                                                          , User_Expiration =. expiration
                                                                           , User_ModifiedDate =. Just now
                                                                           ]
                                               return userKey
@@ -537,4 +550,14 @@ createOrUpdateUserPrivilege userId entityPrivilegeIds = do
                             return ()
 
 fromUserQL :: Person_Id -> UserArg -> UTCTime -> Maybe UTCTime -> Text -> User_
-fromUserQL personId UserArg {..} cd md pass= User_ username email pass active personId cd md
+fromUserQL personId UserArg {..} cd md pass= User_ { user_Username = username
+                                                   , user_Email =  email
+                                                   , user_Password = pass
+                                                   , user_Status = status
+                                                   , user_Language = readLocale language
+                                                   , user_Expiration = expiration
+                                                   , user_PersonId = personId
+                                                   , user_CreatedDate = cd
+                                                   , user_ModifiedDate = md
+                                                   }
+

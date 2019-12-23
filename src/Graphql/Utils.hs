@@ -18,6 +18,7 @@ import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..))
 import Data.Time
+import Enums
 
 data Pageable = Pageable { page :: Int, size :: Int } deriving (Generic)
 
@@ -32,6 +33,13 @@ data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
 data EntityIdsArg = EntityIdsArg { entityIds :: [Int] } deriving (Generic)
 
 data DummyArg = DummyArg {} deriving (Generic)
+
+
+readLocale :: Text -> Locale
+readLocale "en_US" = EN_US
+readLocale "es_US" = ES_US
+readLocale "es_BO" = ES_BO
+
 
 localDay :: IO Day
 localDay = fmap utctDay getCurrentTime
