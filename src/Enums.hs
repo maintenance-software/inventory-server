@@ -1,23 +1,25 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DerivingVia       #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DerivingVia        #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module Enums where
 
+import Data.Text
 import Database.Persist.TH
 import Prelude
-import           GHC.Generics
-import Data.Morpheus.Kind (ENUM)
-import Data.Morpheus.Types (GQLType(..))
+import GHC.Generics
+-- import Data.Morpheus.Kind (ENUM)
+-- import Data.Morpheus.Types (GQLType(..))
 
 
-data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED deriving (Show, Read, Eq, Generic)
+data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | UNKNOWN  deriving (Show, Read, Eq, Generic)
 derivePersistField "EntityStatus"
 
-instance GQLType EntityStatus where
-  type KIND EntityStatus = ENUM
+-- instance GQLType EntityStatus where
+--   type KIND EntityStatus = ENUM
 
 data Locale = EN_US | ES_US | ES_BO deriving (Eq, Generic)
 
@@ -31,7 +33,19 @@ instance Read Locale where
   readsPrec _ "es_US" = [(ES_US, "es_US")]
   readsPrec _ "es_BO" = [(ES_BO, "es_BO")]
 
-instance GQLType Locale where
-  type KIND Locale = ENUM
+-- instance GQLType Locale where
+--   type KIND Locale = ENUM
 
 derivePersistField "Locale"
+
+readLocale :: Text -> Locale
+readLocale "en_US" = EN_US
+readLocale "es_US" = ES_US
+readLocale "es_BO" = ES_BO
+
+readEntityStatus :: Text -> EntityStatus
+readEntityStatus "ACTIVE" = ACTIVE
+readEntityStatus "INACTIVE" = INACTIVE
+readEntityStatus "EXPIRED" = EXPIRED
+readEntityStatus "DELETED" = DELETED
+readEntityStatus    _      = UNKNOWN

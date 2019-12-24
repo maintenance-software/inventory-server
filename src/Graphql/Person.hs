@@ -367,7 +367,7 @@ data User = User { userId :: Int
                  , username :: Text
                  , email :: Text
                  , password :: Text
-                 , status :: EntityStatus
+                 , status :: Text
                  , language :: Text
                  , expiration :: Bool
                  , createdDate :: Text
@@ -424,7 +424,7 @@ toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , username = user_Username
                                      , email = user_Email
                                      , password = "********"
-                                     , status = user_Status
+                                     , status = T.pack $ show user_Status
                                      , language = T.pack $ show user_Language
                                      , expiration = user_Expiration
                                      , createdDate = fromString $ show user_CreatedDate
@@ -445,7 +445,7 @@ data UserArg = UserArg { userId :: Int
                        , username :: Text
                        , email :: Text
                        , password :: Text
-                       , status :: EntityStatus
+                       , status :: Text
                        , language :: Text
                        , expiration :: Bool
                        } deriving (Generic)
@@ -454,7 +454,7 @@ data UserMut = UserMut { userId :: Int
                        , username :: Text
                        , email :: Text
                        , password :: Text
-                       , status :: EntityStatus
+                       , status :: Text
                        , language :: Text
                        , expiration :: Bool
                        , createdDate :: Text
@@ -475,7 +475,7 @@ resolveSaveUser personId arg = lift $ do
                                                , username = user_Username
                                                , email = user_Email
                                                , password = "********"
-                                               , status = user_Status
+                                               , status = T.pack $ show user_Status
                                                , language = T.pack $ show user_Language
                                                , expiration = user_Expiration
                                                , createdDate = fromString $ show user_CreatedDate
@@ -513,7 +513,7 @@ createOrUpdateUser personId userArg = do
                                               let userKey = (toSqlKey $ fromIntegral userId)::User_Id
                                               _ <- runDB $ update userKey [ User_Username =. username
                                                                           , User_Email =. email
-                                                                          , User_Status =. status
+                                                                          , User_Status =. readEntityStatus status
                                                                           , User_Language =. readLocale language
                                                                           , User_Expiration =. expiration
                                                                           , User_ModifiedDate =. Just now
@@ -553,7 +553,7 @@ fromUserQL :: Person_Id -> UserArg -> UTCTime -> Maybe UTCTime -> Text -> User_
 fromUserQL personId UserArg {..} cd md pass= User_ { user_Username = username
                                                    , user_Email =  email
                                                    , user_Password = pass
-                                                   , user_Status = status
+                                                   , user_Status = readEntityStatus status
                                                    , user_Language = readLocale language
                                                    , user_Expiration = expiration
                                                    , user_PersonId = personId
