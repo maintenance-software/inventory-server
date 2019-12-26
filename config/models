@@ -98,13 +98,18 @@ Item_ json sql=t_item
     defaultPrice Double
     description Text
     code Text
+    images [Text]
     categoryId Category_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 Category_ json sql=t_category
     Id sql=category_id
     name Text
     description Text
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 InventoryItem_ json sql=t_inventory_item

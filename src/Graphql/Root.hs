@@ -29,6 +29,8 @@ import           Import
 import           Graphql.Privilege
 import           Graphql.Role
 import           Graphql.Person
+import           Graphql.Category
+import           Graphql.Utils (ListArgs)
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
@@ -36,11 +38,13 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , roles :: Roles (Res () Handler)
                          , persons :: Persons (Res () Handler)
                          , users :: Users (Res () Handler)
+                         , categories :: ListArgs -> m [Category]
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
                            , saveRole :: RoleArg -> m RoleMut
                            , savePerson :: PersonArg -> m PersonMut
+                           , saveCategory :: CategoryArg -> m Category
                            } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
@@ -50,6 +54,7 @@ resolveMutation::Mutation (MutRes () Handler)
 resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
                            , savePerson = resolveSavePerson_
+                           , saveCategory = saveCategoryResolver
                            }
 
 
@@ -74,6 +79,7 @@ resolveQuery = QueryQL { deity = resolveDeity
                        , roles = resolveRole
                        , persons = resolvePerson
                        , users = resolveUser
+                       , categories = listCategoryResolver
                        }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
