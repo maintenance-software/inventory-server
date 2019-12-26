@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Category (Category, CategoryArg, listCategoryResolver, saveCategoryResolver, toCategoryQL) where
+module Graphql.Category (Category, CategoryArg, listCategoryResolver, saveCategoryResolver, toCategoryQL, dbFetchCategoryById) where
 
 import Import
 import GHC.Generics
