@@ -125,7 +125,7 @@ createOrUpdateItem item = do
                                                                      , Item_Description =. description
                                                                      , Item_Code =. code
                                                                      , Item_Images =. images
---                                                                      , Item_CategoryId =. (toSqlKey $ fromIntegral $ categoryId)::Category_Id
+                                                                     , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
                                                                      , Item_ModifiedDate =. Just now
                                                                      ]
                                          return itemKey
