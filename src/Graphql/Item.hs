@@ -28,7 +28,7 @@ import Graphql.Category
 data Item = Item { itemId :: Int
                  , name :: Text
                  , unit :: Text
-                 , defaultPrice :: Double
+                 , defaultPrice :: Float
                  , description :: Text
                  , code :: Text
                  , images :: [Text]
@@ -40,16 +40,6 @@ data Item = Item { itemId :: Int
 data Items m = Items { item :: GetEntityByIdArg -> m Item
                      , list :: ListArgs -> m [Item]
                      } deriving (Generic, GQLType)
-
-data ItemArg = ItemArg { itemId :: Int
-                       , name :: Text
-                       , unit :: Text
-                       , defaultPrice :: Double
-                       , description :: Text
-                       , code :: Text
-                       , images :: [Text]
-                       , categoryId :: Int
-                       } deriving (Generic, GQLType)
 
 -- Query Resolvers
 findItemByIdResolver :: GetEntityByIdArg -> Res e Handler Item
@@ -70,7 +60,7 @@ listItemResolver ListArgs {..} = lift $ do
 itemResolver :: Items (Res () Handler)
 itemResolver = Items {  item = findItemByIdResolver, list = listItemResolver }
 
-categoryResolver :: Category_Id -> DummyArg -> Res e Handler Category
+-- categoryResolver :: Category_Id -> DummyArg -> Res e Handler Category
 categoryResolver categoryId arg = lift $ do
                                       category <- dbFetchCategoryById categoryId
                                       return category
@@ -79,7 +69,7 @@ toItemQL :: Entity Item_ -> Item
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , name = item_Name
                                      , unit = item_Unit
-                                     , defaultPrice = item_DefaultPrice
+                                     , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
                                      , code = item_Code
                                      , images = item_Images
@@ -89,7 +79,6 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      }
                             where
                               Item_ {..} = item
---                               categoryKey = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
                               m = case item_ModifiedDate of
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing
@@ -97,13 +86,23 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
 data ItemMut = ItemMut { itemId :: Int
                        , name :: Text
                        , unit :: Text
-                       , defaultPrice :: Double
+                       , defaultPrice :: Float
                        , description :: Text
                        , code :: Text
                        , images :: [Text]
-                       , category :: DummyArg -> Res () Handler Category
+                       , category :: DummyArg -> MutRes () Handler Category
                        , createdDate :: Text
                        , modifiedDate :: Maybe Text
+                       } deriving (Generic, GQLType)
+
+data ItemArg = ItemArg { itemId :: Int
+                       , name :: Text
+                       , unit :: Text
+                       , defaultPrice :: Float
+                       , description :: Text
+                       , code :: Text
+                       , images :: [Text]
+                       , categoryId :: Int
                        } deriving (Generic, GQLType)
 
 -- Mutation Resolvers
@@ -113,24 +112,16 @@ saveItemResolver arg = lift $ do
                               item <- runDB $ getJustEntity itemId
                               return $ toItemMut item
 
--- resolveSaveRolePrivileges :: Item_Id -> EntityIdsArg -> MutRes e Handler [Category]
--- resolveSaveRolePrivileges itemId EntityIdsArg {..} = lift $ do
---                                           () <- createOrUpdateRolePrivilege itemId entityIds
---                                           rolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. itemId] :: [Filter RolePrivilege_]) []
---                                           let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) rolePrivileges
---                                           privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
---                                           return $ P.map toPrivilegeQL privileges
-
 createOrUpdateItem :: ItemArg -> Handler Item_Id
 createOrUpdateItem item = do
                             let ItemArg {..} = item
                             now <- liftIO getCurrentTime
-                            roleEntityId <- if itemId > 0 then
+                            itemEntityId <- if itemId > 0 then
                                         do
                                          let itemKey = (toSqlKey $ fromIntegral $ itemId)::Item_Id
                                          _ <- runDB $ update itemKey [ Item_Name =. name
                                                                      , Item_Unit =. unit
-                                                                     , Item_DefaultPrice =. defaultPrice
+                                                                     , Item_DefaultPrice =. realToFrac defaultPrice
                                                                      , Item_Description =. description
                                                                      , Item_Code =. code
                                                                      , Item_Images =. images
@@ -141,12 +132,12 @@ createOrUpdateItem item = do
                                       else do
                                             itemKey <- runDB $ insert $ fromItemQL item now Nothing
                                             return itemKey
-                            return roleEntityId
+                            return itemEntityId
 
 fromItemQL :: ItemArg -> UTCTime -> Maybe UTCTime -> Item_
 fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
                                         , item_Unit = unit
-                                        , item_DefaultPrice = defaultPrice
+                                        , item_DefaultPrice = realToFrac defaultPrice
                                         , item_Description = description
                                         , item_Code = code
                                         , item_Images = images
@@ -159,7 +150,7 @@ toItemMut :: Entity Item_ -> ItemMut
 toItemMut (Entity itemId item) = ItemMut { itemId = fromIntegral $ fromSqlKey itemId
                                          , name = item_Name
                                          , unit = item_Unit
-                                         , defaultPrice = item_DefaultPrice
+                                         , defaultPrice = realToFrac item_DefaultPrice
                                          , description = item_Description
                                          , code = item_Code
                                          , images = item_Images
@@ -169,7 +160,6 @@ toItemMut (Entity itemId item) = ItemMut { itemId = fromIntegral $ fromSqlKey it
                                          }
                             where
                               Item_ {..} = item
---                               categoryKey = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
                               md = case item_ModifiedDate of
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing

@@ -40,14 +40,14 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , persons :: Persons (Res () Handler)
                          , users :: Users (Res () Handler)
                          , categories :: ListArgs -> m [Category]
---                          , items :: Items (Res () Handler)
+                         , items :: Items (Res () Handler)
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
                            , saveRole :: RoleArg -> m RoleMut
                            , savePerson :: PersonArg -> m PersonMut
                            , saveCategory :: CategoryArg -> m Category
---                            , saveItem :: ItemArg -> m ItemMut
+                           , saveItem :: ItemArg -> m ItemMut
                            } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
@@ -58,7 +58,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
                            , savePerson = resolveSavePerson_
                            , saveCategory = saveCategoryResolver
---                            , saveItem =  saveItemResolver
+                           , saveItem =  saveItemResolver
                            }
 
 
@@ -84,7 +84,7 @@ resolveQuery = QueryQL { deity = resolveDeity
                        , persons = resolvePerson
                        , users = resolveUser
                        , categories = listCategoryResolver
---                        , items = itemResolver
+                       , items = itemResolver
                        }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
