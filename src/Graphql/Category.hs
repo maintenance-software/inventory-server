@@ -31,7 +31,7 @@ data Category = Category { categoryId :: Int
                          } deriving (Generic, GQLType)
 
 data Privileges m = Privileges { category :: GetEntityByIdArg -> m Category
-                               , list :: ListArgs -> m [Category]
+                               , list :: PageArg -> m [Category]
                                } deriving (Generic, GQLType)
 
 -- DB ACTIONS
@@ -40,16 +40,19 @@ dbFetchCategoryById categoryId = do
                                       category <- runDB $ getJustEntity categoryId
                                       return $ toCategoryQL category
 
-dbFetchCategories:: ListArgs -> Handler [Category]
-dbFetchCategories ListArgs {..} = do
-                                  categories <- runDB $ selectList [] [Asc Category_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+dbFetchCategories:: PageArg -> Handler [Category]
+dbFetchCategories PageArg {..} = do
+                                  categories <- runDB $ selectList [] [Asc Category_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                   return $ P.map toCategoryQL categories
                               where
-                                (page, size) = case pageable of
-                                                Just (Pageable x y) -> (x, y)
-                                                Nothing -> (1, 10)
+                                pageIndex' = case pageIndex of
+                                              Just  x  -> x
+                                              Nothing -> 0
+                                pageSize' = case pageSize of
+                                                Just y -> y
+                                                Nothing -> 10
 
-listCategoryResolver :: ListArgs -> Res e Handler [Category]
+listCategoryResolver :: PageArg -> Res e Handler [Category]
 listCategoryResolver arg = lift $ dbFetchCategories arg
 
 -- Mutation

@@ -31,7 +31,7 @@ import           Graphql.Role
 import           Graphql.Person
 import           Graphql.Category
 import           Graphql.Item
-import           Graphql.Utils (ListArgs)
+import           Graphql.Utils (PageArg)
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
@@ -39,7 +39,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , roles :: Roles (Res () Handler)
                          , persons :: Persons (Res () Handler)
                          , users :: Users (Res () Handler)
-                         , categories :: ListArgs -> m [Category]
+                         , categories :: PageArg -> m [Category]
                          , items :: Items (Res () Handler)
                          } deriving (Generic, GQLType)
 

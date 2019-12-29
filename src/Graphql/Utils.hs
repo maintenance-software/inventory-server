@@ -20,13 +20,33 @@ import Data.Morpheus.Types (GQLType(..))
 import Data.Time
 import Enums
 
-data Pageable = Pageable { page :: Int, size :: Int } deriving (Generic)
+-- data Pageable = Pageable { pageIndex :: Int, pageSize :: Int } deriving (Generic)
 
-instance GQLType Pageable where
-    type  KIND Pageable = INPUT_OBJECT
-    description = const $ Just $ pack "The item that holds the pageable information"
+data PageInfo = PageInfo { hasNext:: Bool
+                         , hasPreview:: Bool
+                         , pageSize :: Int
+                         , pageIndex :: Int
+                         } deriving (Generic, GQLType)
 
-data ListArgs = ListArgs { queryString :: Maybe Text, pageable :: Maybe Pageable } deriving (Generic)
+data Sort = Sort { isUnsorted :: Bool
+                 , isSorted :: Bool
+                 , direction :: Text
+                 } deriving (Generic, GQLType)
+
+data Page a = Page { totalCount :: Int
+                   , content :: [a]
+                   , pageInfo :: PageInfo
+                   , sort :: Sort
+                   } deriving (Generic, GQLType)
+
+-- instance GQLType Pageable where
+--     type  KIND Pageable = INPUT_OBJECT
+--     description = const $ Just $ pack "The item that holds the pageable information"
+
+data PageArg = PageArg { queryString :: Maybe Text
+                       , pageIndex :: Maybe Int
+                       , pageSize :: Maybe Int
+                       } deriving (Generic)
 
 data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
 

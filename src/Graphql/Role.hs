@@ -36,7 +36,7 @@ data Role = Role { roleId :: Int
                  } deriving (Generic, GQLType)
 
 data Roles m = Roles { role :: GetEntityByIdArg -> m Role
-                     , list :: ListArgs -> m [Role]
+                     , list :: PageArg -> m [Role]
                      } deriving (Generic, GQLType)
 
 data RoleArg = RoleArg { roleId :: Int
@@ -53,14 +53,17 @@ findByIdResolver GetEntityByIdArg {..} = lift $ do
                                               role <- runDB $ getJustEntity roleId
                                               return $ toRoleQL role
 
-listResolver :: ListArgs -> Res e Handler [Role]
-listResolver ListArgs {..} = lift $ do
-                        roles <- runDB $ selectList [] [Asc Role_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+listResolver :: PageArg -> Res e Handler [Role]
+listResolver PageArg {..} = lift $ do
+                        roles <- runDB $ selectList [] [Asc Role_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         return $ P.map (\r -> toRoleQL r) roles
                          where
-                          (page, size) = case pageable of
-                                          Just (Pageable x y) -> (x, y)
-                                          Nothing -> (1, 10)
+                          pageIndex' = case pageIndex of
+                                        Just  x  -> x
+                                        Nothing -> 0
+                          pageSize' = case pageSize of
+                                          Just y -> y
+                                          Nothing -> 10
 
 resolveRole :: Roles (Res () Handler)
 resolveRole = Roles {  role = findByIdResolver, list = listResolver }

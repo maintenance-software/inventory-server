@@ -33,7 +33,7 @@ data Privilege = Privilege { privilegeId :: Int
                            } deriving (Generic, GQLType)
 
 data Privileges m = Privileges { privilege :: GetEntityByIdArg -> m Privilege
-                               , list :: ListArgs -> m [Privilege]
+                               , list :: PageArg -> m [Privilege]
                                } deriving (Generic, GQLType)
 
 -- DB ACTIONS
@@ -42,14 +42,17 @@ dbFetchPrivilegeById privilegeId = do
                                       privilege <- runDB $ getJustEntity privilegeId
                                       return $ toPrivilegeQL privilege
 
-dbFetchPrivileges:: ListArgs -> Handler [Privilege]
-dbFetchPrivileges ListArgs {..} = do
-                                  privileges <- runDB $ selectList [] [Asc Privilege_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+dbFetchPrivileges:: PageArg -> Handler [Privilege]
+dbFetchPrivileges PageArg {..} = do
+                                  privileges <- runDB $ selectList [] [Asc Privilege_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                   return $ P.map toPrivilegeQL privileges
                               where
-                                (page, size) = case pageable of
-                                                Just (Pageable x y) -> (x, y)
-                                                Nothing -> (1, 10)
+                                pageIndex' = case pageIndex of
+                                              Just  x  -> x
+                                              Nothing -> 0
+                                pageSize' = case pageSize of
+                                                Just y -> y
+                                                Nothing -> 10
 
 -- Query Resolvers
 findByIdResolver :: GetEntityByIdArg -> Res e Handler Privilege
@@ -57,7 +60,7 @@ findByIdResolver GetEntityByIdArg {..} = lift $ dbFetchPrivilegeById privilegeId
                                               where
                                                 privilegeId = (toSqlKey $ fromIntegral $ entityId)::Privilege_Id
 
-listResolver :: ListArgs -> Res e Handler [Privilege]
+listResolver :: PageArg -> Res e Handler [Privilege]
 listResolver listArgs = lift $ dbFetchPrivileges listArgs
 
 resolvePrivilege :: Privileges (Res () Handler)

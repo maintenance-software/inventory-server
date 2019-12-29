@@ -38,7 +38,7 @@ data Item = Item { itemId :: Int
                  } deriving (Generic, GQLType)
 
 data Items m = Items { item :: GetEntityByIdArg -> m Item
-                     , list :: ListArgs -> m [Item]
+                     , page :: PageArg -> m (Page Item)
                      } deriving (Generic, GQLType)
 
 -- Query Resolvers
@@ -48,17 +48,29 @@ findItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item
 
-listItemResolver :: ListArgs -> Res e Handler [Item]
-listItemResolver ListArgs {..} = lift $ do
-                        items <- runDB $ selectList [] [Asc Item_Id, LimitTo size, OffsetBy $ (page - 1) * size]
-                        return $ P.map (\r -> toItemQL r) items
+listItemResolver :: PageArg -> Res e Handler (Page Item)
+listItemResolver PageArg {..} = lift $ do
+                        countItems <- runDB $ count ([] :: [Filter Item_])
+                        items <- runDB $ selectList [] [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+                        let itemsQL = P.map (\r -> toItemQL r) items
+                        return Page { totalCount = countItems
+                                    , content = itemsQL
+                                    , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                          , hasPreview = pageIndex' * pageSize' > 0
+                                                          , pageSize = pageSize'
+                                                          , pageIndex = pageIndex'
+                                    }
+                        }
                          where
-                          (page, size) = case pageable of
-                                          Just (Pageable x y) -> (x, y)
-                                          Nothing -> (1, 10)
+                          pageIndex' = case pageIndex of
+                                        Just  x  -> x
+                                        Nothing -> 0
+                          pageSize' = case pageSize of
+                                          Just y -> y
+                                          Nothing -> 10
 
 itemResolver :: Items (Res () Handler)
-itemResolver = Items {  item = findItemByIdResolver, list = listItemResolver }
+itemResolver = Items {  item = findItemByIdResolver, page = listItemResolver }
 
 -- categoryResolver :: Category_Id -> DummyArg -> Res e Handler Category
 categoryResolver categoryId arg = lift $ do

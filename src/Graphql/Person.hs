@@ -75,7 +75,7 @@ data Address = Address {  addressId :: Int
                        } deriving (Generic, GQLType)
 
 data Persons m = Persons { person :: GetEntityByIdArg -> m Person
-                         , list :: ListArgs -> m [Person]
+                         , list :: PageArg -> m [Person]
                          } deriving (Generic, GQLType)
 
 -- Query Resolvers
@@ -109,14 +109,17 @@ resolveContactInfo personId arg = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
-listPersonResolver :: ListArgs -> Res e Handler [Person]
-listPersonResolver ListArgs{..} = lift $ do
-                                persons <- runDB $ selectList [] [Asc Person_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+listPersonResolver :: PageArg -> Res e Handler [Person]
+listPersonResolver PageArg{..} = lift $ do
+                                persons <- runDB $ selectList [] [Asc Person_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                 return $ P.map (\p -> toPersonQL p) persons
                          where
-                          (page, size) = case pageable of
-                                          Just (Pageable x y) -> (x, y)
-                                          Nothing -> (1, 10)
+                          pageIndex' = case pageIndex of
+                                        Just  x  -> x
+                                        Nothing -> 0
+                          pageSize' = case pageSize of
+                                          Just y -> y
+                                          Nothing -> 10
 
 toPersonQL :: Entity Person_ -> Person
 toPersonQL (Entity personId person) = Person { personId = fromIntegral $ fromSqlKey personId
@@ -378,7 +381,7 @@ data User = User { userId :: Int
                  } deriving (Generic, GQLType)
 
 data Users m = Users { user :: GetEntityByIdArg -> m User
-                     , list :: ListArgs -> m [User]
+                     , list :: PageArg -> m [User]
                      } deriving (Generic, GQLType)
 
 -- Query Resolvers
@@ -396,14 +399,17 @@ getUserPersonByIdResolver personId _ = lift $ do
                                       person <- runDB $ getJustEntity personId
                                       return $ toPersonQL person
 
-listUserResolver :: ListArgs -> Res e Handler [User]
-listUserResolver ListArgs{..} = lift $ do
-                                users <- runDB $ selectList [] [Asc User_Id, LimitTo size, OffsetBy $ (page - 1) * size]
+listUserResolver :: PageArg -> Res e Handler [User]
+listUserResolver PageArg{..} = lift $ do
+                                users <- runDB $ selectList [] [Asc User_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                 return $ P.map (\p -> toUserQL p) users
                          where
-                          (page, size) = case pageable of
-                                          Just (Pageable x y) -> (x, y)
-                                          Nothing -> (1, 10)
+                          pageIndex' = case pageIndex of
+                                        Just  x  -> x
+                                        Nothing -> 0
+                          pageSize' = case pageSize of
+                                          Just y -> y
+                                          Nothing -> 10
 
 userPrivilegeResolver :: User_Id -> DummyArg -> Res e Handler [Privilege]
 userPrivilegeResolver userId _ = lift $ do
