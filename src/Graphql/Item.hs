@@ -178,21 +178,30 @@ toItemMut (Entity itemId item) = ItemMut { itemId = fromIntegral $ fromSqlKey it
 {-
 query {
   items {
-     item(entityId: 1) {
-      itemId
-      key
-      description
-      active
-      createdDate
-      modifiedDate
-    }
-    list(queryString: "") {
-      itemId
-      key
-      description
-      active
-      createdDate
-      modifiedDate
+    page(pageIndex:0, pageSize: 10) {
+      totalCount
+      pageInfo {
+        pageIndex
+        pageSize
+        hasNext
+        hasPreview
+      }
+      content {
+        itemId
+        name
+        unit
+        defaultPrice
+        description
+        code
+        images
+        createdDate
+        modifiedDate
+        category {
+          categoryId
+          name
+        }
+      }
+
     }
   }
 }
