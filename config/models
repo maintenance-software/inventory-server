@@ -97,7 +97,6 @@ Item_ json sql=t_item
     unit Text
     defaultPrice Double
     description Text
-    code Text
     images [Text]
     categoryId Category_Id
     createdDate UTCTime
@@ -112,22 +111,32 @@ Category_ json sql=t_category
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-InventoryItem_ json sql=t_inventory_item
+InventoryItem_ sql=t_inventory_item
     Id sql=inventory_item_id
     level Int
-    categoryId Category_Id
+    price Double
+    code Text
+    status EntityStatus
+    dateExpiry UTCTime
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-ItemSupplier_ json sql=t_item_supplier
-    Id sql=item_supplier_id
-    orderQuantity Int
-    standardPrice Double
-    suppliedDate UTCTime
-    deliveredLeadTime Int
-    status Text
+OrderItem_ sql=t_order_item
+    Id sql=order_item_id
+    quantity Int
+    price Double
+    discount Double
+    totalPrice
+    orderDate UTCTime
+    deliveredLeadTime UTCTime
+    status EntityStatus
+    notes Text
     inventoryItemId InventoryItem_Id
     supplierId Supplier_Id
     emitterId User_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 Supplier_ json sql=t_supplier
@@ -135,6 +144,8 @@ Supplier_ json sql=t_supplier
     name Text
     webpage Text
     contactId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 -- User

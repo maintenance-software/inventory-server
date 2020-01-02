@@ -30,7 +30,7 @@ data Item = Item { itemId :: Int
                  , unit :: Text
                  , defaultPrice :: Float
                  , description :: Text
-                 , code :: Text
+--                  , code :: Text
                  , images :: [Text]
                  , category :: DummyArg -> Res () Handler Category
                  , createdDate :: Text
@@ -83,7 +83,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , unit = item_Unit
                                      , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
-                                     , code = item_Code
+--                                      , code = item_Code
                                      , images = item_Images
                                      , category = categoryResolver item_CategoryId
                                      , createdDate = fromString $ show item_CreatedDate
@@ -100,7 +100,7 @@ data ItemMut = ItemMut { itemId :: Int
                        , unit :: Text
                        , defaultPrice :: Float
                        , description :: Text
-                       , code :: Text
+--                        , code :: Text
                        , images :: [Text]
                        , category :: DummyArg -> MutRes () Handler Category
                        , createdDate :: Text
@@ -112,7 +112,7 @@ data ItemArg = ItemArg { itemId :: Int
                        , unit :: Text
                        , defaultPrice :: Float
                        , description :: Text
-                       , code :: Text
+--                        , code :: Text
                        , images :: [Text]
                        , categoryId :: Int
                        } deriving (Generic, GQLType)
@@ -135,7 +135,7 @@ createOrUpdateItem item = do
                                                                      , Item_Unit =. unit
                                                                      , Item_DefaultPrice =. realToFrac defaultPrice
                                                                      , Item_Description =. description
-                                                                     , Item_Code =. code
+--                                                                      , Item_Code =. code
                                                                      , Item_Images =. images
                                                                      , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
                                                                      , Item_ModifiedDate =. Just now
@@ -151,7 +151,7 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
                                         , item_Unit = unit
                                         , item_DefaultPrice = realToFrac defaultPrice
                                         , item_Description = description
-                                        , item_Code = code
+--                                         , item_Code = code
                                         , item_Images = images
                                         , item_CategoryId = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
                                         , item_CreatedDate = cd
@@ -164,7 +164,7 @@ toItemMut (Entity itemId item) = ItemMut { itemId = fromIntegral $ fromSqlKey it
                                          , unit = item_Unit
                                          , defaultPrice = realToFrac item_DefaultPrice
                                          , description = item_Description
-                                         , code = item_Code
+--                                          , code = item_Code
                                          , images = item_Images
                                          , category = categoryResolver item_CategoryId
                                          , createdDate = fromString $ show item_CreatedDate
