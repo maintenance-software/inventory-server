@@ -118,6 +118,7 @@ InventoryItem_ sql=t_inventory_item
     code Text
     status EntityStatus
     dateExpiry UTCTime
+    itemId Item_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show

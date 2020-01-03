@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Item (Items, Item, ItemArg, itemResolver, ItemMut, saveItemResolver, toItemQL, toItemMut) where
+module Graphql.Item (Items, Item, ItemArg, itemResolver, saveItemResolver, toItemQL) where
 
 import Import
 import GHC.Generics
@@ -30,9 +30,8 @@ data Item = Item { itemId :: Int
                  , unit :: Text
                  , defaultPrice :: Float
                  , description :: Text
---                  , code :: Text
                  , images :: [Text]
-                 , category :: DummyArg -> Res () Handler Category
+--                  , category :: DummyArg -> MutRes () Handler Category
                  , createdDate :: Text
                  , modifiedDate :: Maybe Text
                  } deriving (Generic, GQLType)
@@ -40,6 +39,17 @@ data Item = Item { itemId :: Int
 data Items m = Items { item :: GetEntityByIdArg -> m Item
                      , page :: PageArg -> m (Page Item)
                      } deriving (Generic, GQLType)
+
+data ItemArg = ItemArg { itemId :: Int
+                       , name :: Text
+                       , unit :: Text
+                       , defaultPrice :: Float
+                       , description :: Text
+--                        , code :: Text
+                       , images :: [Text]
+                       , categoryId :: Int
+                       } deriving (Generic, GQLType)
+
 
 -- Query Resolvers
 findItemByIdResolver :: GetEntityByIdArg -> Res e Handler Item
@@ -83,9 +93,8 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , unit = item_Unit
                                      , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
---                                      , code = item_Code
                                      , images = item_Images
-                                     , category = categoryResolver item_CategoryId
+--                                     , category = categoryResolver item_CategoryId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
                                      }
@@ -94,7 +103,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                               m = case item_ModifiedDate of
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing
-
+{-
 data ItemMut = ItemMut { itemId :: Int
                        , name :: Text
                        , unit :: Text
@@ -106,23 +115,14 @@ data ItemMut = ItemMut { itemId :: Int
                        , createdDate :: Text
                        , modifiedDate :: Maybe Text
                        } deriving (Generic, GQLType)
-
-data ItemArg = ItemArg { itemId :: Int
-                       , name :: Text
-                       , unit :: Text
-                       , defaultPrice :: Float
-                       , description :: Text
---                        , code :: Text
-                       , images :: [Text]
-                       , categoryId :: Int
-                       } deriving (Generic, GQLType)
+-}
 
 -- Mutation Resolvers
-saveItemResolver :: ItemArg -> MutRes e Handler ItemMut
+saveItemResolver :: ItemArg -> MutRes e Handler Item
 saveItemResolver arg = lift $ do
                               itemId <- createOrUpdateItem arg
                               item <- runDB $ getJustEntity itemId
-                              return $ toItemMut item
+                              return $ toItemQL item
 
 createOrUpdateItem :: ItemArg -> Handler Item_Id
 createOrUpdateItem item = do
@@ -157,7 +157,7 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
                                         , item_CreatedDate = cd
                                         , item_ModifiedDate = md
                                         }
-
+{-
 toItemMut :: Entity Item_ -> ItemMut
 toItemMut (Entity itemId item) = ItemMut { itemId = fromIntegral $ fromSqlKey itemId
                                          , name = item_Name
@@ -175,6 +175,7 @@ toItemMut (Entity itemId item) = ItemMut { itemId = fromIntegral $ fromSqlKey it
                               md = case item_ModifiedDate of
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing
+-}
 {-
 query {
   items {
