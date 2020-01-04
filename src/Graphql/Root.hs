@@ -49,7 +49,7 @@ data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
                            , saveRole :: RoleArg -> m RoleMut
                            , savePerson :: PersonArg -> m PersonMut
                            , saveCategory :: CategoryArg -> m Category
-                           , saveItem :: ItemArg -> m ItemMut
+                           , saveItem :: ItemArg -> m (Item MutRes)
                            , saveInventoryItem :: InventoryItemArg -> m InventoryItem
                            } deriving (Generic, GQLType)
 
