@@ -36,8 +36,8 @@ import           Graphql.Utils (PageArg)
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
-                         , privileges :: Privileges (Res () Handler)
-                         , roles :: Roles (Res () Handler)
+                         , privileges :: () -> m Privileges
+                         , roles :: () -> m Roles
                          , persons :: Persons (Res () Handler)
                          , users :: Users (Res () Handler)
                          , categories :: PageArg -> m [Category]
@@ -45,8 +45,8 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , inventoryItems :: InventoryItems (Res () Handler)
                          } deriving (Generic, GQLType)
 
-data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
-                           , saveRole :: RoleArg -> m RoleMut
+data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
+                           , saveRole :: RoleArg -> m (Role MutRes)
                            , savePerson :: PersonArg -> m PersonMut
                            , saveCategory :: CategoryArg -> m Category
                            , saveItem :: ItemArg -> m (Item MutRes)

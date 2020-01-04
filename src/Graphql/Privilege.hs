@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Privilege (Privileges, Privilege, resolvePrivilege, resolveSavePrivilege, toPrivilegeQL) where
+module Graphql.Privilege (Privileges, Privilege, PrivilegeArg, resolvePrivilege, resolveSavePrivilege, toPrivilegeQL) where
 
 import Import
 import GHC.Generics
@@ -32,9 +32,16 @@ data Privilege = Privilege { privilegeId :: Int
                            , modifiedDate :: Maybe Text
                            } deriving (Generic, GQLType)
 
-data Privileges m = Privileges { privilege :: GetEntityByIdArg -> m Privilege
-                               , list :: PageArg -> m [Privilege]
-                               } deriving (Generic, GQLType)
+data PrivilegeArg = PrivilegeArg { privilegeId :: Int
+                                 , key :: Text
+                                 , name :: Text
+                                 , description :: Maybe Text
+                                 , active :: Bool
+                                 } deriving (Generic, GQLType)
+
+data Privileges = Privileges { privilege :: GetEntityByIdArg -> Res () Handler Privilege
+                             , list :: PageArg -> Res () Handler [Privilege]
+                             } deriving (Generic, GQLType)
 
 -- DB ACTIONS
 dbFetchPrivilegeById:: Privilege_Id -> Handler Privilege
@@ -63,16 +70,16 @@ findByIdResolver GetEntityByIdArg {..} = lift $ dbFetchPrivilegeById privilegeId
 listResolver :: PageArg -> Res e Handler [Privilege]
 listResolver listArgs = lift $ dbFetchPrivileges listArgs
 
-resolvePrivilege :: Privileges (Res () Handler)
-resolvePrivilege = Privileges {  privilege = findByIdResolver, list = listResolver }
+resolvePrivilege :: () -> Res e Handler Privileges
+resolvePrivilege _ = pure Privileges {  privilege = findByIdResolver, list = listResolver }
 
 -- Mutation Resolvers
-resolveSavePrivilege :: Privilege -> MutRes e Handler Privilege
+resolveSavePrivilege :: PrivilegeArg -> MutRes e Handler Privilege
 resolveSavePrivilege arg = lift $ createOrUpdatePrivilege arg
 
-createOrUpdatePrivilege :: Privilege -> Handler Privilege
+createOrUpdatePrivilege :: PrivilegeArg -> Handler Privilege
 createOrUpdatePrivilege privilege = do
-                let Privilege {..} = privilege
+                let PrivilegeArg {..} = privilege
                 now <- liftIO getCurrentTime
                 entityId <- if privilegeId > 0 then
                                 do
@@ -113,8 +120,8 @@ toPrivilegeQL (Entity privilegeId privilege) = Privilege { privilegeId = fromInt
                                                               Just d -> Just $ fromString $ show d
                                                               Nothing -> Nothing
 
-fromPrivilegeQL :: Privilege -> UTCTime -> Maybe UTCTime -> Privilege_
-fromPrivilegeQL (Privilege {..}) cd md = Privilege_ { privilege_Key = key
+fromPrivilegeQL :: PrivilegeArg -> UTCTime -> Maybe UTCTime -> Privilege_
+fromPrivilegeQL (PrivilegeArg {..}) cd md = Privilege_ { privilege_Key = key
                                                     , privilege_Name = name
                                                     , privilege_Description = description
                                                     , privilege_Active = active

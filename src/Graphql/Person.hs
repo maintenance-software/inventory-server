@@ -377,7 +377,7 @@ data User = User { userId :: Int
                  , modifiedDate :: Maybe Text
                  , person :: DummyArg -> Res () Handler Person
                  , privileges :: DummyArg -> Res () Handler [Privilege]
-                 , roles :: DummyArg -> Res () Handler [Role]
+                 , roles :: DummyArg -> Res () Handler [Role Res]
                  } deriving (Generic, GQLType)
 
 data Users m = Users { user :: GetEntityByIdArg -> m User
@@ -418,7 +418,7 @@ userPrivilegeResolver userId _ = lift $ do
                                       privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                       return $ P.map toPrivilegeQL privileges
 
-userRoleResolver :: User_Id -> DummyArg -> Res e Handler [Role]
+userRoleResolver :: User_Id -> DummyArg -> Res e Handler [Role Res]
 userRoleResolver userId _ = lift $ do
                                       userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                       let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
@@ -466,7 +466,7 @@ data UserMut = UserMut { userId :: Int
                        , createdDate :: Text
                        , modifiedDate :: Maybe Text
                        , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
-                       , roles :: EntityIdsArg -> MutRes () Handler [RoleMut]
+                       , roles :: EntityIdsArg -> MutRes () Handler [Role MutRes]
                        } deriving (Generic, GQLType)
 
 resolveSaveUser :: Person_Id -> UserArg -> MutRes e Handler UserMut
@@ -490,14 +490,14 @@ resolveSaveUser personId arg = lift $ do
                                                , roles = resolveSaveUserRole userId
                                                }
 
-resolveSaveUserRole :: User_Id -> EntityIdsArg -> MutRes e Handler [RoleMut]
+resolveSaveUserRole :: User_Id -> EntityIdsArg -> MutRes e Handler [Role MutRes]
 resolveSaveUserRole userId EntityIdsArg {..} = lift $ do
                                           let entityRoleIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Role_Id) entityIds
                                           () <- addUserRole userId entityRoleIds
                                           userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                           let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
                                           roles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
-                                          return $ P.map toRoleMut roles
+                                          return $ P.map toRoleQL roles
 
 
 resolveSaveUserPrivilege :: User_Id -> EntityIdsArg -> MutRes e Handler [Privilege]

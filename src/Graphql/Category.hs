@@ -30,7 +30,7 @@ data Category = Category { categoryId :: Int
                          , modifiedDate :: Maybe Text
                          } deriving (Generic, GQLType)
 
-data Privileges m = Privileges { category :: GetEntityByIdArg -> m Category
+data Categories m = Categories { category :: GetEntityByIdArg -> m Category
                                , list :: PageArg -> m [Category]
                                } deriving (Generic, GQLType)
 
