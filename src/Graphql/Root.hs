@@ -41,7 +41,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , persons :: Persons (Res () Handler)
                          , users :: Users (Res () Handler)
                          , categories :: PageArg -> m [Category]
-                         , items :: Items (Res () Handler)
+                         , items :: () -> m Items
                          , inventoryItems :: InventoryItems (Res () Handler)
                          } deriving (Generic, GQLType)
 
@@ -49,13 +49,24 @@ data Mutation m = Mutation { savePrivilege :: Privilege -> m Privilege
                            , saveRole :: RoleArg -> m RoleMut
                            , savePerson :: PersonArg -> m PersonMut
                            , saveCategory :: CategoryArg -> m Category
-                           , saveItem :: ItemArg -> m Item
+                           , saveItem :: ItemArg -> m ItemMut
                            , saveInventoryItem :: InventoryItemArg -> m InventoryItem
                            } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
-
+-- | The query resolver
+resolveQuery::QueryQL (Res () Handler)
+resolveQuery = QueryQL { deity = resolveDeity
+                       , privileges = resolvePrivilege
+                       , roles = resolveRole
+                       , persons = resolvePerson
+                       , users = resolveUser
+                       , categories = listCategoryResolver
+                       , items = itemResolver
+                       , inventoryItems = inventoryItemResolver
+                       }
+-- | The mutation resolver
 resolveMutation::Mutation (MutRes () Handler)
 resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
@@ -79,18 +90,6 @@ resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 
 testsResolver :: TestArg -> Res e Handler NoDeity
 testsResolver TestArg {yourFullName } = pure NoDeity {noFullName = "Test no full am", nopower = Just "no power"}
-
--- | The query resolver
-resolveQuery::QueryQL (Res () Handler)
-resolveQuery = QueryQL { deity = resolveDeity
-                       , privileges = resolvePrivilege
-                       , roles = resolveRole
-                       , persons = resolvePerson
-                       , users = resolveUser
-                       , categories = listCategoryResolver
-                       , items = itemResolver
-                       , inventoryItems = inventoryItemResolver
-                       }
 
 rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
 rootResolver = GQLRootResolver { queryResolver = resolveQuery
