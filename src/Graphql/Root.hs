@@ -39,7 +39,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , privileges :: () -> m Privileges
                          , roles :: () -> m Roles
                          , persons :: Persons (Res () Handler)
-                         , users :: Users (Res () Handler)
+                         , users :: () -> m Users
                          , categories :: PageArg -> m [Category]
                          , items :: () -> m Items
                          , inventoryItems :: InventoryItems (Res () Handler)

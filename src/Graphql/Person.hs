@@ -50,7 +50,7 @@ data Person = Person { personId :: Int
                      , documentId :: Text
                      , createdDate :: Text
                      , modifiedDate :: Maybe Text
-                     , account :: DummyArg -> Res () Handler (Maybe User)
+                     , account :: DummyArg -> Res () Handler (Maybe (User Res))
                      , address :: DummyArg -> Res () Handler (Maybe Address)
                      , contactInfo :: DummyArg -> Res () Handler [ContactInfo]
                      } deriving (Generic, GQLType)
@@ -88,7 +88,7 @@ getPersonByIdResolver GetEntityByIdArg {..} = lift $ do
                                       person <- runDB $ getJustEntity personEntityId
                                       return $ toPersonQL person
 
-getPersonUserByIdResolver :: Person_Id -> DummyArg -> Res e Handler (Maybe User)
+getPersonUserByIdResolver :: Person_Id -> DummyArg -> Res e Handler (Maybe (User Res))
 getPersonUserByIdResolver  personId _ = lift $ do
                                       userMaybe <- runDB $ selectFirst [User_PersonId ==. personId] []
                                       let user = case userMaybe of
@@ -207,7 +207,7 @@ data PersonMut = PersonMut { personId :: Int
                            , modifiedDate :: Maybe Text
                            , address :: AddressArg -> MutRes () Handler Address
                            , contactInfo :: ContactInfoArgWrapper -> MutRes () Handler [ContactInfo]
-                           , account :: UserArg -> MutRes () Handler UserMut
+                           , account :: UserArg -> MutRes () Handler (User MutRes)
                            } deriving (Generic, GQLType)
 
 resolveSavePerson_ :: PersonArg -> MutRes e Handler PersonMut
@@ -366,29 +366,32 @@ mutation {
 }
 -}
 
-data User = User { userId :: Int
-                 , username :: Text
-                 , email :: Text
-                 , password :: Text
-                 , status :: Text
-                 , language :: Text
-                 , expiration :: Bool
-                 , createdDate :: Text
-                 , modifiedDate :: Maybe Text
-                 , person :: DummyArg -> Res () Handler Person
-                 , privileges :: DummyArg -> Res () Handler [Privilege]
-                 , roles :: DummyArg -> Res () Handler [Role Res]
-                 } deriving (Generic, GQLType)
+data UserRoleArg = UserRoleArg {roleIds :: Maybe [Int]} deriving (Generic, GQLType)
+data UserPrivilegeArg = UserPrivilegeArg { privilegeIds :: Maybe [Int]} deriving (Generic, GQLType)
 
-data Users m = Users { user :: GetEntityByIdArg -> m User
-                     , list :: PageArg -> m [User]
-                     } deriving (Generic, GQLType)
+data User o = User { userId :: Int
+                   , username :: Text
+                   , email :: Text
+                   , password :: Text
+                   , status :: Text
+                   , language :: Text
+                   , expiration :: Bool
+                   , createdDate :: Text
+                   , modifiedDate :: Maybe Text
+--                    , person :: DummyArg -> o () Handler Person
+                   , privileges :: UserPrivilegeArg -> o () Handler [Privilege]
+                   , roles :: UserRoleArg -> o () Handler [Role o]
+                   } deriving (Generic, GQLType)
+
+data Users = Users { user :: GetEntityByIdArg -> Res () Handler (User Res)
+                   , list :: PageArg -> Res () Handler [User Res]
+                   } deriving (Generic, GQLType)
 
 -- Query Resolvers
-resolveUser :: Users (Res () Handler)
-resolveUser = Users {  user = getUserByIdResolver, list = listUserResolver}
+resolveUser :: () -> Res e Handler Users
+resolveUser _ = pure Users {  user = getUserByIdResolver, list = listUserResolver}
 
-getUserByIdResolver :: GetEntityByIdArg -> Res e Handler User
+getUserByIdResolver :: GetEntityByIdArg -> Res e Handler (User Res)
 getUserByIdResolver GetEntityByIdArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
                                       user <- runDB $ getJustEntity userEntityId
@@ -399,7 +402,7 @@ getUserPersonByIdResolver personId _ = lift $ do
                                       person <- runDB $ getJustEntity personId
                                       return $ toPersonQL person
 
-listUserResolver :: PageArg -> Res e Handler [User]
+listUserResolver :: PageArg -> Res e Handler [User Res]
 listUserResolver PageArg{..} = lift $ do
                                 users <- runDB $ selectList [] [Asc User_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                 return $ P.map (\p -> toUserQL p) users
@@ -411,21 +414,21 @@ listUserResolver PageArg{..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-userPrivilegeResolver :: User_Id -> DummyArg -> Res e Handler [Privilege]
+userPrivilegeResolver :: User_Id -> UserPrivilegeArg -> Res e Handler [Privilege]
 userPrivilegeResolver userId _ = lift $ do
                                       userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
                                       let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) userPrivileges
                                       privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                       return $ P.map toPrivilegeQL privileges
 
-userRoleResolver :: User_Id -> DummyArg -> Res e Handler [Role Res]
+userRoleResolver :: User_Id -> UserRoleArg -> Res e Handler [Role Res]
 userRoleResolver userId _ = lift $ do
                                       userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                       let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
                                       roles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
                                       return $ P.map toRoleQL roles
 
-toUserQL :: Entity User_ -> User
+-- toUserQL :: Entity User_ -> User Res
 toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , username = user_Username
                                      , email = user_Email
@@ -435,7 +438,7 @@ toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , expiration = user_Expiration
                                      , createdDate = fromString $ show user_CreatedDate
                                      , modifiedDate = md
-                                     , person = getUserPersonByIdResolver user_PersonId
+--                                      , person = getUserPersonByIdResolver user_PersonId
                                      , privileges = userPrivilegeResolver userId
                                      , roles = userRoleResolver userId
                                      }
@@ -455,7 +458,7 @@ data UserArg = UserArg { userId :: Int
                        , language :: Text
                        , expiration :: Bool
                        } deriving (Generic)
-
+{-
 data UserMut = UserMut { userId :: Int
                        , username :: Text
                        , email :: Text
@@ -468,8 +471,8 @@ data UserMut = UserMut { userId :: Int
                        , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
                        , roles :: EntityIdsArg -> MutRes () Handler [Role MutRes]
                        } deriving (Generic, GQLType)
-
-resolveSaveUser :: Person_Id -> UserArg -> MutRes e Handler UserMut
+-}
+resolveSaveUser :: Person_Id -> UserArg -> MutRes e Handler (User MutRes)
 resolveSaveUser personId arg = lift $ do
                                 userId <- createOrUpdateUser personId arg
                                 user <- runDB $ getJustEntity userId
@@ -477,7 +480,7 @@ resolveSaveUser personId arg = lift $ do
                                 let md = case user_ModifiedDate of
                                           Just d -> Just $ fromString $ show d
                                           Nothing -> Nothing
-                                return UserMut { userId = fromIntegral $ fromSqlKey userId
+                                return User { userId = fromIntegral $ fromSqlKey userId
                                                , username = user_Username
                                                , email = user_Email
                                                , password = "********"
@@ -490,8 +493,11 @@ resolveSaveUser personId arg = lift $ do
                                                , roles = resolveSaveUserRole userId
                                                }
 
-resolveSaveUserRole :: User_Id -> EntityIdsArg -> MutRes e Handler [Role MutRes]
-resolveSaveUserRole userId EntityIdsArg {..} = lift $ do
+resolveSaveUserRole :: User_Id -> UserRoleArg -> MutRes e Handler [Role MutRes]
+resolveSaveUserRole userId (UserRoleArg {roleIds}) = lift $ do
+                                          let entityIds = case roleIds of
+                                                            Just d -> d
+                                                            Nothing -> []
                                           let entityRoleIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Role_Id) entityIds
                                           () <- addUserRole userId entityRoleIds
                                           userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
@@ -500,8 +506,11 @@ resolveSaveUserRole userId EntityIdsArg {..} = lift $ do
                                           return $ P.map toRoleQL roles
 
 
-resolveSaveUserPrivilege :: User_Id -> EntityIdsArg -> MutRes e Handler [Privilege]
-resolveSaveUserPrivilege userId EntityIdsArg {..} = lift $ do
+resolveSaveUserPrivilege :: User_Id -> UserPrivilegeArg -> MutRes e Handler [Privilege]
+resolveSaveUserPrivilege userId UserPrivilegeArg {privilegeIds} = lift $ do
+                                          let entityIds = case privilegeIds of
+                                                            Just d -> d
+                                                            Nothing -> []
                                           let entityPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) entityIds
                                           () <- createOrUpdateUserPrivilege userId entityPrivilegeIds
                                           userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
