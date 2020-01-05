@@ -38,7 +38,7 @@ import           Graphql.Utils (PageArg)
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , privileges :: () -> m Privileges
                          , roles :: () -> m Roles
-                         , persons :: Persons (Res () Handler)
+                         , persons :: () -> m Persons
                          , users :: () -> m Users
                          , categories :: PageArg -> m [Category]
                          , items :: () -> m Items
@@ -47,7 +47,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
 
 data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveRole :: RoleArg -> m (Role MutRes)
-                           , savePerson :: PersonArg -> m PersonMut
+                           , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
                            , saveItem :: ItemArg -> m (Item MutRes)
                            , saveInventoryItem :: InventoryItemArg -> m InventoryItem
@@ -70,7 +70,7 @@ resolveQuery = QueryQL { deity = resolveDeity
 resolveMutation::Mutation (MutRes () Handler)
 resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
-                           , savePerson = resolveSavePerson_
+                           , savePerson = resolveSavePerson
                            , saveCategory = saveCategoryResolver
                            , saveItem =  saveItemResolver
                            , saveInventoryItem =  saveInventoryItemResolver
