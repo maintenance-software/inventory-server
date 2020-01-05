@@ -1,3 +1,5 @@
+.project
+/target
 *.iml
 .idea/
 dist*
@@ -22,3 +24,5 @@ cabal.sandbox.config
 *~
 \#*
 inventory-server.cabal
+webapps/dist/**
+ui-home/

@@ -1,18 +1,167 @@
 -- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
-User
-    ident Text
-    password Text Maybe
-    UniqueUser ident
-    deriving Typeable
-Email
+
+User_ sql=t_user
+    Id sql=user_id
+    username Text
     email Text
-    userId UserId Maybe
-    verkey Text Maybe
-    UniqueEmail email
+    password Text
+    status EntityStatus
+    language Locale
+    expiration Bool
+    personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    UniqueUserUsername username
+    UniqueUserEmail email
+    deriving Typeable Show
+
+Role_ json sql=t_role
+    Id sql=role_id
+    key Text
+    name Text
+    description Text Maybe
+    active Bool
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Show
+
+UserRole_ json sql=t_user_role
+    Id sql=user_role_id
+    userId User_Id
+    roleId Role_Id
+    deriving Show
+
+Privilege_ json sql=t_privilege
+    Id sql=privilege_id
+    key Text
+    name Text
+    description Text Maybe
+    active Bool
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Show
+
+RolePrivilege_ json sql=t_role_privilege
+    Id sql=role_privilege_id
+    roleId Role_Id
+    privilegeId Privilege_Id
+    deriving Show
+
+
+UserPrivilege_ json sql=t_user_privilege
+    Id sql=user_privilege_id
+    userId User_Id
+    privilegeId Privilege_Id
+    deriving Show
+
+Person_ json sql=t_person
+    Id sql=person_id
+    firstName Text
+    lastName Text
+    documentType Text
+    documentId Text
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    UniquePersonDocumentId documentId
+    deriving Typeable Show
+
+Address_ json sql=t_address
+    Id sql=address_id
+    street1 Text
+    street2 Text
+    street3 Text
+    zip Text
+    city Text
+    state Text
+    country Text
+    personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    UniqueAddressPersonId personId
+    deriving Typeable Show
+
+ContactInfo_ json sql=t_contact_info
+    Id sql=contact_info_id
+    contactType Text
+    contact Text
+    personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Item_ json sql=t_item
+    Id sql=item_id
+    name Text
+    unit Text
+    defaultPrice Double
+    description Text
+    images [Text]
+    categoryId Category_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Category_ json sql=t_category
+    Id sql=category_id
+    name Text
+    description Text
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+InventoryItem_ sql=t_inventory_item
+    Id sql=inventory_item_id
+    level Int
+    price Double
+    code Text
+    status EntityStatus
+    dateExpiry UTCTime
+    itemId Item_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+OrderItem_ sql=t_order_item
+    Id sql=order_item_id
+    quantity Int
+    price Double
+    discount Double
+    totalPrice
+    orderDate UTCTime
+    deliveredLeadTime UTCTime
+    status EntityStatus
+    notes Text
+    inventoryItemId InventoryItem_Id
+    supplierId Supplier_Id
+    emitterId User_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Supplier_ json sql=t_supplier
+    Id sql=supplier_id
+    name Text
+    webpage Text
+    contactId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+-- User
+--     ident Text
+--     password Text Maybe
+--     UniqueUser ident
+--     deriving Typeable
+-- Email
+--     email Text
+--     userId UserId Maybe
+--     verkey Text Maybe
+--     UniqueEmail email
+
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
     message Text
-    userId UserId Maybe
+    userId User_Id Maybe
     deriving Eq
     deriving Show

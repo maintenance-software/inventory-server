@@ -2,72 +2,64 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TypeFamilies #-}
 module Handler.Home where
 
 import Import
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
-import Text.Julius (RawJS (..))
+import Text.Hamlet          (hamletFile)
 
--- Define our data that will be used for creating the form.
-data FileForm = FileForm
-    { fileInfo :: FileInfo
-    , fileDescription :: Text
-    }
+-- getHomeR :: Handler Html
+-- getHomeR = homePage
 
--- This is a handler function for the GET request method on the HomeR
--- resource pattern. All of your resource patterns are defined in
--- config/routes
---
--- The majority of the code you will write in Yesod lives in these handler
--- functions. You can spread them across multiple files if you are so
--- inclined, or create a single monolithic file.
+getIndexR :: Handler Html
+getIndexR = getHomeR
+
 getHomeR :: Handler Html
 getHomeR = do
-    (formWidget, formEnctype) <- generateFormPost sampleForm
-    let submission = Nothing :: Maybe FileForm
-        handlerName = "getHomeR" :: Text
-    allComments <- runDB $ getAllComments
+        maid <- maybeAuthId
+        defaultLayout
+            [whamlet|
+                <p>Your current auth ID: #{show maid}
+                $maybe _ <- maid
+                    <p>
+                        <a href=@{AuthR LogoutR}>Logout
+                $nothing
+                    <p>
+                        <a href=@{AuthR LoginR}>Go to the login page
+            |]
 
-    defaultLayout $ do
-        let (commentFormId, commentTextareaId, commentListId) = commentIds
-        aDomId <- newIdent
-        setTitle "Welcome To Yesod!"
-        $(widgetFile "homepage")
+{--
+        case maid of
+             Nothing -> redirect ("auth/page/github/forward" :: Text)
+             Just _ -> defaultLayout
+                            [whamlet|
+                                <p>Your current auth ID: #{show maid}
+                                <p>
+                                    <a href=@{AuthR LogoutR}>Logout
+                            |]
+--}
+        -- redirect $ AuthR LoginR
+   
 
-postHomeR :: Handler Html
-postHomeR = do
-    ((result, formWidget), formEnctype) <- runFormPost sampleForm
-    let handlerName = "postHomeR" :: Text
-        submission = case result of
-            FormSuccess res -> Just res
-            _ -> Nothing
-    allComments <- runDB $ getAllComments
 
-    defaultLayout $ do
-        let (commentFormId, commentTextareaId, commentListId) = commentIds
-        aDomId <- newIdent
-        setTitle "Welcome To Yesod!"
-        $(widgetFile "homepage")
+{--
+    defaultLayout
+        [whamlet|
+            <p>Your current auth ID: #{show maid}
+            $maybe _ <- maid
+                <p>
+                    <a href=@{AuthR LogoutR}>Logout
+            $nothing
+                <p>
+                    <a href=@{AuthR LoginR}>Go to the login page
+        |]
+--}
 
-sampleForm :: Form FileForm
-sampleForm = renderBootstrap3 BootstrapBasicForm $ FileForm
-    <$> fileAFormReq "Choose a file"
-    <*> areq textField textSettings Nothing
-    -- Add attributes like the placeholder and CSS classes.
-    where textSettings = FieldSettings
-            { fsLabel = "What's on the file?"
-            , fsTooltip = Nothing
-            , fsId = Nothing
-            , fsName = Nothing
-            , fsAttrs =
-                [ ("class", "form-control")
-                , ("placeholder", "File description")
-                ]
-            }
-
-commentIds :: (Text, Text, Text)
-commentIds = ("js-commentForm", "js-createCommentTextarea", "js-commentList")
-
-getAllComments :: DB [Entity Comment]
-getAllComments = selectList [] [Asc CommentId]
+-- homePage :: Handler Html
+-- homePage = do
+--            master <- getYesod
+--            mmsg <- getMessage
+--            muser <- maybeAuthPair
+--            mcurrentRoute <- getCurrentRoute
+--            withUrlRenderer $(hamletFile "src/Views/index.hamlet")

@@ -1,0 +1,24 @@
+# cp /etc/systemd/system/inventory-server.service
+# systemctl daemon-reload
+# systemctl start inventory-server.service
+# systemctl status inventory-server.service
+#
+# To enable by default on boot:
+#
+# systemctl enable inventory-server.service
+
+[Unit]
+Description=Yesdo inventory server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+WorkingDirectory=/home/amauricio/inventory-server
+Type=simple
+User=amauricio
+Restart=always
+RestartSec=1
+ExecStart=/home/amauricio/inventory-server/.stack-work/install/i386-linux/082105eb77d1e1b3b5ed46c9697f28adfb650dff873ea261608b680fdd548c1a/8.6.5/bin/inventory-server
+
+[Install]
+WantedBy=multi-user.target

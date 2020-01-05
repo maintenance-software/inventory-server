@@ -25,11 +25,14 @@ import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import OAuthClient
 
--- | The foundation datatype for your application. This can be a good place to
--- keep settings and values requiring initialization before your application
--- starts running, such as database connections. Every handler will have
--- access to the data present here.
+clientId :: Text
+clientId = "app"
+
+clientSecret :: Text
+clientSecret = "appsecret"
+
 data App = App
     { appSettings    :: AppSettings
     , appStatic      :: Static -- ^ Settings for static file serving.
@@ -37,16 +40,6 @@ data App = App
     , appHttpManager :: Manager
     , appLogger      :: Logger
     }
-
-data MenuItem = MenuItem
-    { menuItemLabel :: Text
-    , menuItemRoute :: Route App
-    , menuItemAccessCallback :: Bool
-    }
-
-data MenuTypes
-    = NavbarLeft MenuItem
-    | NavbarRight MenuItem
 
 -- This is where we define all of the routes in our application. For a full
 -- explanation of the syntax, please see:
@@ -61,9 +54,6 @@ data MenuTypes
 -- type Handler = HandlerT App IO
 -- type Widget = WidgetT App IO ()
 mkYesodData "App" $(parseRoutesFile "config/routes")
-
--- | A convenient synonym for creating forms.
-type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
 
 -- | A convenient synonym for database access functions.
 type DB a = forall (m :: * -> *).
@@ -97,57 +87,13 @@ instance Yesod App where
     yesodMiddleware :: ToTypedContent res => Handler res -> Handler res
     yesodMiddleware = defaultYesodMiddleware
 
-    defaultLayout :: Widget -> Handler Html
-    defaultLayout widget = do
-        master <- getYesod
-        mmsg <- getMessage
-
-        muser <- maybeAuthPair
-        mcurrentRoute <- getCurrentRoute
-
-        -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
-        (title, parents) <- breadcrumbs
-
-        -- Define the menu items of the header.
-        let menuItems =
-                [ NavbarLeft $ MenuItem
-                    { menuItemLabel = "Home"
-                    , menuItemRoute = HomeR
-                    , menuItemAccessCallback = True
-                    }
-                , NavbarLeft $ MenuItem
-                    { menuItemLabel = "Profile"
-                    , menuItemRoute = ProfileR
-                    , menuItemAccessCallback = isJust muser
-                    }
-                , NavbarRight $ MenuItem
-                    { menuItemLabel = "Login"
-                    , menuItemRoute = AuthR LoginR
-                    , menuItemAccessCallback = isNothing muser
-                    }
-                , NavbarRight $ MenuItem
-                    { menuItemLabel = "Logout"
-                    , menuItemRoute = AuthR LogoutR
-                    , menuItemAccessCallback = isJust muser
-                    }
-                ]
-
-        let navbarLeftMenuItems = [x | NavbarLeft x <- menuItems]
-        let navbarRightMenuItems = [x | NavbarRight x <- menuItems]
-
-        let navbarLeftFilteredMenuItems = [x | x <- navbarLeftMenuItems, menuItemAccessCallback x]
-        let navbarRightFilteredMenuItems = [x | x <- navbarRightMenuItems, menuItemAccessCallback x]
-
-        -- We break up the default layout into two components:
-        -- default-layout is the contents of the body tag, and
-        -- default-layout-wrapper is the entire page. Since the final
-        -- value passed to hamletToRepHtml cannot be a widget, this allows
-        -- you to use normal widget features in default-layout.
-
-        pc <- widgetToPageContent $ do
-            addStylesheet $ StaticR css_bootstrap_css
-            $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+--     defaultLayout :: Widget -> Handler Html
+--     defaultLayout widget = do
+--         master <- getYesod
+--         mmsg <- getMessage
+--         muser <- maybeAuthPair
+--         mcurrentRoute <- getCurrentRoute
+--         withUrlRenderer $(hamletFile "src/views/index.hamlet")
 
     -- The page to be redirected to when authentication is required.
     authRoute
@@ -163,13 +109,17 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
+
+    isAuthorized GraphqlR _ = return Authorized
+
+    isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
     isAuthorized (StaticR _) _ = return Authorized
 
     -- the profile route requires that the user is authenticated, so we
     -- delegate to that function
-    isAuthorized ProfileR _ = isAuthenticated
+    -- isAuthorized ProfileR _ = isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -207,19 +157,6 @@ instance Yesod App where
     makeLogger :: App -> IO Logger
     makeLogger = return . appLogger
 
--- Define breadcrumbs.
-instance YesodBreadcrumbs App where
-    -- Takes the route that the user is currently on, and returns a tuple
-    -- of the 'Text' that you want the label to display, and a previous
-    -- breadcrumb route.
-    breadcrumb
-        :: Route App  -- ^ The route the user is visiting currently.
-        -> Handler (Text, Maybe (Route App))
-    breadcrumb HomeR = return ("Home", Nothing)
-    breadcrumb (AuthR _) = return ("Login", Just HomeR)
-    breadcrumb ProfileR = return ("Profile", Just HomeR)
-    breadcrumb  _ = return ("home", Nothing)
-
 -- How to run database actions.
 instance YesodPersist App where
     type YesodPersistBackend App = SqlBackend
@@ -233,34 +170,24 @@ instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
 instance YesodAuth App where
-    type AuthId App = UserId
+    type AuthId App = Text
 
-    -- Where to send a user after successful login
-    loginDest :: App -> Route App
-    loginDest _ = HomeR
-    -- Where to send a user after logout
-    logoutDest :: App -> Route App
-    logoutDest _ = HomeR
-    -- Override the above two destinations when a Referer: header is present
-    redirectToReferer :: App -> Bool
+    loginHandler = defaultLoginHandler
+
+    authenticate = return . Authenticated . credsIdent
     redirectToReferer _ = True
 
-    authenticate :: (MonadHandler m, HandlerSite m ~ App)
-                 => Creds App -> m (AuthenticationResult App)
-    authenticate creds = liftHandler $ runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Authenticated uid
-            Nothing -> Authenticated <$> insert User
-                { userIdent = credsIdent creds
-                , userPassword = Nothing
-                }
+    loginDest _ = HomeR
+    logoutDest _ = HomeR
 
-    -- You can add other plugins like Google Email, email or OAuth here
-    authPlugins :: App -> [AuthPlugin App]
-    authPlugins app = [authOpenId Claimed []] ++ extraAuthPlugins
+    authPlugins _ = [ oauth2Client clientId clientSecret ]
+
+    -- The default maybeAuthId assumes a Persistent database. We're going for a
+    -- simpler AuthId, so we'll just do a direct lookup in the session.
+    maybeAuthId = lookupSession "_ID"
+
         -- Enable authDummy login if enabled.
-        where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
+        -- where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
@@ -270,8 +197,7 @@ isAuthenticated = do
         Nothing -> Unauthorized "You must login to access this page"
         Just _ -> Authorized
 
-instance YesodAuthPersist App
-
+-- instance YesodAuthPersist App
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.
 instance RenderMessage App FormMessage where
