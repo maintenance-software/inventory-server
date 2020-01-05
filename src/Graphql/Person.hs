@@ -199,6 +199,7 @@ toAddressQL (Entity addressId address) = Address { addressId = fromIntegral $ fr
                                                       Just d -> Just $ fromString $ show d
                                                       Nothing -> Nothing
 
+-- Person Mutation Resolvers
 resolveSavePerson :: PersonArg -> MutRes e Handler (Person MutRes)
 resolveSavePerson arg = lift $ do
                                 personId <- createOrUpdatePerson_ arg
@@ -216,7 +217,7 @@ resolveSavePerson arg = lift $ do
                                                  , modifiedDate = md
                                                  , address = resolveSaveAddress personId
                                                  , contactInfo = resolveSaveContactInfo personId
---                                                  , account = resolveSaveUser personId
+                                                 , account = resolveSaveUser personId
                                                  }
 
 resolveSaveAddress :: Person_Id -> PersonAddressArg -> MutRes e Handler (Maybe Address)
@@ -361,9 +362,6 @@ mutation {
 }
 -}
 
-data UserRoleArg = UserRoleArg {roleIds :: Maybe [Int]} deriving (Generic, GQLType)
-data UserPrivilegeArg = UserPrivilegeArg { privilegeIds :: Maybe [Int]} deriving (Generic, GQLType)
-
 data User o = User { userId :: Int
                    , username :: Text
                    , email :: Text
@@ -381,6 +379,23 @@ data User o = User { userId :: Int
 data Users = Users { user :: GetEntityByIdArg -> Res () Handler (User Res)
                    , list :: PageArg -> Res () Handler [User Res]
                    } deriving (Generic, GQLType)
+
+-- User Graphql Arguments
+data UserArg = UserArg { userId :: Int
+                       , username :: Text
+                       , email :: Text
+                       , password :: Text
+                       , status :: Text
+                       , language :: Text
+                       , expiration :: Bool
+                       } deriving (Generic)
+
+instance GQLType UserArg where
+    type  KIND UserArg = INPUT_OBJECT
+    description = const $ Just $ pack "The item that holds the user information"
+
+data UserRoleArg = UserRoleArg {roleIds :: Maybe [Int]} deriving (Generic, GQLType)
+data UserPrivilegeArg = UserPrivilegeArg { privilegeIds :: Maybe [Int]} deriving (Generic, GQLType)
 
 -- Query Resolvers
 resolveUser :: () -> Res e Handler Users
@@ -443,43 +458,16 @@ toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                         Just d -> Just $ fromString $ show d
                                         Nothing -> Nothing
 
-
--- User Graphql Arguments
-data UserArg = UserArg { userId :: Int
-                       , username :: Text
-                       , email :: Text
-                       , password :: Text
-                       , status :: Text
-                       , language :: Text
-                       , expiration :: Bool
-                       } deriving (Generic)
-
-instance GQLType UserArg where
-    type  KIND UserArg = INPUT_OBJECT
-    description = const $ Just $ pack "The item that holds the user information"
-{-
-data UserMut = UserMut { userId :: Int
-                       , username :: Text
-                       , email :: Text
-                       , password :: Text
-                       , status :: Text
-                       , language :: Text
-                       , expiration :: Bool
-                       , createdDate :: Text
-                       , modifiedDate :: Maybe Text
-                       , privileges :: EntityIdsArg -> MutRes () Handler [Privilege]
-                       , roles :: EntityIdsArg -> MutRes () Handler [Role MutRes]
-                       } deriving (Generic, GQLType)
--}
-resolveSaveUser :: Person_Id -> UserArg -> MutRes e Handler (User MutRes)
-resolveSaveUser personId arg = lift $ do
+-- Mutation Resolvers
+resolveSaveUser :: Person_Id -> PersonUserArg -> MutRes e Handler (Maybe (User MutRes))
+resolveSaveUser personId (PersonUserArg (Just arg) ) = lift $ do
                                 userId <- createOrUpdateUser personId arg
                                 user <- runDB $ getJustEntity userId
                                 let Entity _ User_ {..} = user
                                 let md = case user_ModifiedDate of
                                           Just d -> Just $ fromString $ show d
                                           Nothing -> Nothing
-                                return User { userId = fromIntegral $ fromSqlKey userId
+                                return $ Just User { userId = fromIntegral $ fromSqlKey userId
                                                , username = user_Username
                                                , email = user_Email
                                                , password = "********"
@@ -493,10 +481,7 @@ resolveSaveUser personId arg = lift $ do
                                                }
 
 resolveSaveUserRole :: User_Id -> UserRoleArg -> MutRes e Handler [Role MutRes]
-resolveSaveUserRole userId (UserRoleArg {roleIds}) = lift $ do
-                                          let entityIds = case roleIds of
-                                                            Just d -> d
-                                                            Nothing -> []
+resolveSaveUserRole userId (UserRoleArg (Just entityIds)) = lift $ do
                                           let entityRoleIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Role_Id) entityIds
                                           () <- addUserRole userId entityRoleIds
                                           userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
@@ -504,19 +489,14 @@ resolveSaveUserRole userId (UserRoleArg {roleIds}) = lift $ do
                                           roles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
                                           return $ P.map toRoleQL roles
 
-
 resolveSaveUserPrivilege :: User_Id -> UserPrivilegeArg -> MutRes e Handler [Privilege]
-resolveSaveUserPrivilege userId UserPrivilegeArg {privilegeIds} = lift $ do
-                                          let entityIds = case privilegeIds of
-                                                            Just d -> d
-                                                            Nothing -> []
+resolveSaveUserPrivilege userId (UserPrivilegeArg (Just entityIds)) = lift $ do
                                           let entityPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) entityIds
                                           () <- createOrUpdateUserPrivilege userId entityPrivilegeIds
                                           userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
                                           let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) userPrivileges
                                           privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                           return $ P.map toPrivilegeQL privileges
-
 
 createOrUpdateUser :: Person_Id -> UserArg -> Handler User_Id
 createOrUpdateUser personId userArg = do
