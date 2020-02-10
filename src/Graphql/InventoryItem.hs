@@ -46,6 +46,8 @@ data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
                                          , price :: Float
                                          , code :: Text
                                          , status :: Text
+                                         , categoryId :: Int
+                                         , inventoryId :: Int
                                          , dateExpiry :: Text
                                          } deriving (Generic, GQLType)
 
@@ -135,6 +137,8 @@ fromInventoryItemQL (InventoryItemArg {..}) cd md = InventoryItem_ { inventoryIt
                                                                    , inventoryItem_Status = readEntityStatus status
                                                                    , inventoryItem_DateExpiry = cd
                                                                    , inventoryItem_ItemId = (toSqlKey $ fromIntegral 0)::Item_Id
+                                                                   , inventoryItem_CategoryId = ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
+                                                                   , inventoryItem_InventoryId = ((toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id)
                                                                    , inventoryItem_CreatedDate = cd
                                                                    , inventoryItem_ModifiedDate = md
                                                                    }

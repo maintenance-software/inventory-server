@@ -46,7 +46,7 @@ data ItemArg = ItemArg { itemId :: Int
                        , defaultPrice :: Float
                        , description :: Text
                        , images :: [Text]
-                       , categoryId :: Int
+                       , active :: Bool
                        } deriving (Generic, GQLType)
 
 
@@ -96,7 +96,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
                                      , images = item_Images
-                                     , category = categoryResolver item_CategoryId
+--                                     , category = categoryResolver item_CategoryId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
                                      }
@@ -126,7 +126,7 @@ createOrUpdateItem item = do
                                                                      , Item_DefaultPrice =. realToFrac defaultPrice
                                                                      , Item_Description =. description
                                                                      , Item_Images =. images
-                                                                     , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
+--                                                                     , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
                                                                      , Item_ModifiedDate =. Just now
                                                                      ]
                                          return itemKey
@@ -141,7 +141,8 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
                                         , item_DefaultPrice = realToFrac defaultPrice
                                         , item_Description = description
                                         , item_Images = images
-                                        , item_CategoryId = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
+                                        , item_Active = active
+--                                        , item_CategoryId = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
                                         , item_CreatedDate = cd
                                         , item_ModifiedDate = md
                                         }
