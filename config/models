@@ -181,6 +181,42 @@ Asset_ sql=t_asset
 	  priority Int
 	  images [Text]
 	  active Bool
+	  parentId Asset_Id Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+TaskPlan_ sql=t_task_plan
+    Id sql=task_plan_id
+	  name Text
+	  description Text
+	  assetId Asset_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Task_ sql=t_task
+    Id sql=task_id
+	  name Text
+	  description Text
+	  type Text
+	  priority Int
+	  duration Int
+	  downTimeDuration Int
+	  attribute1 Text
+	  attribute2 Text
+	  taskPlanId TaskPlan_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+SubTask_ sql=t_sub_task
+    Id sql=sub_task_id
+	  type Text
+	  description Text
+	  mandatory Bool
+	  partGroupId Asset_Id
+	  taskId Task_Id Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
