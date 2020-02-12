@@ -27,23 +27,19 @@ oauth2Client = oauth2ClientScoped defaultScopes
 oauth2ClientScoped :: YesodAuth m => [Text] -> Text -> Text -> AuthPlugin m
 oauth2ClientScoped scopes clientId clientSecret =
     authOAuth2 pluginName oauth2 $ \manager token -> do
-        (User userId, userResponse) <- authGetProfile pluginName manager token "http://192.168.0.100:4200/connect/userinfo"
+        (User userId, userResponse) <- authGetProfile pluginName manager token "http://localhost:4200/connect/userinfo"
 
-        pure Creds
-            { credsPlugin = pluginName
-            , credsIdent = T.pack $ show userId
-            , credsExtra = setExtra token userResponse
-            }
+        pure Creds { credsPlugin = pluginName
+                   , credsIdent = T.pack $ show userId
+                   , credsExtra = setExtra token userResponse
+                   }
   where
-    oauth2 = OAuth2
-        { oauthClientId = clientId
-        , oauthClientSecret = clientSecret
-        , oauthOAuthorizeEndpoint = "http://192.168.0.100:4200/oauth/authorize" `withQuery`
-            [ scopeParam "," scopes
-            ]
-        , oauthAccessTokenEndpoint = "http://192.168.0.100:4200/oauth/access_token"
-        , oauthCallback = Nothing
-        }
+    oauth2 = OAuth2 { oauthClientId = clientId
+                    , oauthClientSecret = clientSecret
+                    , oauthOAuthorizeEndpoint = "http://localhost:4200/oauth/authorize" `withQuery` [ scopeParam "," scopes ]
+                    , oauthAccessTokenEndpoint = "http://localhost:4200/oauth/token"
+                    , oauthCallback = Nothing
+                    }
 
 {--
 

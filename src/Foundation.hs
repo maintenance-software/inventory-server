@@ -110,7 +110,7 @@ instance Yesod App where
     isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
 
-    isAuthorized GraphqlR _ = return Authorized
+    isAuthorized GraphqlR _ = isAuthenticated
 
     isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
