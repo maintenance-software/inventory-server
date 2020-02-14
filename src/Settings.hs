@@ -23,13 +23,24 @@ import           Yesod.Default.Config2       (applyEnvValue, configSettingsYml)
 import           Yesod.Default.Util          (WidgetFileSettings,
                                               widgetFileNoReload,
                                               widgetFileReload)
-
+import           Yesod.Auth.OAuth2.Prelude  (URI)
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
 -- theoretically even a database.
+data Oauth2Config = Oauth2Config
+    { clientId :: Text
+    , clientSecret :: Text
+    , authorizeEndpoint :: URI
+    , accessTokenEndpoint :: URI
+    , userInfoEndpoint :: URI
+    , scopes :: [Text]
+    }
+
 data AppSettings = AppSettings
     { appStaticDir              :: String
     -- ^ Directory from which to serve static files.
+    , oauth2Conf                :: Oauth2Config
+        -- ^ Indicate if auth dummy login should be enabled.
     , appDatabaseConf           :: PostgresConf
     -- ^ Configuration settings for accessing the database.
     , appRoot                   :: Maybe Text
@@ -64,6 +75,16 @@ data AppSettings = AppSettings
     -- ^ Indicate if auth dummy login should be enabled.
     }
 
+instance FromJSON Oauth2Config where
+    parseJSON = withObject "Oauth2Config" $ \o -> do
+        clientId                  <- o .: "clientId"
+        clientSecret              <- o .: "clientSecret"
+        authorizeEndpoint         <- o .: "authorizeEndpoint"
+        accessTokenEndpoint       <- o .: "accessTokenEndpoint"
+        userInfoEndpoint          <- o .: "userInfoEndpoint"
+        scopes                    <- o .: "scopes"
+        return Oauth2Config {..}
+
 instance FromJSON AppSettings where
     parseJSON = withObject "AppSettings" $ \o -> do
         let defaultDev =
@@ -73,6 +94,7 @@ instance FromJSON AppSettings where
                 False
 #endif
         appStaticDir              <- o .: "static-dir"
+        oauth2Conf                <- o .: "oauth2"
         appDatabaseConf           <- o .: "database"
         appRoot                   <- o .:? "approot"
         appHost                   <- fromString <$> o .: "host"

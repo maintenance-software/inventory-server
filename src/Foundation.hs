@@ -27,12 +27,6 @@ import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import OAuthClient
 
-clientId :: Text
-clientId = "app"
-
-clientSecret :: Text
-clientSecret = "appsecret"
-
 data App = App
     { appSettings    :: AppSettings
     , appStatic      :: Static -- ^ Settings for static file serving.
@@ -180,7 +174,7 @@ instance YesodAuth App where
     loginDest _ = HomeR
     logoutDest _ = HomeR
 
-    authPlugins _ = [ oauth2Client clientId clientSecret ]
+    authPlugins app = [ oauth2Client (oauth2Conf $ appSettings app) ]
 
     -- The default maybeAuthId assumes a Persistent database. We're going for a
     -- simpler AuthId, so we'll just do a direct lookup in the session.
