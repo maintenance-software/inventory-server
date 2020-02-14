@@ -232,8 +232,8 @@ SubTask_ sql=t_sub_task
 --     verkey Text Maybe
 --     UniqueEmail email
 
-Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
-    message Text
-    userId User_Id Maybe
-    deriving Eq
-    deriving Show
+-- Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
+--    message Text
+--    userId User_Id Maybe
+--    deriving Eq
+--    deriving Show
