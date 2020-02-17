@@ -7,7 +7,7 @@ import Import.NoFoundation
 import Yesod.Auth.OAuth2.Prelude
 import qualified Data.Text as T
 
-newtype User = User String
+newtype User = User Text
 
 instance FromJSON User where
     parseJSON = withObject "User" $ \o -> User
@@ -22,7 +22,7 @@ oauth2Client Oauth2Config {..} =
         (User userId, userResponse) <- authGetProfile pluginName manager token userInfoEndpoint
 
         pure Creds { credsPlugin = pluginName
-                   , credsIdent = T.pack $ show userId
+                   , credsIdent = userId
                    , credsExtra = setExtra token userResponse
                    }
   where

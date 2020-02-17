@@ -26,6 +26,7 @@ import           Data.ByteString
 import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity, NoDeity(..), TestArg(..))
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import
+import           Graphql.Session
 import           Graphql.Privilege
 import           Graphql.Role
 import           Graphql.Person
@@ -37,6 +38,7 @@ import           Graphql.Utils (PageArg)
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
+                         , session :: () -> Res () Handler Session
                          , privileges :: () -> m Privileges
                          , roles :: () -> m Roles
                          , persons :: () -> m Persons
@@ -61,6 +63,7 @@ data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (G
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
 resolveQuery = QueryQL { deity = resolveDeity
+                       , session = getUserSessionResolver
                        , privileges = resolvePrivilege
                        , roles = resolveRole
                        , persons = resolvePerson
