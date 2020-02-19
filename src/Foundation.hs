@@ -166,10 +166,10 @@ instance YesodPersistRunner App where
 instance YesodAuth App where
     type AuthId App = Text
 
-    loginHandler = defaultLoginHandler
+--    loginHandler = defaultLoginHandler
 
     authenticate = return . Authenticated . credsIdent
-    redirectToReferer _ = True
+--    redirectToReferer _ = True
 
     loginDest _ = HomeR
     logoutDest _ = HomeR

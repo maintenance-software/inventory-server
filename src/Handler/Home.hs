@@ -12,23 +12,27 @@ import Text.Hamlet          (hamletFile)
 -- getHomeR :: Handler Html
 -- getHomeR = homePage
 
-getIndexR :: Handler Html
+getIndexR :: Handler ()
 getIndexR = getHomeR
 
-getHomeR :: Handler Html
+--getIndexR :: Handler ()
+--getIndexR = redirect ("/admin/test"::Text)
+
+--htmlType :: ContentType
+--htmlType = "text/html"
+
+--getIndexR :: Handler TypedContent
+--getIndexR = do
+--                addHeader "X-Frame-Options" "sameorigin"
+--                return $ TypedContent htmlType $ toContent ("<h6>redirect</h6>"::Text)
+
+getHomeR :: Handler ()
 getHomeR = do
         maid <- maybeAuthId
-        defaultLayout
-            [whamlet|
-                <p>Your current auth ID: #{show maid}
-                $maybe _ <- maid
-                    <p>
-                        <a href=@{AuthR LogoutR}>Logout
-                $nothing
-                    <p>
-                        <a href=@{AuthR LoginR}>Go to the login page
-            |]
-
+        response <- case maid of
+                     Nothing -> redirect ("auth/page/inventoty-auth-provider/forward" :: Text)
+                     Just _ -> redirect ("admin/index.html" :: Text)
+        return response
 {--
         case maid of
              Nothing -> redirect ("auth/page/github/forward" :: Text)
@@ -40,7 +44,7 @@ getHomeR = do
                             |]
 --}
         -- redirect $ AuthR LoginR
-   
+
 
 
 {--
