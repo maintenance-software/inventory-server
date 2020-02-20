@@ -16,3 +16,4 @@ buildHook_ packageDesc localBuildInfo userHooks buildFlags = do
 main :: IO ()
 main = DS.defaultMainWithHooks DS.simpleUserHooks{buildHook = buildHook_}
 -- https://stackoverflow.com/questions/38903177/how-to-run-bash-commands-like-npm-install-on-complie/39078496#39078496
+-- https://github.com/nakaji-dayo/yesod-job-queue
