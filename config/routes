@@ -10,8 +10,8 @@
 /forward/admin ForwardAdminR GET
 /forward/login ForwardLoginR GET
 
-/ HomeR GET
-/index IndexR GET
+/home HomeR GET
+/ IndexR GET
 -- /comments CommentR POST
 -- /profile ProfileR GET
 
