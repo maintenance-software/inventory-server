@@ -1,49 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
-module OAuthClient
-    ( oauth2Client
-    , oauth2ClientScoped
-    ) where
+module OAuthClient ( oauth2Client ) where
 
+import Import.NoFoundation
 import Yesod.Auth.OAuth2.Prelude
-
 import qualified Data.Text as T
 
-newtype User = User String
+newtype User = User Text
 
 instance FromJSON User where
     parseJSON = withObject "User" $ \o -> User
-        <$> o .: "email"
+        <$> o .: "sub"
 
 pluginName :: Text
 pluginName = "inventoty-auth-provider"
 
-defaultScopes :: [Text]
-defaultScopes = ["openid"] -- ["email profile"]
-
-oauth2Client :: YesodAuth m => Text -> Text -> AuthPlugin m
-oauth2Client = oauth2ClientScoped defaultScopes
-
-oauth2ClientScoped :: YesodAuth m => [Text] -> Text -> Text -> AuthPlugin m
-oauth2ClientScoped scopes clientId clientSecret =
+oauth2Client :: YesodAuth m => Oauth2Config -> AuthPlugin m
+oauth2Client Oauth2Config {..} =
     authOAuth2 pluginName oauth2 $ \manager token -> do
-        (User userId, userResponse) <- authGetProfile pluginName manager token "http://192.168.0.100:4200/connect/userinfo"
+        (User userId, userResponse) <- authGetProfile pluginName manager token userInfoEndpoint
 
-        pure Creds
-            { credsPlugin = pluginName
-            , credsIdent = T.pack $ show userId
-            , credsExtra = setExtra token userResponse
-            }
+        pure Creds { credsPlugin = pluginName
+                   , credsIdent = userId
+                   , credsExtra = setExtra token userResponse
+                   }
   where
-    oauth2 = OAuth2
-        { oauthClientId = clientId
-        , oauthClientSecret = clientSecret
-        , oauthOAuthorizeEndpoint = "http://192.168.0.100:4200/oauth/authorize" `withQuery`
-            [ scopeParam "," scopes
-            ]
-        , oauthAccessTokenEndpoint = "http://192.168.0.100:4200/oauth/access_token"
-        , oauthCallback = Nothing
-        }
+    oauth2 = OAuth2 { oauthClientId = clientId
+                    , oauthClientSecret = clientSecret
+                    , oauthOAuthorizeEndpoint = authorizeEndpoint `withQuery` [ scopeParam "," scopes ]
+                    , oauthAccessTokenEndpoint = accessTokenEndpoint
+                    , oauthCallback = Nothing
+                    }
 
 {--
 

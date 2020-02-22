@@ -28,7 +28,7 @@ import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Crypto.BCrypt
+import Crypto.KDF.BCrypt (hashPassword, validatePassword)
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as B
 import Prelude as P
@@ -515,10 +515,8 @@ createOrUpdateUser personId userArg = do
                                               return userKey
                                             else
                                               do
-                                                p <- liftIO $ hashPasswordUsingPolicy slowerBcryptHashingPolicy $ B.pack $ T.unpack password
-                                                let passwordEncrypted = case p of
-                                                                          Nothing -> ""
-                                                                          Just b -> T.pack $ B.unpack b
+                                                p <- liftIO $ hashPassword 13 (encodeUtf8 password)
+                                                let passwordEncrypted = T.pack $ B.unpack p
                                                 userKey <- runDB $ insert (fromUserQL personId userArg now Nothing passwordEncrypted)
                                                 return userKey
                                return userEntityId

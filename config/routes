@@ -7,9 +7,12 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
+/forward/admin ForwardAdminR GET
+/forward/login ForwardLoginR GET
+
 / HomeR GET
 /index IndexR GET
-/comments CommentR POST
+-- /comments CommentR POST
 -- /profile ProfileR GET
 
 /graphql GraphqlR GET POST

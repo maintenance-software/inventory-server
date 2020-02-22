@@ -37,5 +37,12 @@ database:
   database: "_env:YESOD_PGDATABASE:inventory_db"
   poolsize: "_env:YESOD_PGPOOLSIZE:10"
 
+oauth2:
+  clientId: "app"
+  clientSecret: "appsecret"
+  authorizeEndpoint: "http://192.168.0.100:4200/oauth/authorize"
+  accessTokenEndpoint: "http://192.168.0.100:4200/oauth/token"
+  userInfoEndpoint: "http://192.168.0.100:4200/connect/userinfo"
+  scopes: ["openid"]
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE

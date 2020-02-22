@@ -98,9 +98,19 @@ Item_ json sql=t_item
     defaultPrice Double
     description Text
     images [Text]
-    categoryId Category_Id
+    active Bool
     createdDate UTCTime
     modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Inventory_ json sql=t_inventory
+    Id sql=inventory_id
+    name Text
+    description Text
+    active Bool
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    UniqueInventoryName name
     deriving Typeable Show
 
 Category_ json sql=t_category
@@ -119,21 +129,33 @@ InventoryItem_ sql=t_inventory_item
     status EntityStatus
     dateExpiry UTCTime
     itemId Item_Id
+    categoryId Category_Id
+    inventoryId Inventory_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-OrderItem_ sql=t_order_item
-    Id sql=order_item_id
+InventoryItemOrder_ sql=t_inventory_item_order
+    Id sql=inventory_item_order_id
     quantity Int
     price Double
+    discount Double
+    subTotalPrice Double
+    notes Text
+    inventoryItemId InventoryItem_Id
+    oderId Order_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Order_ sql=t_order
+    Id sql=order_id
     discount Double
     totalPrice
     orderDate UTCTime
     deliveredLeadTime UTCTime
     status EntityStatus
     notes Text
-    inventoryItemId InventoryItem_Id
     supplierId Supplier_Id
     emitterId User_Id
     createdDate UTCTime
@@ -149,6 +171,56 @@ Supplier_ json sql=t_supplier
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
+Asset_ sql=t_asset
+    Id sql=asset_id
+	  name Text
+	  description Text
+	  make Text
+	  model Text
+	  code Text
+	  priority Int
+	  images [Text]
+	  active Bool
+	  parentId Asset_Id Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+TaskPlan_ sql=t_task_plan
+    Id sql=task_plan_id
+	  name Text
+	  description Text
+	  assetId Asset_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Task_ sql=t_task
+    Id sql=task_id
+	  name Text
+	  description Text
+	  type Text
+	  priority Int
+	  duration Int
+	  downTimeDuration Int
+	  attribute1 Text
+	  attribute2 Text
+	  taskPlanId TaskPlan_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+SubTask_ sql=t_sub_task
+    Id sql=sub_task_id
+	  type Text
+	  description Text
+	  mandatory Bool
+	  partGroupId Asset_Id
+	  taskId Task_Id Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
 -- User
 --     ident Text
 --     password Text Maybe
@@ -160,8 +232,8 @@ Supplier_ json sql=t_supplier
 --     verkey Text Maybe
 --     UniqueEmail email
 
-Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
-    message Text
-    userId User_Id Maybe
-    deriving Eq
-    deriving Show
+-- Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
+--    message Text
+--    userId User_Id Maybe
+--    deriving Eq
+--    deriving Show

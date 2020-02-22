@@ -26,21 +26,25 @@ import           Data.ByteString
 import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity, NoDeity(..), TestArg(..))
 import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import
+import           Graphql.Session
 import           Graphql.Privilege
 import           Graphql.Role
 import           Graphql.Person
 import           Graphql.Category
 import           Graphql.Item
+import           Graphql.Inventory
 import           Graphql.InventoryItem
 import           Graphql.Utils (PageArg)
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
+                         , session :: () -> Res () Handler Session
                          , privileges :: () -> m Privileges
                          , roles :: () -> m Roles
                          , persons :: () -> m Persons
                          , users :: () -> m Users
                          , categories :: PageArg -> m [Category]
+                         , inventories :: () -> m [Inventory]
                          , items :: () -> m Items
                          , inventoryItems :: InventoryItems (Res () Handler)
                          } deriving (Generic, GQLType)
@@ -49,6 +53,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveRole :: RoleArg -> m (Role MutRes)
                            , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
+                           , saveInventory :: InventoryArg -> m Inventory
                            , saveItem :: ItemArg -> m (Item MutRes)
                            , saveInventoryItem :: InventoryItemArg -> m InventoryItem
                            } deriving (Generic, GQLType)
@@ -58,11 +63,13 @@ data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (G
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
 resolveQuery = QueryQL { deity = resolveDeity
+                       , session = getUserSessionResolver
                        , privileges = resolvePrivilege
                        , roles = resolveRole
                        , persons = resolvePerson
                        , users = resolveUser
                        , categories = listCategoryResolver
+                       , inventories = listInventoryResolver
                        , items = itemResolver
                        , inventoryItems = inventoryItemResolver
                        }
@@ -72,6 +79,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
                            , savePerson = resolveSavePerson
                            , saveCategory = saveCategoryResolver
+                           , saveInventory = saveInventoryResolver
                            , saveItem =  saveItemResolver
                            , saveInventoryItem =  saveInventoryItemResolver
                            }

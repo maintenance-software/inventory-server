@@ -27,12 +27,6 @@ import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 import OAuthClient
 
-clientId :: Text
-clientId = "app"
-
-clientSecret :: Text
-clientSecret = "appsecret"
-
 data App = App
     { appSettings    :: AppSettings
     , appStatic      :: Static -- ^ Settings for static file serving.
@@ -99,7 +93,7 @@ instance Yesod App where
     authRoute
         :: App
         -> Maybe (Route App)
-    authRoute _ = Just $ AuthR LoginR
+    authRoute _ = Just $ ForwardLoginR
 
     isAuthorized
         :: Route App  -- ^ The route the user is visiting.
@@ -107,15 +101,17 @@ instance Yesod App where
         -> Handler AuthResult
     -- Routes not requiring authentication.
     isAuthorized (AuthR _) _ = return Authorized
-    isAuthorized CommentR _ = return Authorized
+--    isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
 
-    isAuthorized GraphqlR _ = return Authorized
+    isAuthorized GraphqlR _ = isAuthenticated
 
+    isAuthorized ForwardLoginR _ = return Authorized
+    isAuthorized ForwardAdminR _ = isAuthenticated
     isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
+    isAuthorized (StaticR _) _ = isAuthenticated
 
     -- the profile route requires that the user is authenticated, so we
     -- delegate to that function
@@ -172,15 +168,15 @@ instance YesodPersistRunner App where
 instance YesodAuth App where
     type AuthId App = Text
 
-    loginHandler = defaultLoginHandler
+--    loginHandler = defaultLoginHandler
 
     authenticate = return . Authenticated . credsIdent
-    redirectToReferer _ = True
+--    redirectToReferer _ = True
 
-    loginDest _ = HomeR
+    loginDest _ = ForwardAdminR
     logoutDest _ = HomeR
 
-    authPlugins _ = [ oauth2Client clientId clientSecret ]
+    authPlugins app = [ oauth2Client (oauth2Conf $ appSettings app) ]
 
     -- The default maybeAuthId assumes a Persistent database. We're going for a
     -- simpler AuthId, so we'll just do a direct lookup in the session.
@@ -194,7 +190,7 @@ isAuthenticated :: Handler AuthResult
 isAuthenticated = do
     muid <- maybeAuthId
     return $ case muid of
-        Nothing -> Unauthorized "You must login to access this page"
+        Nothing -> AuthenticationRequired -- Unauthorized "You must login to access this page"
         Just _ -> Authorized
 
 -- instance YesodAuthPersist App
