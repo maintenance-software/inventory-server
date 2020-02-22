@@ -93,7 +93,7 @@ instance Yesod App where
     authRoute
         :: App
         -> Maybe (Route App)
-    authRoute _ = Just $ AuthR LoginR
+    authRoute _ = Just $ ForwardLoginR
 
     isAuthorized
         :: Route App  -- ^ The route the user is visiting.
@@ -106,10 +106,12 @@ instance Yesod App where
 
     isAuthorized GraphqlR _ = isAuthenticated
 
+    isAuthorized ForwardLoginR _ = return Authorized
+    isAuthorized ForwardAdminR _ = isAuthenticated
     isAuthorized IndexR _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
+    isAuthorized (StaticR _) _ = isAuthenticated
 
     -- the profile route requires that the user is authenticated, so we
     -- delegate to that function
@@ -171,7 +173,7 @@ instance YesodAuth App where
     authenticate = return . Authenticated . credsIdent
 --    redirectToReferer _ = True
 
-    loginDest _ = HomeR
+    loginDest _ = ForwardAdminR
     logoutDest _ = HomeR
 
     authPlugins app = [ oauth2Client (oauth2Conf $ appSettings app) ]
@@ -188,7 +190,7 @@ isAuthenticated :: Handler AuthResult
 isAuthenticated = do
     muid <- maybeAuthId
     return $ case muid of
-        Nothing -> Unauthorized "You must login to access this page"
+        Nothing -> AuthenticationRequired -- Unauthorized "You must login to access this page"
         Just _ -> Authorized
 
 -- instance YesodAuthPersist App

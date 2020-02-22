@@ -22,7 +22,7 @@ buildHook_ :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags ->
 buildHook_ packageDesc localBuildInfo userHooks buildFlags = do
 --    exists <- Dir.doesFileExist "./app/dist/app.bundle.js"
 --    when (not exists) $ void $ Proc.system "cd app && npm install && npm run build-js"
-    () <- buildUI
+--    () <- buildUI
 --    print buildFlags
     (buildHook DS.simpleUserHooks) packageDesc localBuildInfo userHooks buildFlags
 

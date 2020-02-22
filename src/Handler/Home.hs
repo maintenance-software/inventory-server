@@ -11,6 +11,11 @@ import Text.Hamlet          (hamletFile)
 
 -- getHomeR :: Handler Html
 -- getHomeR = homePage
+getForwardLoginR :: Handler ()
+getForwardLoginR = redirect ("/auth/page/inventoty-auth-provider/forward" :: Text)
+
+getForwardAdminR :: Handler ()
+getForwardAdminR = redirect ("/admin/index.html" :: Text)
 
 getIndexR :: Handler ()
 getIndexR = getHomeR
