@@ -33,6 +33,7 @@ data Oauth2Config = Oauth2Config
     , authorizeEndpoint :: URI
     , accessTokenEndpoint :: URI
     , userInfoEndpoint :: URI
+    , logoutEndpoint :: URI
     , scopes :: [Text]
     }
 
@@ -82,6 +83,7 @@ instance FromJSON Oauth2Config where
         authorizeEndpoint         <- o .: "authorizeEndpoint"
         accessTokenEndpoint       <- o .: "accessTokenEndpoint"
         userInfoEndpoint          <- o .: "userInfoEndpoint"
+        logoutEndpoint            <- o .: "logoutEndpoint"
         scopes                    <- o .: "scopes"
         return Oauth2Config {..}
 

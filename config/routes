@@ -8,10 +8,12 @@
 /robots.txt RobotsR GET
 
 /forward/admin ForwardAdminR GET
-/forward/login ForwardLoginR GET
+
+/login RemoteLoginR GET
+/logout RemoteLogoutR GET
 
 /home HomeR GET
-/ IndexR GET
+/ RootR GET
 -- /comments CommentR POST
 -- /profile ProfileR GET
 

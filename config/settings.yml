@@ -43,6 +43,7 @@ oauth2:
   authorizeEndpoint: "http://192.168.0.100:4200/oauth/authorize"
   accessTokenEndpoint: "http://192.168.0.100:4200/oauth/token"
   userInfoEndpoint: "http://192.168.0.100:4200/connect/userinfo"
+  logoutEndpoint: "http://192.168.0.100:4200/logout"
   scopes: ["openid"]
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE

@@ -93,7 +93,7 @@ instance Yesod App where
     authRoute
         :: App
         -> Maybe (Route App)
-    authRoute _ = Just $ ForwardLoginR
+    authRoute _ = Just $ RemoteLoginR
 
     isAuthorized
         :: Route App  -- ^ The route the user is visiting.
@@ -101,12 +101,13 @@ instance Yesod App where
         -> Handler AuthResult
     -- Routes not requiring authentication.
     isAuthorized (AuthR _) _ = return Authorized
+    isAuthorized RemoteLogoutR _ = return Authorized
 --    isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = isAuthenticated
-    isAuthorized IndexR _ = isAuthenticated
+    isAuthorized RootR _ = isAuthenticated
     isAuthorized GraphqlR _ = isAuthenticated
 
-    isAuthorized ForwardLoginR _ = return Authorized
+    isAuthorized RemoteLoginR _ = return Authorized
     isAuthorized ForwardAdminR _ = isAuthenticated
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
