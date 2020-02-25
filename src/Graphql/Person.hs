@@ -365,7 +365,6 @@ mutation {
 data User o = User { userId :: Int
                    , username :: Text
                    , email :: Text
-                   , password :: Text
                    , status :: Text
                    , language :: Text
                    , expiration :: Bool
@@ -390,7 +389,6 @@ data UpdatePasswordArg = UpdatePasswordArg { userId:: Int, password :: Text } de
 data UserArg = UserArg { userId :: Int
                        , username :: Text
                        , email :: Text
-                       , password :: Text
                        , status :: Text
                        , language :: Text
                        , expiration :: Bool
@@ -494,7 +492,6 @@ userRoleResolver userId _ = lift $ do
 toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , username = user_Username
                                      , email = user_Email
-                                     , password = "********"
                                      , status = T.pack $ show user_Status
                                      , language = T.pack $ show user_Language
                                      , expiration = user_Expiration
@@ -522,7 +519,6 @@ resolveSaveUser personId (PersonUserArg (Just arg) ) = lift $ do
                                 return $ Just User { userId = fromIntegral $ fromSqlKey userId
                                                , username = user_Username
                                                , email = user_Email
-                                               , password = "********"
                                                , status = T.pack $ show user_Status
                                                , language = T.pack $ show user_Language
                                                , expiration = user_Expiration
@@ -567,9 +563,7 @@ createOrUpdateUser personId userArg = do
                                               return userKey
                                             else
                                               do
-                                                p <- liftIO $ hashPassword 6 (encodeUtf8 password)
-                                                let passwordEncrypted = T.pack $ B.unpack p
-                                                userKey <- runDB $ insert (fromUserQL personId userArg now Nothing passwordEncrypted True)
+                                                userKey <- runDB $ insert (fromUserQL personId userArg now Nothing "$" True)
                                                 return userKey
                                return userEntityId
 
