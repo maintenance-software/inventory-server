@@ -10,6 +10,7 @@ User_ sql=t_user
     status EntityStatus
     language Locale
     expiration Bool
+    newPasswordRequired Bool
     personId Person_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe

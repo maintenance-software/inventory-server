@@ -13,6 +13,8 @@
 
 module Graphql.Utils where
 
+import System.Random
+import Prelude as P
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
@@ -58,3 +60,13 @@ data DummyArg = DummyArg {} deriving (Generic)
 
 localDay :: IO Day
 localDay = fmap utctDay getCurrentTime
+
+
+genRandomAlphaNumString :: Int -> IO String
+genRandomAlphaNumString 0 = return []
+genRandomAlphaNumString n = do
+                             let s = ['0'..'9'] P.++ ['A'..'Z']
+                             r <- randomRIO (0, (P.length s) - 1)
+                             let c = s !! r
+                             s <- genRandomAlphaNumString (n - 1)
+                             return (c:s)

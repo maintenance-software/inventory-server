@@ -105,8 +105,11 @@ instance Yesod App where
 --    isAuthorized CommentR _ = return Authorized
     isAuthorized HomeR _ = isAuthenticated
     isAuthorized RootR _ = isAuthenticated
-    isAuthorized GraphqlR _ = isAuthenticated
-
+    isAuthorized GraphqlR _ = do
+                                muid <- maybeAuthId
+                                return $ case muid of
+                                          Nothing -> Unauthorized "You must login to access this page"
+                                          Just _ -> Authorized
     isAuthorized RemoteLoginR _ = return Authorized
     isAuthorized ForwardAdminR _ = isAuthenticated
     isAuthorized FaviconR _ = return Authorized

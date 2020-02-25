@@ -369,6 +369,7 @@ data User o = User { userId :: Int
                    , status :: Text
                    , language :: Text
                    , expiration :: Bool
+                   , newPasswordRequired :: Bool
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
                    , person :: DummyArg -> o () Handler (Person o)
@@ -377,9 +378,14 @@ data User o = User { userId :: Int
                    } deriving (Generic, GQLType)
 
 data Users = Users { user :: GetEntityByIdArg -> Res () Handler (User Res)
+                   , resetPassword :: GetEntityByIdArg -> Res () Handler Text
+                   , changePassword :: ChangePasswordArg -> Res () Handler Bool
+                   , updatePassword :: UpdatePasswordArg -> Res () Handler Bool
                    , list :: PageArg -> Res () Handler [User Res]
                    } deriving (Generic, GQLType)
 
+data ChangePasswordArg = ChangePasswordArg { userId:: Int, password :: Text, newPassword :: Text} deriving (Generic)
+data UpdatePasswordArg = UpdatePasswordArg { userId:: Int, password :: Text } deriving (Generic)
 -- User Graphql Arguments
 data UserArg = UserArg { userId :: Int
                        , username :: Text
@@ -399,13 +405,59 @@ data UserPrivilegeArg = UserPrivilegeArg { privilegeIds :: Maybe [Int]} deriving
 
 -- Query Resolvers
 resolveUser :: () -> Res e Handler Users
-resolveUser _ = pure Users {  user = getUserByIdResolver, list = listUserResolver}
+resolveUser _ = pure Users { user = getUserByIdResolver
+                           , list = listUserResolver
+                           , resetPassword = resetPasswordResolver
+                           , changePassword = changePasswordResolver
+                           , updatePassword = updatePasswordResolver
+                           }
 
 getUserByIdResolver :: GetEntityByIdArg -> Res e Handler (User Res)
 getUserByIdResolver GetEntityByIdArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
                                       user <- runDB $ getJustEntity userEntityId
                                       return $ toUserQL user
+
+resetPasswordResolver :: GetEntityByIdArg -> Res e Handler Text
+resetPasswordResolver GetEntityByIdArg {..} = lift $ do
+                                      password <- liftIO $ genRandomAlphaNumString 8
+                                      hashedPassword <- liftIO $ hashPassword 6 (encodeUtf8 $ T.pack password)
+                                      let passwordEncrypted = T.pack $ B.unpack hashedPassword
+                                      let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
+                                      _ <- runDB $ update userEntityId [ User_Password =. passwordEncrypted, User_NewPasswordRequired =. True ]
+                                      return $ T.pack password
+
+changePasswordResolver :: ChangePasswordArg -> Res e Handler Bool
+changePasswordResolver ChangePasswordArg {..} = lift $ do
+                                      p <- liftIO $ hashPassword 6 (encodeUtf8 password)
+                                      let hashedPassword = T.pack $ B.unpack p
+                                      let userEntityId = (toSqlKey $ fromIntegral $ userId)::User_Id
+                                      userEntity <- runDB $ getJustEntity userEntityId
+                                      let Entity _ user = userEntity
+                                      let User_ {..} = user
+                                      result <- case user_Password == hashedPassword of
+                                                True -> do
+                                                          q <- liftIO $ hashPassword 6 (encodeUtf8 newPassword)
+                                                          let hashedNewPassword = T.pack $ B.unpack q
+                                                          () <- runDB $ update userEntityId [ User_Password =. hashedNewPassword, User_NewPasswordRequired =. False ]
+                                                          return True
+                                                False ->  return False
+                                      return result
+
+updatePasswordResolver :: UpdatePasswordArg -> Res e Handler Bool
+updatePasswordResolver UpdatePasswordArg {..} = lift $ do
+                                      let userEntityId = (toSqlKey $ fromIntegral $ userId)::User_Id
+                                      userEntity <- runDB $ getJustEntity userEntityId
+                                      let Entity _ user = userEntity
+                                      let User_ {..} = user
+                                      result <- case user_NewPasswordRequired of
+                                                True -> do
+                                                          p <- liftIO $ hashPassword 6 (encodeUtf8 password)
+                                                          let hashedPassword = T.pack $ B.unpack p
+                                                          () <- runDB $ update userEntityId [ User_Password =. hashedPassword, User_NewPasswordRequired =. False ]
+                                                          return True
+                                                False ->  return False
+                                      return result
 
 getUserPersonByIdResolver :: Person_Id -> DummyArg -> Res e Handler (Person Res)
 getUserPersonByIdResolver personId _ = lift $ do
@@ -515,9 +567,9 @@ createOrUpdateUser personId userArg = do
                                               return userKey
                                             else
                                               do
-                                                p <- liftIO $ hashPassword 13 (encodeUtf8 password)
+                                                p <- liftIO $ hashPassword 6 (encodeUtf8 password)
                                                 let passwordEncrypted = T.pack $ B.unpack p
-                                                userKey <- runDB $ insert (fromUserQL personId userArg now Nothing passwordEncrypted)
+                                                userKey <- runDB $ insert (fromUserQL personId userArg now Nothing passwordEncrypted True)
                                                 return userKey
                                return userEntityId
 
@@ -541,15 +593,16 @@ createOrUpdateUserPrivilege userId entityPrivilegeIds = do
                             _ <- runDB $ insertMany $ P.map (\privilegeId -> (UserPrivilege_ userId privilegeId)) newIds
                             return ()
 
-fromUserQL :: Person_Id -> UserArg -> UTCTime -> Maybe UTCTime -> Text -> User_
-fromUserQL personId UserArg {..} cd md pass= User_ { user_Username = username
-                                                   , user_Email =  email
-                                                   , user_Password = pass
-                                                   , user_Status = readEntityStatus status
-                                                   , user_Language = readLocale language
-                                                   , user_Expiration = expiration
-                                                   , user_PersonId = personId
-                                                   , user_CreatedDate = cd
-                                                   , user_ModifiedDate = md
-                                                   }
+fromUserQL :: Person_Id -> UserArg -> UTCTime -> Maybe UTCTime -> Text -> Bool -> User_
+fromUserQL personId UserArg {..} cd md pass newPasswordRequired = User_ { user_Username = username
+                                                                        , user_Email =  email
+                                                                        , user_Password = pass
+                                                                        , user_Status = readEntityStatus status
+                                                                        , user_Language = readLocale language
+                                                                        , user_NewPasswordRequired = newPasswordRequired
+                                                                        , user_Expiration = expiration
+                                                                        , user_PersonId = personId
+                                                                        , user_CreatedDate = cd
+                                                                        , user_ModifiedDate = md
+                                                                        }
 

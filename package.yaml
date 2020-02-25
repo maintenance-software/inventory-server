@@ -15,6 +15,7 @@ dependencies:
 - morpheus-graphql    >= 0.7.1
 - hoauth2 # >=1.3.0 && <1.9
 - cryptonite >= 0.25
+- random  >= 1.1
 - raw-strings-qq
 - uri-bytestring-aeson
 - classy-prelude # >=1.4 && <1.5
