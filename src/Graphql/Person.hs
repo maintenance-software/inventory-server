@@ -52,7 +52,7 @@ data Person o = Person { personId :: Int
                        } deriving (Generic, GQLType)
 
 data Persons = Persons { person :: GetEntityByIdArg -> Res () Handler (Person Res)
-                       , list :: PageArg -> Res () Handler [Person Res]
+                       , page :: PageArg -> Res () Handler (Page (Person Res))
                        } deriving (Generic, GQLType)
 
 data ContactInfo = ContactInfo { contactId :: Int
@@ -109,7 +109,7 @@ instance GQLType ContactInfoArg where
 
 -- Query Resolvers
 resolvePerson :: () -> Res e Handler Persons
-resolvePerson _ = pure Persons {  person = getPersonByIdResolver, list = listPersonResolver}
+resolvePerson _ = pure Persons {  person = getPersonByIdResolver, page = listPagedPersonResolver}
 
 getPersonByIdResolver :: GetEntityByIdArg -> Res e Handler (Person Res)
 getPersonByIdResolver GetEntityByIdArg {..} = lift $ do
@@ -138,10 +138,19 @@ resolveContactInfo personId _ = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
-listPersonResolver :: PageArg -> Res e Handler [Person Res]
-listPersonResolver PageArg{..} = lift $ do
+listPagedPersonResolver :: PageArg -> Res e Handler (Page (Person Res))
+listPagedPersonResolver PageArg{..} = lift $ do
+                                countItems <- runDB $ count ([] :: [Filter Person_])
                                 persons <- runDB $ selectList [] [Asc Person_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
-                                return $ P.map (\p -> toPersonQL p) persons
+                                let personsQL = P.map (\p -> toPersonQL p) persons
+                                return Page { totalCount = countItems
+                                            , content = personsQL
+                                            , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                                  , hasPreview = pageIndex' * pageSize' > 0
+                                                                  , pageSize = pageSize'
+                                                                  , pageIndex = pageIndex'
+                                            }
+                                }
                          where
                           pageIndex' = case pageIndex of
                                         Just  x  -> x
