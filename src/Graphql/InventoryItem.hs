@@ -29,9 +29,12 @@ import Enums
 
 data InventoryItem = InventoryItem { inventoryItemId :: Int
                                    , level :: Int
+                                   , maxLevelAllowed :: Int
+                                   , minLevelAllowed :: Int
                                    , price :: Float
                                    , code :: Text
-                                   , status :: Text
+                                   , location :: Text
+--                                   , status :: Text
                                    , dateExpiry :: Text
                                    , createdDate :: Text
                                    , modifiedDate :: Maybe Text
@@ -43,12 +46,15 @@ data InventoryItems m = InventoryItems { inventoryItem :: GetEntityByIdArg -> m 
 
 data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
                                          , level :: Int
+                                         , maxLevelAllowed :: Int
+                                         , minLevelAllowed :: Int
                                          , price :: Float
                                          , code :: Text
-                                         , status :: Text
-                                         , categoryId :: Int
+                                         , location :: Text
+--                                         , status :: Text
                                          , inventoryId :: Int
                                          , dateExpiry :: Text
+                                         , itemId :: Int
                                          } deriving (Generic, GQLType)
 
 -- Query Resolvers
@@ -82,17 +88,15 @@ listInventoryItemResolver PageArg {..} = lift $ do
 inventoryItemResolver :: InventoryItems (Res () Handler)
 inventoryItemResolver = InventoryItems {  inventoryItem = findInventoryItemByIdResolver, page = listInventoryItemResolver }
 
--- categoryResolver :: Category_Id -> DummyArg -> Res e Handler Category
-categoryResolver categoryId arg = lift $ do
-                                      category <- dbFetchCategoryById categoryId
-                                      return category
-
 toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
 toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
                                                                          , level = inventoryItem_Level
+                                                                         , maxLevelAllowed = inventoryItem_MaxLevelAllowed
+                                                                         , minLevelAllowed = inventoryItem_MinLevelAllowed
                                                                          , price = realToFrac inventoryItem_Price
                                                                          , code = inventoryItem_Code
-                                                                         , status = T.pack $ show inventoryItem_Status
+                                                                         , location = inventoryItem_Location
+--                                                                         , status = T.pack $ show inventoryItem_Status
                                                                          , dateExpiry = fromString $ show inventoryItem_CreatedDate
                                                                          , createdDate = fromString $ show inventoryItem_CreatedDate
                                                                          , modifiedDate = m
@@ -118,10 +122,15 @@ createOrUpdateInventoryItem inventoryItem = do
                                         do
                                          let itemKey = (toSqlKey $ fromIntegral $ inventoryItemId)::InventoryItem_Id
                                          _ <- runDB $ update itemKey [ InventoryItem_Level =. level
+                                                                     , InventoryItem_MaxLevelAllowed =. maxLevelAllowed
+                                                                     , InventoryItem_MinLevelAllowed =. minLevelAllowed
                                                                      , InventoryItem_Price =. realToFrac price
                                                                      , InventoryItem_Code =. code
-                                                                     , InventoryItem_Status =. readEntityStatus status
+                                                                     , InventoryItem_Location =. location
+--                                                                     , InventoryItem_Status =. readEntityStatus status
                                                                      , InventoryItem_DateExpiry =.  now
+                                                                     , InventoryItem_InventoryId =. ((toSqlKey $ fromIntegral inventoryId)::Inventory_Id)
+                                                                     , InventoryItem_ItemId =. ((toSqlKey $ fromIntegral itemId)::Item_Id)
                                                                      , InventoryItem_ModifiedDate =. Just now
                                                                      ]
                                          return itemKey
@@ -132,12 +141,14 @@ createOrUpdateInventoryItem inventoryItem = do
 
 fromInventoryItemQL :: InventoryItemArg -> UTCTime -> Maybe UTCTime -> InventoryItem_
 fromInventoryItemQL (InventoryItemArg {..}) cd md = InventoryItem_ { inventoryItem_Level = level
+                                                                   , inventoryItem_MaxLevelAllowed = maxLevelAllowed
+                                                                   , inventoryItem_MinLevelAllowed = minLevelAllowed
                                                                    , inventoryItem_Price = realToFrac price
                                                                    , inventoryItem_Code = code
-                                                                   , inventoryItem_Status = readEntityStatus status
+                                                                   , inventoryItem_Location = location
+--                                                                   , inventoryItem_Status = readEntityStatus status
                                                                    , inventoryItem_DateExpiry = cd
-                                                                   , inventoryItem_ItemId = (toSqlKey $ fromIntegral 0)::Item_Id
-                                                                   , inventoryItem_CategoryId = ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
+                                                                   , inventoryItem_ItemId = (toSqlKey $ fromIntegral itemId)::Item_Id
                                                                    , inventoryItem_InventoryId = ((toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id)
                                                                    , inventoryItem_CreatedDate = cd
                                                                    , inventoryItem_ModifiedDate = md

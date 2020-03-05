@@ -92,14 +92,21 @@ ContactInfo_ json sql=t_contact_info
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-Item_ json sql=t_item
+Item_ sql=t_item
     Id sql=item_id
     name Text
     unit Text
     defaultPrice Double
-    description Text
+    description Text Maybe
     images [Text]
     active Bool
+    partNumber Text Maybe
+    manufacturer Text Maybe
+    model Text Maybe
+    itemType ItemType
+    notes Text Maybe
+    status EntityStatus
+    categoryId Category_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -125,12 +132,13 @@ Category_ json sql=t_category
 InventoryItem_ sql=t_inventory_item
     Id sql=inventory_item_id
     level Int
+    maxLevelAllowed Int
+    minLevelAllowed Int
     price Double
     code Text
-    status EntityStatus
+    location Text
     dateExpiry UTCTime
     itemId Item_Id
-    categoryId Category_Id
     inventoryId Inventory_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe

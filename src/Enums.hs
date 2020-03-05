@@ -18,10 +18,14 @@ import GHC.Generics
 data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | UNKNOWN  deriving (Show, Read, Eq, Generic)
 derivePersistField "EntityStatus"
 
+data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | NONE deriving (Show, Read, Eq, Generic)
+derivePersistField "ItemType"
+
 -- instance GQLType EntityStatus where
 --   type KIND EntityStatus = ENUM
 
 data Locale = EN_US | ES_US | ES_BO deriving (Eq, Generic)
+derivePersistField "Locale"
 
 instance Show Locale where
   show EN_US = "en_US"
@@ -36,8 +40,6 @@ instance Read Locale where
 -- instance GQLType Locale where
 --   type KIND Locale = ENUM
 
-derivePersistField "Locale"
-
 readLocale :: Text -> Locale
 readLocale "en_US" = EN_US
 readLocale "es_US" = ES_US
@@ -49,3 +51,9 @@ readEntityStatus "INACTIVE" = INACTIVE
 readEntityStatus "EXPIRED" = EXPIRED
 readEntityStatus "DELETED" = DELETED
 readEntityStatus    _      = UNKNOWN
+
+readItemType :: Text -> ItemType
+readItemType "SPARE_PARTS" = SPARE_PARTS
+readItemType "TOOLS" = TOOLS
+readItemType "SUPPLIES" = SUPPLIES
+readItemType _ = NONE

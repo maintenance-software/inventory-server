@@ -19,17 +19,25 @@ import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import qualified Data.Text as T
 import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Category
+import Enums
 
 data Item o = Item { itemId :: Int
                  , name :: Text
                  , unit :: Text
                  , defaultPrice :: Float
-                 , description :: Text
+                 , description :: Maybe Text
+                 , partNumber :: Maybe Text
+                 , manufacturer :: Maybe Text
+                 , model :: Maybe Text
+                 , itemType :: Text
+                 , notes:: Maybe Text
+                 , status :: Text
                  , images :: [Text]
                  , category :: DummyArg -> o () Handler Category
                  , createdDate :: Text
@@ -44,9 +52,16 @@ data ItemArg = ItemArg { itemId :: Int
                        , name :: Text
                        , unit :: Text
                        , defaultPrice :: Float
-                       , description :: Text
+                       , description :: Maybe Text
+                       , partNumber :: Maybe Text
+                       , manufacturer :: Maybe Text
+                       , model :: Maybe Text
+                       , itemType :: Text
+                       , notes :: Maybe Text
+                       , status :: Text
                        , images :: [Text]
                        , active :: Bool
+                       , categoryId :: Int
                        } deriving (Generic, GQLType)
 
 
@@ -88,15 +103,20 @@ itemResolver _ = pure Items {  item = findItemByIdResolver, page = listItemResol
 categoryResolver categoryId arg = lift $ do
                                       category <- dbFetchCategoryById categoryId
                                       return category
-
 -- toItemQL :: Entity Item_ -> (Item Res)
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , name = item_Name
                                      , unit = item_Unit
                                      , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
+                                     , partNumber = item_PartNumber
+                                     , manufacturer = item_Manufacturer
+                                     , model = item_Model
+                                     , itemType = T.pack $ show item_ItemType
+                                     , notes = item_Notes
+                                     , status = T.pack $ show item_Status
                                      , images = item_Images
---                                     , category = categoryResolver item_CategoryId
+                                     , category = categoryResolver item_CategoryId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
                                      }
@@ -125,8 +145,14 @@ createOrUpdateItem item = do
                                                                      , Item_Unit =. unit
                                                                      , Item_DefaultPrice =. realToFrac defaultPrice
                                                                      , Item_Description =. description
+                                                                     , Item_PartNumber =. partNumber
+                                                                     , Item_Manufacturer =. manufacturer
+                                                                     , Item_Model =. model
+                                                                     , Item_ItemType =. readItemType itemType
+                                                                     , Item_Notes =. notes
+                                                                     , Item_Status =. readEntityStatus status
                                                                      , Item_Images =. images
---                                                                     , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
+                                                                     , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
                                                                      , Item_ModifiedDate =. Just now
                                                                      ]
                                          return itemKey
@@ -140,9 +166,15 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
                                         , item_Unit = unit
                                         , item_DefaultPrice = realToFrac defaultPrice
                                         , item_Description = description
+                                        , item_PartNumber = partNumber
+                                        , item_Manufacturer = manufacturer
+                                        , item_Model = model
+                                        , item_ItemType = readItemType itemType
+                                        , item_Notes = notes
+                                        , item_Status = readEntityStatus status
                                         , item_Images = images
                                         , item_Active = active
---                                        , item_CategoryId = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
+                                        , item_CategoryId = ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
                                         , item_CreatedDate = cd
                                         , item_ModifiedDate = md
                                         }
