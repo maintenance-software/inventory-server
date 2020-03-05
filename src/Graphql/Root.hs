@@ -44,7 +44,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , persons :: () -> m Persons
                          , users :: () -> m Users
                          , categories :: PageArg -> m [Category]
-                         , inventories :: () -> m [Inventory]
+                         , inventories :: () -> m Inventories
                          , items :: () -> m Items
                          , inventoryItems :: InventoryItems (Res () Handler)
                          } deriving (Generic, GQLType)
@@ -53,7 +53,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveRole :: RoleArg -> m (Role MutRes)
                            , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
-                           , saveInventory :: InventoryArg -> m Inventory
+                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
                            , saveItem :: ItemArg -> m (Item MutRes)
                            , saveInventoryItem :: InventoryItemArg -> m InventoryItem
                            } deriving (Generic, GQLType)
@@ -69,7 +69,7 @@ resolveQuery = QueryQL { deity = resolveDeity
                        , persons = resolvePerson
                        , users = resolveUser
                        , categories = listCategoryResolver
-                       , inventories = listInventoryResolver
+                       , inventories = inventoryResolver
                        , items = itemResolver
                        , inventoryItems = inventoryItemResolver
                        }

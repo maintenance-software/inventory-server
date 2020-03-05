@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Inventory (Inventory, InventoryArg, listInventoryResolver, saveInventoryResolver, toInventoryQL, dbFetchInventoryById) where
+module Graphql.Inventory (Inventory, Inventories, InventoryArg, inventoryResolver, saveInventoryResolver, toInventoryQL, dbFetchInventoryById) where
 
 import Import
 import GHC.Generics
@@ -21,32 +21,64 @@ import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Utils
+import Graphql.InventoryItem
 import Data.Time
 
-data Inventory = Inventory { inventoryId :: Int
+data Inventory o = Inventory { inventoryId :: Int
                            , name :: Text
                            , description :: Text
+                           , inventoryItems :: PageArg -> o () Handler (Page InventoryItem)
                            , createdDate :: Text
                            , modifiedDate :: Maybe Text
                            } deriving (Generic, GQLType)
 
-data Inventories m = Inventories { inventory :: GetEntityByIdArg -> m Inventory
-                                 , list :: () -> m [Inventory]
-                                 } deriving (Generic, GQLType)
+data Inventories = Inventories { inventory :: GetEntityByIdArg ->  Res () Handler (Inventory Res)
+                               , list :: () -> Res () Handler [Inventory Res]
+                               } deriving (Generic, GQLType)
+
+inventoryResolver :: () -> Res e Handler Inventories
+inventoryResolver _ = pure Inventories {  inventory = findInventoryByIdResolver, list = listInventoryResolver }
+
+findInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
+findInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
+                                              let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id
+                                              inventory <- runDB $ getJustEntity inventoryId
+                                              return $ toInventoryQL inventory
 
 -- DB ACTIONS
-dbFetchInventoryById:: Inventory_Id -> Handler Inventory
+--dbFetchInventoryById:: Inventory_Id -> Handler (Inventory Res)
 dbFetchInventoryById inventoryId = do
                                       inventory <- runDB $ getJustEntity inventoryId
                                       return $ toInventoryQL inventory
 
-dbFetchInventories:: Handler [Inventory]
+dbFetchInventories:: Handler [Inventory Res]
 dbFetchInventories = do
                        inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
                        return $ P.map toInventoryQL inventories
 
-listInventoryResolver :: () -> Res e Handler [Inventory]
+listInventoryResolver :: () -> Res e Handler [Inventory Res]
 listInventoryResolver _ = lift $ dbFetchInventories
+
+--inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
+inventoryItemsResolver inventoryId (PageArg {..}) = lift $ do
+                                    countItems <- runDB $ count ([InventoryItem_InventoryId ==. inventoryId] :: [Filter InventoryItem_])
+                                    items <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+                                    let itemsQL = P.map (\r -> toInventoryItemQL r) items
+                                    return Page { totalCount = countItems
+                                                , content = itemsQL
+                                                , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                                      , hasPreview = pageIndex' * pageSize' > 0
+                                                                      , pageSize = pageSize'
+                                                                      , pageIndex = pageIndex'
+                                                }
+                                    }
+                                     where
+                                      pageIndex' = case pageIndex of
+                                                    Just  x  -> x
+                                                    Nothing -> 0
+                                      pageSize' = case pageSize of
+                                                      Just y -> y
+                                                      Nothing -> 10
 
 -- Mutation
 data InventoryArg = InventoryArg { inventoryId :: Int
@@ -55,10 +87,10 @@ data InventoryArg = InventoryArg { inventoryId :: Int
                                  , active :: Bool
                                  } deriving (Generic)
 
-saveInventoryResolver :: InventoryArg -> MutRes e Handler Inventory
+saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)
 saveInventoryResolver arg = lift $ createOrUpdateInventory arg
 
-createOrUpdateInventory :: InventoryArg -> Handler Inventory
+createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
 createOrUpdateInventory inventory = do
                 let InventoryArg {..} = inventory
                 now <- liftIO getCurrentTime
@@ -77,10 +109,11 @@ createOrUpdateInventory inventory = do
                 return response
 
 -- CONVERTERS
-toInventoryQL :: Entity Inventory_ -> Inventory
+--toInventoryQL :: Entity Inventory_ -> Inventory
 toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
                                                          , name = inventory_Name
                                                          , description = inventory_Description
+                                                         , inventoryItems = inventoryItemsResolver inventoryId
                                                          , createdDate = fromString $ show inventory_CreatedDate
                                                          , modifiedDate = m
                                                          }

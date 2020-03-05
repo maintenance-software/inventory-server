@@ -35,7 +35,7 @@ data InventoryItem = InventoryItem { inventoryItemId :: Int
                                    , code :: Text
                                    , location :: Text
 --                                   , status :: Text
-                                   , dateExpiry :: Text
+                                   , dateExpiry :: Maybe Text
                                    , createdDate :: Text
                                    , modifiedDate :: Maybe Text
                                    } deriving (Generic, GQLType)
@@ -53,7 +53,7 @@ data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
                                          , location :: Text
 --                                         , status :: Text
                                          , inventoryId :: Int
-                                         , dateExpiry :: Text
+                                         , dateExpiry :: Maybe Text
                                          , itemId :: Int
                                          } deriving (Generic, GQLType)
 
@@ -97,13 +97,16 @@ toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inven
                                                                          , code = inventoryItem_Code
                                                                          , location = inventoryItem_Location
 --                                                                         , status = T.pack $ show inventoryItem_Status
-                                                                         , dateExpiry = fromString $ show inventoryItem_CreatedDate
+                                                                         , dateExpiry = de
                                                                          , createdDate = fromString $ show inventoryItem_CreatedDate
                                                                          , modifiedDate = m
                                                                          }
                             where
                               InventoryItem_ {..} = inventoryItem
                               m = case inventoryItem_ModifiedDate of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
+                              de = case inventoryItem_DateExpiry of
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing
 
@@ -128,7 +131,7 @@ createOrUpdateInventoryItem inventoryItem = do
                                                                      , InventoryItem_Code =. code
                                                                      , InventoryItem_Location =. location
 --                                                                     , InventoryItem_Status =. readEntityStatus status
-                                                                     , InventoryItem_DateExpiry =.  now
+                                                                     , InventoryItem_DateExpiry =.  Just now
                                                                      , InventoryItem_InventoryId =. ((toSqlKey $ fromIntegral inventoryId)::Inventory_Id)
                                                                      , InventoryItem_ItemId =. ((toSqlKey $ fromIntegral itemId)::Item_Id)
                                                                      , InventoryItem_ModifiedDate =. Just now
@@ -147,7 +150,7 @@ fromInventoryItemQL (InventoryItemArg {..}) cd md = InventoryItem_ { inventoryIt
                                                                    , inventoryItem_Code = code
                                                                    , inventoryItem_Location = location
 --                                                                   , inventoryItem_Status = readEntityStatus status
-                                                                   , inventoryItem_DateExpiry = cd
+                                                                   , inventoryItem_DateExpiry = md
                                                                    , inventoryItem_ItemId = (toSqlKey $ fromIntegral itemId)::Item_Id
                                                                    , inventoryItem_InventoryId = ((toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id)
                                                                    , inventoryItem_CreatedDate = cd

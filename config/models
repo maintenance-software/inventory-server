@@ -137,7 +137,7 @@ InventoryItem_ sql=t_inventory_item
     price Double
     code Text
     location Text
-    dateExpiry UTCTime
+    dateExpiry UTCTime Maybe
     itemId Item_Id
     inventoryId Inventory_Id
     createdDate UTCTime
