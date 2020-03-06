@@ -12,7 +12,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Inventory (Inventory, Inventories, InventoryArg, inventoryResolver, saveInventoryResolver, toInventoryQL, dbFetchInventoryById) where
+module Graphql.Inventory (
+      inventoryResolver
+    , saveInventoryResolver
+    , toInventoryQL
+    , dbFetchInventoryById
+) where
 
 import Import
 import GHC.Generics
@@ -21,20 +26,9 @@ import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Utils
+import Graphql.InventoryDataTypes
 import Graphql.InventoryItem
 import Data.Time
-
-data Inventory o = Inventory { inventoryId :: Int
-                           , name :: Text
-                           , description :: Text
-                           , inventoryItems :: PageArg -> o () Handler (Page InventoryItem)
-                           , createdDate :: Text
-                           , modifiedDate :: Maybe Text
-                           } deriving (Generic, GQLType)
-
-data Inventories = Inventories { inventory :: GetEntityByIdArg ->  Res () Handler (Inventory Res)
-                               , list :: () -> Res () Handler [Inventory Res]
-                               } deriving (Generic, GQLType)
 
 inventoryResolver :: () -> Res e Handler Inventories
 inventoryResolver _ = pure Inventories {  inventory = findInventoryByIdResolver, list = listInventoryResolver }
@@ -79,13 +73,6 @@ inventoryItemsResolver inventoryId (PageArg {..}) = lift $ do
                                       pageSize' = case pageSize of
                                                       Just y -> y
                                                       Nothing -> 10
-
--- Mutation
-data InventoryArg = InventoryArg { inventoryId :: Int
-                                 , name :: Text
-                                 , description :: Text
-                                 , active :: Bool
-                                 } deriving (Generic)
 
 saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)
 saveInventoryResolver arg = lift $ createOrUpdateInventory arg

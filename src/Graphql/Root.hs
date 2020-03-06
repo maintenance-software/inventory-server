@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 
 module Graphql.Root (api, apiDoc) where
@@ -35,6 +36,7 @@ import           Graphql.Item
 import           Graphql.Inventory
 import           Graphql.InventoryItem
 import           Graphql.Utils (PageArg)
+import           Graphql.InventoryDataTypes
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
@@ -46,7 +48,7 @@ data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
                          , categories :: PageArg -> m [Category]
                          , inventories :: () -> m Inventories
                          , items :: () -> m Items
-                         , inventoryItems :: InventoryItems (Res () Handler)
+                         , inventoryItems :: () -> m InventoryItems
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
@@ -55,7 +57,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveCategory :: CategoryArg -> m Category
                            , saveInventory :: InventoryArg -> m (Inventory MutRes)
                            , saveItem :: ItemArg -> m (Item MutRes)
-                           , saveInventoryItem :: InventoryItemArg -> m InventoryItem
+                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
                            } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)

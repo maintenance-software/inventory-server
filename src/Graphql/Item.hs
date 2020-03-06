@@ -12,7 +12,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Item (Items, Item, ItemArg, itemResolver, saveItemResolver, toItemQL) where
+module Graphql.Item (
+        itemResolver
+      , saveItemResolver
+      , toItemQL
+) where
 
 import Import
 import GHC.Generics
@@ -25,45 +29,8 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Category
+import Graphql.InventoryDataTypes
 import Enums
-
-data Item o = Item { itemId :: Int
-                 , name :: Text
-                 , unit :: Text
-                 , defaultPrice :: Float
-                 , description :: Maybe Text
-                 , partNumber :: Maybe Text
-                 , manufacturer :: Maybe Text
-                 , model :: Maybe Text
-                 , itemType :: Text
-                 , notes:: Maybe Text
-                 , status :: Text
-                 , images :: [Text]
-                 , category :: DummyArg -> o () Handler Category
-                 , createdDate :: Text
-                 , modifiedDate :: Maybe Text
-                 } deriving (Generic, GQLType)
-
-data Items = Items { item :: GetEntityByIdArg -> Res () Handler (Item Res)
-                     , page :: PageArg -> Res () Handler (Page (Item Res))
-                   } deriving (Generic, GQLType)
-
-data ItemArg = ItemArg { itemId :: Int
-                       , name :: Text
-                       , unit :: Text
-                       , defaultPrice :: Float
-                       , description :: Maybe Text
-                       , partNumber :: Maybe Text
-                       , manufacturer :: Maybe Text
-                       , model :: Maybe Text
-                       , itemType :: Text
-                       , notes :: Maybe Text
-                       , status :: Text
-                       , images :: [Text]
-                       , active :: Bool
-                       , categoryId :: Int
-                       } deriving (Generic, GQLType)
-
 
 -- Query Resolvers
 findItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)

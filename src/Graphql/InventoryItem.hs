@@ -12,7 +12,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.InventoryItem (InventoryItems, InventoryItem, InventoryItemArg, inventoryItemResolver, saveInventoryItemResolver, toInventoryItemQL) where
+module Graphql.InventoryItem (
+        inventoryItemResolver
+      , saveInventoryItemResolver
+      , toInventoryItemQL
+) where
 
 import Import
 import GHC.Generics
@@ -25,46 +29,17 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Category
+import Graphql.InventoryDataTypes
 import Enums
 
-data InventoryItem = InventoryItem { inventoryItemId :: Int
-                                   , level :: Int
-                                   , maxLevelAllowed :: Int
-                                   , minLevelAllowed :: Int
-                                   , price :: Float
-                                   , code :: Text
-                                   , location :: Text
---                                   , status :: Text
-                                   , dateExpiry :: Maybe Text
-                                   , createdDate :: Text
-                                   , modifiedDate :: Maybe Text
-                                   } deriving (Generic, GQLType)
-
-data InventoryItems m = InventoryItems { inventoryItem :: GetEntityByIdArg -> m InventoryItem
-                                       , page :: PageArg -> m (Page InventoryItem)
-                                       } deriving (Generic, GQLType)
-
-data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
-                                         , level :: Int
-                                         , maxLevelAllowed :: Int
-                                         , minLevelAllowed :: Int
-                                         , price :: Float
-                                         , code :: Text
-                                         , location :: Text
---                                         , status :: Text
-                                         , inventoryId :: Int
-                                         , dateExpiry :: Maybe Text
-                                         , itemId :: Int
-                                         } deriving (Generic, GQLType)
-
 -- Query Resolvers
-findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler InventoryItem
+findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
 findInventoryItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let inventoryItemId = (toSqlKey $ fromIntegral $ entityId)::InventoryItem_Id
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 
-listInventoryItemResolver :: PageArg -> Res e Handler (Page InventoryItem)
+listInventoryItemResolver :: PageArg -> Res e Handler (Page (InventoryItem Res))
 listInventoryItemResolver PageArg {..} = lift $ do
                         countItems <- runDB $ count ([] :: [Filter InventoryItem_])
                         items <- runDB $ selectList [] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
@@ -85,10 +60,10 @@ listInventoryItemResolver PageArg {..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-inventoryItemResolver :: InventoryItems (Res () Handler)
-inventoryItemResolver = InventoryItems {  inventoryItem = findInventoryItemByIdResolver, page = listInventoryItemResolver }
+inventoryItemResolver :: () -> Res e Handler InventoryItems
+inventoryItemResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver, page = listInventoryItemResolver }
 
-toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
+--toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
 toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
                                                                          , level = inventoryItem_Level
                                                                          , maxLevelAllowed = inventoryItem_MaxLevelAllowed
@@ -111,7 +86,7 @@ toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inven
                                     Nothing -> Nothing
 
 -- Mutation Resolvers
-saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler InventoryItem
+saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler (InventoryItem MutRes)
 saveInventoryItemResolver arg = lift $ do
                               inventoryItemId <- createOrUpdateInventoryItem arg
                               inventoryItem <- runDB $ getJustEntity inventoryItemId
