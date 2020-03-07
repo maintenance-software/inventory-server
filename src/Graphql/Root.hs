@@ -73,7 +73,7 @@ resolveQuery = QueryQL { deity = resolveDeity
                        , categories = listCategoryResolver
                        , inventories = inventoryResolver
                        , items = itemResolver
-                       , inventoryItems = inventoryItemResolver
+                       , inventoryItems = inventoryItemsResolver
                        }
 -- | The mutation resolver
 resolveMutation::Mutation (MutRes () Handler)

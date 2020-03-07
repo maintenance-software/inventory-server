@@ -13,6 +13,31 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
+#ifdef include_InventoryItem
+
+--toInventoryQL :: Entity Inventory_ -> Inventory
+toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
+                                                         , name = inventory_Name
+                                                         , description = inventory_Description
+                                                         , inventoryItems = inventoryItemsPageResolver_ inventoryId
+                                                         , createdDate = fromString $ show inventory_CreatedDate
+                                                         , modifiedDate = m
+                                                         }
+                                          where
+                                            Inventory_ {..} = inventory
+                                            m = case inventory_ModifiedDate of
+                                                  Just d -> Just $ fromString $ show d
+                                                  Nothing -> Nothing
+
+--inventoryResolver_ :: Inventory_Id -> () -> Res e Handler (Inventory Res)
+getInventoryByIdResolver_ inventoryId _ = lift $ do
+                                    inventory <- runDB $ getJustEntity inventoryId
+                                    return $ toInventoryQL inventory
+
+#undef include_InventoryItem
+
+#elif 1
+
 module Graphql.Inventory (
       inventoryResolver
     , saveInventoryResolver
@@ -29,23 +54,16 @@ import Prelude as P
 import Graphql.Utils
 import Graphql.InventoryDataTypes
 import Data.Time
-#define include_InventoryItem
-#include "InventoryItem.hs"
-
+import Graphql.InventoryItem
 
 inventoryResolver :: () -> Res e Handler Inventories
-inventoryResolver _ = pure Inventories {  inventory = findInventoryByIdResolver, list = listInventoryResolver }
+inventoryResolver _ = pure Inventories {  inventory = getInventoryByIdResolver, list = listInventoryResolver }
 
-findInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
-findInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
+getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
+getInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id
                                               inventory <- runDB $ getJustEntity inventoryId
                                               return $ toInventoryQL inventory
-
---inventoryResolver_ :: Inventory_Id -> () -> Res e Handler (Inventory Res)
-inventoryResolver_ inventoryId _ = lift $ do
-                                    inventory <- runDB $ getJustEntity inventoryId
-                                    return $ toInventoryQL inventory
 
 -- DB ACTIONS
 --dbFetchInventoryById:: Inventory_Id -> Handler (Inventory Res)
@@ -60,27 +78,6 @@ dbFetchInventories = do
 
 listInventoryResolver :: () -> Res e Handler [Inventory Res]
 listInventoryResolver _ = lift $ dbFetchInventories
-
---inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
-inventoryItemsResolver inventoryId (PageArg {..}) = lift $ do
-                                    countItems <- runDB $ count ([InventoryItem_InventoryId ==. inventoryId] :: [Filter InventoryItem_])
-                                    items <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
-                                    let itemsQL = P.map (\r -> toInventoryItemQL r) items
-                                    return Page { totalCount = countItems
-                                                , content = itemsQL
-                                                , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
-                                                                      , hasPreview = pageIndex' * pageSize' > 0
-                                                                      , pageSize = pageSize'
-                                                                      , pageIndex = pageIndex'
-                                                }
-                                    }
-                                     where
-                                      pageIndex' = case pageIndex of
-                                                    Just  x  -> x
-                                                    Nothing -> 0
-                                      pageSize' = case pageSize of
-                                                      Just y -> y
-                                                      Nothing -> 10
 
 saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)
 saveInventoryResolver arg = lift $ createOrUpdateInventory arg
@@ -108,7 +105,7 @@ createOrUpdateInventory inventory = do
 toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
                                                          , name = inventory_Name
                                                          , description = inventory_Description
-                                                         , inventoryItems = inventoryItemsResolver inventoryId
+                                                         , inventoryItems = inventoryItemsPageResolver_ inventoryId
                                                          , createdDate = fromString $ show inventory_CreatedDate
                                                          , modifiedDate = m
                                                          }
@@ -142,3 +139,4 @@ mutation {
   }
 }
 -}
+#endif

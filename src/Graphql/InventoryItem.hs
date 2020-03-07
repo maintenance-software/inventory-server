@@ -13,37 +13,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-#ifdef include_InventoryItem
-
---toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
-toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
-                                                                         , level = inventoryItem_Level
-                                                                         , maxLevelAllowed = inventoryItem_MaxLevelAllowed
-                                                                         , minLevelAllowed = inventoryItem_MinLevelAllowed
-                                                                         , price = realToFrac inventoryItem_Price
-                                                                         , code = inventoryItem_Code
-                                                                         , location = inventoryItem_Location
---                                                                         , status = T.pack $ show inventoryItem_Status
-                                                                         , inventory =  inventoryResolver_ inventoryItem_InventoryId
-                                                                         , dateExpiry = de
-                                                                         , createdDate = fromString $ show inventoryItem_CreatedDate
-                                                                         , modifiedDate = m
-                                                                         }
-                            where
-                              InventoryItem_ {..} = inventoryItem
-                              m = case inventoryItem_ModifiedDate of
-                                    Just d -> Just $ fromString $ show d
-                                    Nothing -> Nothing
-                              de = case inventoryItem_DateExpiry of
-                                    Just d -> Just $ fromString $ show d
-                                    Nothing -> Nothing
-
-#undef include_InventoryItem
-
-#elif 1
-
 module Graphql.InventoryItem (
-        inventoryItemResolver
+        inventoryItemsResolver
+      , inventoryItemsPageResolver_
       , saveInventoryItemResolver
       , toInventoryItemQL
 ) where
@@ -59,9 +31,11 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Category
-import Graphql.Inventory (toInventoryQL)
 import Graphql.InventoryDataTypes
 import Enums
+#define include_InventoryItem
+#include "Inventory.hs"
+
 
 -- Query Resolvers
 findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
@@ -70,8 +44,29 @@ findInventoryItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 
-listInventoryItemResolver :: PageArg -> Res e Handler (Page (InventoryItem Res))
-listInventoryItemResolver PageArg {..} = lift $ do
+--inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
+inventoryItemsPageResolver_ inventoryId (PageArg {..}) = lift $ do
+                                    countItems <- runDB $ count ([InventoryItem_InventoryId ==. inventoryId] :: [Filter InventoryItem_])
+                                    items <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+                                    let itemsQL = P.map (\r -> toInventoryItemQL r) items
+                                    return Page { totalCount = countItems
+                                                , content = itemsQL
+                                                , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                                      , hasPreview = pageIndex' * pageSize' > 0
+                                                                      , pageSize = pageSize'
+                                                                      , pageIndex = pageIndex'
+                                                }
+                                    }
+                                     where
+                                      pageIndex' = case pageIndex of
+                                                    Just  x  -> x
+                                                    Nothing -> 0
+                                      pageSize' = case pageSize of
+                                                      Just y -> y
+                                                      Nothing -> 10
+
+inventoryItemsPageResolver :: PageArg -> Res e Handler (Page (InventoryItem Res))
+inventoryItemsPageResolver PageArg {..} = lift $ do
                         countItems <- runDB $ count ([] :: [Filter InventoryItem_])
                         items <- runDB $ selectList [] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toInventoryItemQL r) items
@@ -91,8 +86,8 @@ listInventoryItemResolver PageArg {..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-inventoryItemResolver :: () -> Res e Handler InventoryItems
-inventoryItemResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver, page = listInventoryItemResolver }
+inventoryItemsResolver :: () -> Res e Handler InventoryItems
+inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver, page = inventoryItemsPageResolver }
 
 --toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
 toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
@@ -104,6 +99,7 @@ toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inven
                                                                          , location = inventoryItem_Location
 --                                                                         , status = T.pack $ show inventoryItem_Status
                                                                          , dateExpiry = de
+                                                                         , inventory = getInventoryByIdResolver_ inventoryItem_InventoryId
                                                                          , createdDate = fromString $ show inventoryItem_CreatedDate
                                                                          , modifiedDate = m
                                                                          }
@@ -215,4 +211,3 @@ mutation {
 
 -}
 
-#endif
