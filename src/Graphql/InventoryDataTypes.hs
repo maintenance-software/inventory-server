@@ -95,6 +95,7 @@ data Item o = Item { itemId :: Int
                    , status :: Text
                    , images :: [Text]
                    , category :: DummyArg -> o () Handler Category
+                   , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
                    } deriving (Generic, GQLType)

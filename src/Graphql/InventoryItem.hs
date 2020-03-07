@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -15,7 +15,9 @@
 
 module Graphql.InventoryItem (
         inventoryItemsResolver
+      , getInventoryItemByIdResolver_
       , inventoryItemsPageResolver_
+      , inventoryItemsItemPageResolver_
       , saveInventoryItemResolver
       , toInventoryItemQL
 ) where
@@ -33,7 +35,7 @@ import Data.Time
 import Graphql.Category
 import Graphql.InventoryDataTypes
 import Enums
-#define include_InventoryItem
+#define INVENTORY_ITEM_MACRO
 #include "Inventory.hs"
 
 
@@ -44,10 +46,36 @@ findInventoryItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 
+--getInventoryItemByIdResolver_ :: InventoryItem_Id -> () -> Res e Handler (InventoryItem Res)
+getInventoryItemByIdResolver_ inventoryItemId _ = lift $ do
+                                              inventoryItem <- runDB $ getJustEntity inventoryItemId
+                                              return $ toInventoryItemQL inventoryItem
+
 --inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
 inventoryItemsPageResolver_ inventoryId (PageArg {..}) = lift $ do
                                     countItems <- runDB $ count ([InventoryItem_InventoryId ==. inventoryId] :: [Filter InventoryItem_])
                                     items <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+                                    let itemsQL = P.map (\r -> toInventoryItemQL r) items
+                                    return Page { totalCount = countItems
+                                                , content = itemsQL
+                                                , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                                      , hasPreview = pageIndex' * pageSize' > 0
+                                                                      , pageSize = pageSize'
+                                                                      , pageIndex = pageIndex'
+                                                }
+                                    }
+                                     where
+                                      pageIndex' = case pageIndex of
+                                                    Just  x  -> x
+                                                    Nothing -> 0
+                                      pageSize' = case pageSize of
+                                                      Just y -> y
+                                                      Nothing -> 10
+
+--inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
+inventoryItemsItemPageResolver_ itemId (PageArg {..}) = lift $ do
+                                    countItems <- runDB $ count ([InventoryItem_ItemId ==. itemId] :: [Filter InventoryItem_])
+                                    items <- runDB $ selectList [InventoryItem_ItemId ==. itemId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                     let itemsQL = P.map (\r -> toInventoryItemQL r) items
                                     return Page { totalCount = countItems
                                                 , content = itemsQL

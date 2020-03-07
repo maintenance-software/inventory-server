@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -11,6 +12,42 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
+
+#ifdef INVENTORY_ITEM_MACRO
+
+-- toItemQL :: Entity Item_ -> (Item Res)
+toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
+                                     , name = item_Name
+                                     , unit = item_Unit
+                                     , defaultPrice = realToFrac item_DefaultPrice
+                                     , description = item_Description
+                                     , partNumber = item_PartNumber
+                                     , manufacturer = item_Manufacturer
+                                     , model = item_Model
+                                     , itemType = T.pack $ show item_ItemType
+                                     , notes = item_Notes
+                                     , status = T.pack $ show item_Status
+                                     , images = item_Images
+                                     , category = categoryResolver item_CategoryId
+                                     , item = getInventoryItemByIdResolver_ item_InventoryItemId
+                                     , createdDate = fromString $ show item_CreatedDate
+                                     , modifiedDate = m
+                                     }
+                            where
+                              Item_ {..} = item
+                              m = case item_ModifiedDate of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
+
+
+--getItemByIdResolver_ :: Item_Id -> ()-> Res e Handler (Item Res)
+getItemByIdResolver_ itemId () = lift $ do
+                                         item <- runDB $ getJustEntity itemId
+                                         return $ toItemQL item
+
+#undef INVENTORY_ITEM_MACRO
+
+#elif 1
 
 module Graphql.Item (
         itemResolver
@@ -31,16 +68,17 @@ import Data.Time
 import Graphql.Category
 import Graphql.InventoryDataTypes
 import Enums
+import Graphql.InventoryItem
 
 -- Query Resolvers
-findItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
-findItemByIdResolver GetEntityByIdArg {..} = lift $ do
+getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
+getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item
 
-listItemResolver :: PageArg -> Res e Handler (Page (Item Res))
-listItemResolver PageArg {..} = lift $ do
+itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
+itemsPageResolver PageArg {..} = lift $ do
                         countItems <- runDB $ count ([] :: [Filter Item_])
                         items <- runDB $ selectList [] [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toItemQL r) items
@@ -61,10 +99,10 @@ listItemResolver PageArg {..} = lift $ do
                                           Nothing -> 10
 
 itemResolver :: () -> Res e Handler Items
-itemResolver _ = pure Items {  item = findItemByIdResolver, page = listItemResolver }
+itemResolver _ = pure Items {  item = getItemByIdResolver, page = itemsPageResolver }
 
 -- itemResolver :: Items (Res () Handler)
--- itemResolver = Items {  item = findItemByIdResolver, page = listItemResolver }
+-- itemResolver = Items {  item = getItemByIdResolver, page = itemsPageResolver }
 
 -- categoryResolver :: Category_Id -> DummyArg -> Res e Handler Category
 categoryResolver categoryId arg = lift $ do
@@ -84,6 +122,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
                                      , category = categoryResolver item_CategoryId
+                                     , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
                                      }
@@ -197,3 +236,4 @@ mutation {
 }
 
 -}
+#endif
