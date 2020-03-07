@@ -94,7 +94,7 @@ data Item o = Item { itemId :: Int
                    , notes:: Maybe Text
                    , status :: Text
                    , images :: [Text]
-                   , category :: DummyArg -> o () Handler Category
+                   , category :: () -> o () Handler Category
                    , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text

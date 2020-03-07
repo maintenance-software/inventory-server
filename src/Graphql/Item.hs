@@ -104,7 +104,7 @@ itemResolver _ = pure Items {  item = getItemByIdResolver, page = itemsPageResol
 -- itemResolver :: Items (Res () Handler)
 -- itemResolver = Items {  item = getItemByIdResolver, page = itemsPageResolver }
 
--- categoryResolver :: Category_Id -> DummyArg -> Res e Handler Category
+-- categoryResolver :: Category_Id -> () -> Res e Handler Category
 categoryResolver categoryId arg = lift $ do
                                       category <- dbFetchCategoryById categoryId
                                       return category

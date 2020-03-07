@@ -32,7 +32,7 @@ data Role o = Role { roleId :: Int
                  , active :: Bool
                  , createdDate :: Text
                  , modifiedDate :: Maybe Text
-                 , privileges :: DummyArg -> o () Handler [Privilege]
+                 , privileges :: () -> o () Handler [Privilege]
                  } deriving (Generic, GQLType)
 
 data Roles = Roles { role :: GetEntityByIdArg -> Res () Handler (Role Res)
@@ -68,7 +68,7 @@ listResolver PageArg {..} = lift $ do
 resolveRole :: () -> Res e Handler Roles
 resolveRole _ = pure Roles {  role = findByIdResolver, list = listResolver }
 
--- resolvePrivileges :: Role_Id -> DummyArg -> Res e Handler [Privilege]
+-- resolvePrivileges :: Role_Id -> () -> Res e Handler [Privilege]
 resolvePrivileges roleId arg = lift $ do
                                       rolePrivileges <- runDB $ selectList ([RolePrivilege_RoleId ==. roleId] :: [Filter RolePrivilege_]) []
                                       let privilegeIds = P.map (\(Entity _ (RolePrivilege_ _ privilegeId)) -> privilegeId) rolePrivileges

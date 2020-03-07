@@ -56,7 +56,7 @@ data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
 
 data EntityIdsArg = EntityIdsArg { entityIds :: [Int] } deriving (Generic)
 
-data DummyArg = DummyArg {} deriving (Generic)
+--data DummyArg = DummyArg {} deriving (Generic)
 
 localDay :: IO Day
 localDay = fmap utctDay getCurrentTime

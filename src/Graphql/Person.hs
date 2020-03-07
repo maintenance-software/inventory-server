@@ -380,7 +380,7 @@ data User o = User { userId :: Int
                    , newPasswordRequired :: Bool
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
-                   , person :: DummyArg -> o () Handler (Person o)
+                   , person :: () -> o () Handler (Person o)
                    , privileges :: UserPrivilegeArg -> o () Handler [Privilege]
                    , roles :: UserRoleArg -> o () Handler [Role o]
                    } deriving (Generic, GQLType)
@@ -466,7 +466,7 @@ updatePasswordResolver UpdatePasswordArg {..} = lift $ do
                                                 False ->  return False
                                       return result
 
-getUserPersonByIdResolver :: Person_Id -> DummyArg -> Res e Handler (Person Res)
+getUserPersonByIdResolver :: Person_Id -> () -> Res e Handler (Person Res)
 getUserPersonByIdResolver personId _ = lift $ do
                                       person <- runDB $ getJustEntity personId
                                       return $ toPersonQL person
