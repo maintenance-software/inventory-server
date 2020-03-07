@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -27,8 +28,10 @@ import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Utils
 import Graphql.InventoryDataTypes
-import Graphql.InventoryItem
 import Data.Time
+#define include_InventoryItem
+#include "InventoryItem.hs"
+
 
 inventoryResolver :: () -> Res e Handler Inventories
 inventoryResolver _ = pure Inventories {  inventory = findInventoryByIdResolver, list = listInventoryResolver }
@@ -38,6 +41,11 @@ findInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id
                                               inventory <- runDB $ getJustEntity inventoryId
                                               return $ toInventoryQL inventory
+
+--inventoryResolver_ :: Inventory_Id -> () -> Res e Handler (Inventory Res)
+inventoryResolver_ inventoryId _ = lift $ do
+                                    inventory <- runDB $ getJustEntity inventoryId
+                                    return $ toInventoryQL inventory
 
 -- DB ACTIONS
 --dbFetchInventoryById:: Inventory_Id -> Handler (Inventory Res)

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -11,6 +12,35 @@
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
+
+#ifdef include_InventoryItem
+
+--toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
+toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
+                                                                         , level = inventoryItem_Level
+                                                                         , maxLevelAllowed = inventoryItem_MaxLevelAllowed
+                                                                         , minLevelAllowed = inventoryItem_MinLevelAllowed
+                                                                         , price = realToFrac inventoryItem_Price
+                                                                         , code = inventoryItem_Code
+                                                                         , location = inventoryItem_Location
+--                                                                         , status = T.pack $ show inventoryItem_Status
+                                                                         , inventory =  inventoryResolver_ inventoryItem_InventoryId
+                                                                         , dateExpiry = de
+                                                                         , createdDate = fromString $ show inventoryItem_CreatedDate
+                                                                         , modifiedDate = m
+                                                                         }
+                            where
+                              InventoryItem_ {..} = inventoryItem
+                              m = case inventoryItem_ModifiedDate of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
+                              de = case inventoryItem_DateExpiry of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
+
+#undef include_InventoryItem
+
+#elif 1
 
 module Graphql.InventoryItem (
         inventoryItemResolver
@@ -29,6 +59,7 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Category
+import Graphql.Inventory (toInventoryQL)
 import Graphql.InventoryDataTypes
 import Enums
 
@@ -183,3 +214,5 @@ mutation {
 }
 
 -}
+
+#endif
