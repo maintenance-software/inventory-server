@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-#ifdef INVENTORY_ITEM_MACRO
+#ifdef INVENTORY_DEF
 
 --toInventoryQL :: Entity Inventory_ -> Inventory
 toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
@@ -34,7 +34,7 @@ getInventoryByIdResolver_ inventoryId _ = lift $ do
                                     inventory <- runDB $ getJustEntity inventoryId
                                     return $ toInventoryQL inventory
 
-#undef INVENTORY_ITEM_MACRO
+#undef INVENTORY_DEF
 
 #elif 1
 

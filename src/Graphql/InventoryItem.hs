@@ -35,8 +35,10 @@ import Data.Time
 import Graphql.Category
 import Graphql.InventoryDataTypes
 import Enums
-#define INVENTORY_ITEM_MACRO
+#define INVENTORY_DEF
 #include "Inventory.hs"
+#define ITEM_DEF
+#include "Item.hs"
 
 
 -- Query Resolvers
@@ -128,6 +130,7 @@ toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inven
 --                                                                         , status = T.pack $ show inventoryItem_Status
                                                                          , dateExpiry = de
                                                                          , inventory = getInventoryByIdResolver_ inventoryItem_InventoryId
+                                                                         , item = getItemByIdResolver_ inventoryItem_ItemId
                                                                          , createdDate = fromString $ show inventoryItem_CreatedDate
                                                                          , modifiedDate = m
                                                                          }

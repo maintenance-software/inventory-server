@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-#ifdef INVENTORY_ITEM_MACRO
+#ifdef ITEM_DEF
 
 -- toItemQL :: Entity Item_ -> (Item Res)
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
@@ -29,7 +29,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
                                      , category = categoryResolver item_CategoryId
-                                     , item = getInventoryItemByIdResolver_ item_InventoryItemId
+                                     , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
                                      }
@@ -41,11 +41,15 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
 
 
 --getItemByIdResolver_ :: Item_Id -> ()-> Res e Handler (Item Res)
-getItemByIdResolver_ itemId () = lift $ do
+getItemByIdResolver_ itemId _ = lift $ do
                                          item <- runDB $ getJustEntity itemId
                                          return $ toItemQL item
 
-#undef INVENTORY_ITEM_MACRO
+categoryResolver categoryId arg = lift $ do
+                                      category <- dbFetchCategoryById categoryId
+                                      return category
+
+#undef ITEM_DEF
 
 #elif 1
 
