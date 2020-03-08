@@ -116,6 +116,5 @@ data ItemArg = ItemArg { itemId :: Int
                        , notes :: Maybe Text
                        , status :: Text
                        , images :: [Text]
-                       , active :: Bool
                        , categoryId :: Int
                        } deriving (Generic, GQLType)

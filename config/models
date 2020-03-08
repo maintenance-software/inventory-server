@@ -99,7 +99,6 @@ Item_ sql=t_item
     defaultPrice Double
     description Text Maybe
     images [Text]
-    active Bool
     partNumber Text Maybe
     manufacturer Text Maybe
     model Text Maybe

@@ -15,6 +15,7 @@ module Graphql.Utils where
 
 import System.Random
 import Prelude as P
+import qualified Data.Text as T
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
@@ -50,11 +51,18 @@ data EntityArg a = EntityArg { arg :: a } deriving (Generic, GQLType)
 data PageArg = PageArg { queryString :: Maybe Text
                        , pageIndex :: Maybe Int
                        , pageSize :: Maybe Int
+                       , filters :: Maybe [Predicate]
                        } deriving (Generic)
 
 data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
 
 data EntityIdsArg = EntityIdsArg { entityIds :: [Int] } deriving (Generic)
+
+data Predicate = Predicate { field :: Text, operator :: Text, value :: Text} deriving (Generic)
+
+instance GQLType Predicate where
+    type  KIND Predicate = INPUT_OBJECT
+    description = const $ Just $ pack "This field holds predicate information"
 
 --data DummyArg = DummyArg {} deriving (Generic)
 
@@ -70,3 +78,6 @@ genRandomAlphaNumString n = do
                              let c = s !! r
                              s <- genRandomAlphaNumString (n - 1)
                              return (c:s)
+
+parseToInteger :: Text -> Int
+parseToInteger str = read $ T.unpack str :: Int

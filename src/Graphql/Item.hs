@@ -81,10 +81,32 @@ getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item
 
+--countItems <- runDB $ count ([InventoryItem_ItemId ==. itemId] :: [Filter InventoryItem_])
+getOperator "=" = (==.)
+getOperator ">" = (>.)
+getOperator ">=" = (>=.)
+getOperator "<=" = (<=.)
+getOperator "<" = (<.)
+
+getFilters Nothing = []
+getFilters (Just []) = []
+getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.strip value == ""  = getFilters $ Just xs
+                         | T.strip field == "status" = ((getOperator operator) Item_Status (readEntityStatus $ T.strip value)) : (getFilters $ Just xs)
+                         | T.strip field == "itemType" = ((getOperator operator) Item_ItemType (readItemType $ T.strip value)) : (getFilters $ Just xs)
+                         | T.strip field == "name" = ((getOperator operator) Item_Name (T.strip value)) : (getFilters $ Just xs)
+                         | T.strip field == "partNumber" = ((getOperator operator) Item_PartNumber (Just $ T.strip value)) : (getFilters $ Just xs)
+                         | T.strip field == "manufacturer" = ((getOperator operator) Item_Manufacturer (Just $ T.strip value)) : (getFilters $ Just xs)
+                         | T.strip field == "model" = ((getOperator operator) Item_Model (Just $ T.strip value)) : (getFilters $ Just xs)
+                         | T.strip field == "categoryId" = ((getOperator operator) Item_CategoryId (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)) : (getFilters $ Just xs)
+                         | otherwise = getFilters $ Just xs
+                   where
+                      Predicate {..} = x
+
 itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver PageArg {..} = lift $ do
-                        countItems <- runDB $ count ([] :: [Filter Item_])
-                        items <- runDB $ selectList [] [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+--                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
+                        countItems <- runDB $ count ((getFilters filters) :: [Filter Item_])
+                        items <- runDB $ selectList (getFilters filters) [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toItemQL r) items
                         return Page { totalCount = countItems
                                     , content = itemsQL
@@ -183,7 +205,6 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
                                         , item_Notes = notes
                                         , item_Status = readEntityStatus status
                                         , item_Images = images
-                                        , item_Active = active
                                         , item_CategoryId = ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
                                         , item_CreatedDate = cd
                                         , item_ModifiedDate = md
