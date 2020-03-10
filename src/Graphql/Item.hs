@@ -136,6 +136,7 @@ categoryResolver categoryId arg = lift $ do
                                       return category
 -- toItemQL :: Entity Item_ -> (Item Res)
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
+                                     , code = item_Code
                                      , name = item_Name
                                      , unit = item_Unit
                                      , defaultPrice = realToFrac item_DefaultPrice
@@ -173,7 +174,8 @@ createOrUpdateItem item = do
                             itemEntityId <- if itemId > 0 then
                                         do
                                          let itemKey = (toSqlKey $ fromIntegral $ itemId)::Item_Id
-                                         _ <- runDB $ update itemKey [ Item_Name =. name
+                                         _ <- runDB $ update itemKey [ Item_Code =. code
+                                                                     , Item_Name =. name
                                                                      , Item_Unit =. unit
                                                                      , Item_DefaultPrice =. realToFrac defaultPrice
                                                                      , Item_Description =. description
@@ -194,7 +196,8 @@ createOrUpdateItem item = do
                             return itemEntityId
 
 fromItemQL :: ItemArg -> UTCTime -> Maybe UTCTime -> Item_
-fromItemQL (ItemArg {..}) cd md = Item_ { item_Name = name
+fromItemQL (ItemArg {..}) cd md = Item_ { item_Code = code
+                                        , item_Name = name
                                         , item_Unit = unit
                                         , item_DefaultPrice = realToFrac defaultPrice
                                         , item_Description = description

@@ -55,7 +55,6 @@ data InventoryItem o = InventoryItem { inventoryItemId :: Int
                                    , maxLevelAllowed :: Int
                                    , minLevelAllowed :: Int
                                    , price :: Float
-                                   , code :: Text
                                    , location :: Text
                                    , dateExpiry :: Maybe Text
                                    , inventory :: () -> o () Handler (Inventory o)
@@ -83,6 +82,7 @@ data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
 
 
 data Item o = Item { itemId :: Int
+                   , code :: Text
                    , name :: Text
                    , unit :: Text
                    , defaultPrice :: Float
@@ -105,6 +105,7 @@ data Items = Items { item :: GetEntityByIdArg -> Res () Handler (Item Res)
                    } deriving (Generic, GQLType)
 
 data ItemArg = ItemArg { itemId :: Int
+                       , code :: Text
                        , name :: Text
                        , unit :: Text
                        , defaultPrice :: Float

@@ -94,6 +94,7 @@ ContactInfo_ json sql=t_contact_info
 
 Item_ sql=t_item
     Id sql=item_id
+    code Text
     name Text
     unit Text
     defaultPrice Double
@@ -134,7 +135,6 @@ InventoryItem_ sql=t_inventory_item
     maxLevelAllowed Int
     minLevelAllowed Int
     price Double
-    code Text
     location Text
     dateExpiry UTCTime Maybe
     itemId Item_Id
