@@ -18,7 +18,6 @@
 -- toItemQL :: Entity Item_ -> (Item Res)
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , name = item_Name
-                                     , unit = item_Unit
                                      , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
                                      , partNumber = item_PartNumber
@@ -29,6 +28,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
                                      , category = categoryResolver item_CategoryId
+                                     , unit = getUnitByIdResolver_ item_UnitId
                                      , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
@@ -48,6 +48,10 @@ getItemByIdResolver_ itemId _ = lift $ do
 categoryResolver categoryId arg = lift $ do
                                       category <- dbFetchCategoryById categoryId
                                       return category
+
+getUnitByIdResolver_ unitId _ = lift $ do
+                                      unit <- dbFetchUnitById unitId
+                                      return unit
 
 #undef ITEM_DEF
 
@@ -73,6 +77,7 @@ import Graphql.Category
 import Graphql.InventoryDataTypes
 import Enums
 import Graphql.InventoryItem
+import Graphql.Unit
 
 -- Query Resolvers
 getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
@@ -134,11 +139,15 @@ itemResolver _ = pure Items {  item = getItemByIdResolver, page = itemsPageResol
 categoryResolver categoryId arg = lift $ do
                                       category <- dbFetchCategoryById categoryId
                                       return category
+
+getUnitByIdResolver_ unitId _ = lift $ do
+                                      unit <- dbFetchUnitById unitId
+                                      return unit
+
 -- toItemQL :: Entity Item_ -> (Item Res)
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , code = item_Code
                                      , name = item_Name
-                                     , unit = item_Unit
                                      , defaultPrice = realToFrac item_DefaultPrice
                                      , description = item_Description
                                      , partNumber = item_PartNumber
@@ -149,6 +158,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
                                      , category = categoryResolver item_CategoryId
+                                     , unit = getUnitByIdResolver_ item_UnitId
                                      , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
@@ -176,7 +186,6 @@ createOrUpdateItem item = do
                                          let itemKey = (toSqlKey $ fromIntegral $ itemId)::Item_Id
                                          _ <- runDB $ update itemKey [ Item_Code =. code
                                                                      , Item_Name =. name
-                                                                     , Item_Unit =. unit
                                                                      , Item_DefaultPrice =. realToFrac defaultPrice
                                                                      , Item_Description =. description
                                                                      , Item_PartNumber =. partNumber
@@ -187,6 +196,7 @@ createOrUpdateItem item = do
                                                                      , Item_Status =. readEntityStatus status
                                                                      , Item_Images =. images
                                                                      , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
+                                                                     , Item_UnitId =. ((toSqlKey $ fromIntegral $ unitId)::Unit_Id)
                                                                      , Item_ModifiedDate =. Just now
                                                                      ]
                                          return itemKey
@@ -198,7 +208,6 @@ createOrUpdateItem item = do
 fromItemQL :: ItemArg -> UTCTime -> Maybe UTCTime -> Item_
 fromItemQL (ItemArg {..}) cd md = Item_ { item_Code = code
                                         , item_Name = name
-                                        , item_Unit = unit
                                         , item_DefaultPrice = realToFrac defaultPrice
                                         , item_Description = description
                                         , item_PartNumber = partNumber
@@ -209,6 +218,7 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Code = code
                                         , item_Status = readEntityStatus status
                                         , item_Images = images
                                         , item_CategoryId = ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
+                                        , item_UnitId = ((toSqlKey $ fromIntegral $ unitId)::Unit_Id)
                                         , item_CreatedDate = cd
                                         , item_ModifiedDate = md
                                         }

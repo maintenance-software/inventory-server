@@ -96,7 +96,6 @@ Item_ sql=t_item
     Id sql=item_id
     code Text
     name Text
-    unit Text
     defaultPrice Double
     description Text Maybe
     images [Text]
@@ -107,6 +106,7 @@ Item_ sql=t_item
     notes Text Maybe
     status EntityStatus
     categoryId Category_Id
+    unitId Unit_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -125,6 +125,14 @@ Category_ json sql=t_category
     Id sql=category_id
     name Text
     description Text
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Unit_ json sql=t_unit
+    Id sql=unit_id
+    key Text
+    label Text
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show

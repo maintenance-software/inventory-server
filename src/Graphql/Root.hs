@@ -32,6 +32,7 @@ import           Graphql.Privilege
 import           Graphql.Role
 import           Graphql.Person
 import           Graphql.Category
+import           Graphql.Unit
 import           Graphql.Item
 import           Graphql.Inventory
 import           Graphql.InventoryItem
@@ -39,13 +40,14 @@ import           Graphql.Utils (PageArg)
 import           Graphql.InventoryDataTypes
 -- importGQLDocumentWithNamespace "schema.gql"
 
-data QueryQL m = QueryQL { deity :: DeityArgs -> m Deity
-                         , session :: () -> Res () Handler Session
+data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
+                           session :: () -> Res () Handler Session
                          , privileges :: () -> m Privileges
                          , roles :: () -> m Roles
                          , persons :: () -> m Persons
                          , users :: () -> m Users
-                         , categories :: PageArg -> m [Category]
+                         , categories :: () -> m [Category]
+                         , units :: () -> m [Unit]
                          , inventories :: () -> m Inventories
                          , items :: () -> m Items
                          , inventoryItems :: () -> m InventoryItems
@@ -60,17 +62,18 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
                            } deriving (Generic, GQLType)
 
-data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
+--data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
 
 -- | The query resolver
 resolveQuery::QueryQL (Res () Handler)
-resolveQuery = QueryQL { deity = resolveDeity
-                       , session = getUserSessionResolver
+resolveQuery = QueryQL { --deity = resolveDeity
+                         session = getUserSessionResolver
                        , privileges = resolvePrivilege
                        , roles = resolveRole
                        , persons = resolvePerson
                        , users = resolveUser
                        , categories = listCategoryResolver
+                       , units = listUnitResolver
                        , inventories = inventoryResolver
                        , items = itemResolver
                        , inventoryItems = inventoryItemsResolver
@@ -89,17 +92,17 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
 
 -- BASE EXAMPLE
 -- https://github.com/dnulnets/haccessability
-dbFetchDeity:: Text -> Handler Deity
-dbFetchDeity name = do
-                     let userId = (toSqlKey 3)::User_Id
-                     deity <- runDB $ getEntity userId
-                     return $ Deity {fullName = "dummy", power = Just "Shapeshifting", tests = testsResolver}
+--dbFetchDeity:: Text -> Handler Deity
+--dbFetchDeity name = do
+--                     let userId = (toSqlKey 3)::User_Id
+--                     deity <- runDB $ getEntity userId
+--                     return $ Deity {fullName = "dummy", power = Just "Shapeshifting", tests = testsResolver}
 
-resolveDeity :: DeityArgs -> Res e Handler Deity
-resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
+--resolveDeity :: DeityArgs -> Res e Handler Deity
+--resolveDeity DeityArgs { name, mythology } = lift $ dbFetchDeity name
 
-testsResolver :: TestArg -> Res e Handler NoDeity
-testsResolver TestArg {yourFullName } = pure NoDeity {noFullName = "Test no full am", nopower = Just "no power"}
+--testsResolver :: TestArg -> Res e Handler NoDeity
+--testsResolver TestArg {yourFullName } = pure NoDeity {noFullName = "Test no full am", nopower = Just "no power"}
 
 rootResolver :: GQLRootResolver Handler () QueryQL Mutation Undefined
 rootResolver = GQLRootResolver { queryResolver = resolveQuery

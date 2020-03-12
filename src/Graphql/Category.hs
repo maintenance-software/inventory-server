@@ -12,7 +12,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Category (Category, CategoryArg, listCategoryResolver, saveCategoryResolver, toCategoryQL, dbFetchCategoryById) where
+module Graphql.Category (
+    Category
+    , CategoryArg
+    , listCategoryResolver
+    , saveCategoryResolver
+    , toCategoryQL
+    , dbFetchCategoryById
+) where
 
 import Import
 import GHC.Generics
@@ -30,30 +37,19 @@ data Category = Category { categoryId :: Int
                          , modifiedDate :: Maybe Text
                          } deriving (Generic, GQLType)
 
-data Categories m = Categories { category :: GetEntityByIdArg -> m Category
-                               , list :: PageArg -> m [Category]
-                               } deriving (Generic, GQLType)
-
 -- DB ACTIONS
 dbFetchCategoryById:: Category_Id -> Handler Category
 dbFetchCategoryById categoryId = do
                                       category <- runDB $ getJustEntity categoryId
                                       return $ toCategoryQL category
 
-dbFetchCategories:: PageArg -> Handler [Category]
-dbFetchCategories PageArg {..} = do
-                                  categories <- runDB $ selectList [] [Asc Category_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
-                                  return $ P.map toCategoryQL categories
-                              where
-                                pageIndex' = case pageIndex of
-                                              Just  x  -> x
-                                              Nothing -> 0
-                                pageSize' = case pageSize of
-                                                Just y -> y
-                                                Nothing -> 10
+dbFetchCategories:: Handler [Category]
+dbFetchCategories = do
+                       categories <- runDB $ selectList [] []
+                       return $ P.map toCategoryQL categories
 
-listCategoryResolver :: PageArg -> Res e Handler [Category]
-listCategoryResolver arg = lift $ dbFetchCategories arg
+listCategoryResolver :: () -> Res e Handler [Category]
+listCategoryResolver _ = lift $ dbFetchCategories
 
 -- Mutation
 data CategoryArg = CategoryArg { categoryId :: Int

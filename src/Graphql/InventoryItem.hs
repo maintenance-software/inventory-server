@@ -33,6 +33,7 @@ import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
 import Graphql.Category
+import Graphql.Unit
 import Graphql.InventoryDataTypes
 import Enums
 #define INVENTORY_DEF

@@ -30,6 +30,7 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Graphql.Utils
 import Graphql.Category
+import Graphql.Unit
 
 data Inventory o = Inventory { inventoryId :: Int
                              , name :: Text
@@ -84,7 +85,6 @@ data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
 data Item o = Item { itemId :: Int
                    , code :: Text
                    , name :: Text
-                   , unit :: Text
                    , defaultPrice :: Float
                    , description :: Maybe Text
                    , partNumber :: Maybe Text
@@ -95,6 +95,7 @@ data Item o = Item { itemId :: Int
                    , status :: Text
                    , images :: [Text]
                    , category :: () -> o () Handler Category
+                   , unit :: () -> o () Handler Unit
                    , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
@@ -107,7 +108,6 @@ data Items = Items { item :: GetEntityByIdArg -> Res () Handler (Item Res)
 data ItemArg = ItemArg { itemId :: Int
                        , code :: Text
                        , name :: Text
-                       , unit :: Text
                        , defaultPrice :: Float
                        , description :: Maybe Text
                        , partNumber :: Maybe Text
@@ -118,4 +118,5 @@ data ItemArg = ItemArg { itemId :: Int
                        , status :: Text
                        , images :: [Text]
                        , categoryId :: Int
+                       , unitId :: Int
                        } deriving (Generic, GQLType)
