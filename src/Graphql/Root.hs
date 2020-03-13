@@ -57,6 +57,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveRole :: RoleArg -> m (Role MutRes)
                            , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
+                           , saveUnit :: UnitArg -> m Unit
                            , saveInventory :: InventoryArg -> m (Inventory MutRes)
                            , saveItem :: ItemArg -> m (Item MutRes)
                            , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
@@ -84,6 +85,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
                            , savePerson = resolveSavePerson
                            , saveCategory = saveCategoryResolver
+                           , saveUnit = saveUnitResolver
                            , saveInventory = saveInventoryResolver
                            , saveItem =  saveItemResolver
                            , saveInventoryItem =  saveInventoryItemResolver
