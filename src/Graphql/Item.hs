@@ -173,15 +173,18 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                     Nothing -> Nothing
 
 -- Mutation Resolvers
---changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler (Item MutRes)
+--changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler Bool
 changeItemStatusResolver EntityChangeStatusArg {..} = lift $ do
-                              let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
-                              now <- liftIO getCurrentTime
-                              _ <- runDB $ update itemId [ Item_Status =. status
-                                                         , Item_ModifiedDate =. Just now
-                                                         ]
-                              item <- runDB $ getJustEntity itemId
-                              return $ toItemQL item
+                              () <- changeStatus entityIds status
+                              return True
+changeStatus :: [Int] -> EntityStatus -> Handler ()
+changeStatus [] _ = pure ()
+changeStatus (x:xs) status = do
+                        let itemId = (toSqlKey $ fromIntegral $ x)::Item_Id
+                        now <- liftIO getCurrentTime
+                        _ <- runDB $ update itemId [ Item_Status =. status, Item_ModifiedDate =. Just now]
+                        _ <- changeStatus xs status
+                        return ()
 
 saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
 saveItemResolver arg = lift $ do

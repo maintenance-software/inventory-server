@@ -105,7 +105,7 @@ data Item o = Item { itemId :: Int
 data Items o = Items { item :: GetEntityByIdArg -> o () Handler (Item o)
                      , page :: PageArg -> o () Handler (Page (Item o))
                      , saveItem :: ItemArg -> o () Handler (Item o)
-                     , changeItemStatus :: EntityChangeStatusArg -> o () Handler (Item o)
+                     , changeItemStatus :: EntityChangeStatusArg -> o () Handler Bool
                      } deriving (Generic, GQLType)
 
 data ItemArg = ItemArg { itemId :: Int

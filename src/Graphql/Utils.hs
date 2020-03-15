@@ -44,7 +44,7 @@ data Page a = Page { totalCount :: Int
 
 data EntityArg a = EntityArg { arg :: a } deriving (Generic, GQLType)
 
-data EntityChangeStatusArg = EntityChangeStatusArg { entityId :: Int
+data EntityChangeStatusArg = EntityChangeStatusArg { entityIds :: [Int]
                                                    , status :: EntityStatus
                                                    } deriving (Generic, GQLType)
 
