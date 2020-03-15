@@ -44,6 +44,10 @@ data Page a = Page { totalCount :: Int
 
 data EntityArg a = EntityArg { arg :: a } deriving (Generic, GQLType)
 
+data EntityChangeStatusArg = EntityChangeStatusArg { entityId :: Int
+                                                   , status :: EntityStatus
+                                                   } deriving (Generic, GQLType)
+
 -- instance GQLType Pageable where
 --     type  KIND Pageable = INPUT_OBJECT
 --     description = const $ Just $ pack "The item that holds the pageable information"

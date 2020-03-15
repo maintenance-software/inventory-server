@@ -12,10 +12,10 @@ import Database.Persist.TH
 import Prelude
 import GHC.Generics
 -- import Data.Morpheus.Kind (ENUM)
--- import Data.Morpheus.Types (GQLType(..))
+import Data.Morpheus.Types (GQLType(..))
 
 
-data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | UNKNOWN  deriving (Show, Read, Eq, Generic)
+data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | UNKNOWN  deriving (Show, Read, Eq, Generic, GQLType)
 derivePersistField "EntityStatus"
 
 data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | NONE deriving (Show, Read, Eq, Generic)

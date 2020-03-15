@@ -80,7 +80,7 @@ import Graphql.InventoryItem
 import Graphql.Unit
 
 -- Query Resolvers
-getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
+--getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
 getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
                                               item <- runDB $ getJustEntity itemId
@@ -107,7 +107,7 @@ getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.st
                    where
                       Predicate {..} = x
 
-itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
+--itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
                         countItems <- runDB $ count ((getFilters filters) :: [Filter Item_])
@@ -129,8 +129,11 @@ itemsPageResolver PageArg {..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-itemResolver :: () -> Res e Handler Items
-itemResolver _ = pure Items {  item = getItemByIdResolver, page = itemsPageResolver }
+--itemResolver :: () -> Res e Handler Items
+itemResolver _ = pure Items { item = getItemByIdResolver
+                            , page = itemsPageResolver
+                            , changeItemStatus = changeItemStatusResolver
+                            }
 
 -- itemResolver :: Items (Res () Handler)
 -- itemResolver = Items {  item = getItemByIdResolver, page = itemsPageResolver }
@@ -169,8 +172,17 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing
 
-
 -- Mutation Resolvers
+--changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler (Item MutRes)
+changeItemStatusResolver EntityChangeStatusArg {..} = lift $ do
+                              let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
+                              now <- liftIO getCurrentTime
+                              _ <- runDB $ update itemId [ Item_Status =. status
+                                                         , Item_ModifiedDate =. Just now
+                                                         ]
+                              item <- runDB $ getJustEntity itemId
+                              return $ toItemQL item
+
 saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
 saveItemResolver arg = lift $ do
                               itemId <- createOrUpdateItem arg

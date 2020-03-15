@@ -31,6 +31,7 @@ import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Graphql.Utils
 import Graphql.Category
 import Graphql.Unit
+import Enums
 
 data Inventory o = Inventory { inventoryId :: Int
                              , name :: Text
@@ -101,9 +102,11 @@ data Item o = Item { itemId :: Int
                    , modifiedDate :: Maybe Text
                    } deriving (Generic, GQLType)
 
-data Items = Items { item :: GetEntityByIdArg -> Res () Handler (Item Res)
-                   , page :: PageArg -> Res () Handler (Page (Item Res))
-                   } deriving (Generic, GQLType)
+data Items o = Items { item :: GetEntityByIdArg -> o () Handler (Item o)
+                     , page :: PageArg -> o () Handler (Page (Item o))
+                     , saveItem :: ItemArg -> o () Handler (Item o)
+                     , changeItemStatus :: EntityChangeStatusArg -> o () Handler (Item o)
+                     } deriving (Generic, GQLType)
 
 data ItemArg = ItemArg { itemId :: Int
                        , code :: Text
