@@ -45,7 +45,7 @@ data Page a = Page { totalCount :: Int
 data EntityArg a = EntityArg { arg :: a } deriving (Generic, GQLType)
 
 data EntityChangeStatusArg = EntityChangeStatusArg { entityIds :: [Int]
-                                                   , status :: EntityStatus
+                                                   , status :: Text
                                                    } deriving (Generic, GQLType)
 
 -- instance GQLType Pageable where

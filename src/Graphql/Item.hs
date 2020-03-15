@@ -175,7 +175,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
 -- Mutation Resolvers
 --changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler Bool
 changeItemStatusResolver EntityChangeStatusArg {..} = lift $ do
-                              () <- changeStatus entityIds status
+                              () <- changeStatus entityIds (readEntityStatus status)
                               return True
 changeStatus :: [Int] -> EntityStatus -> Handler ()
 changeStatus [] _ = pure ()
