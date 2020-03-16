@@ -105,7 +105,7 @@ itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
                         let dbFilters = case searchString of
                                           Nothing -> getFilters filters
-                                          Just s -> (Item_Name `like`  s) : (getFilters filters)
+                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ (getFilters filters)
                         countItems <- runDB $ count (dbFilters :: [Filter Item_])
                         items <- runDB $ selectList dbFilters [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toItemQL r) items
