@@ -34,7 +34,7 @@ data Oauth2Config = Oauth2Config
     , accessTokenEndpoint :: URI
     , userInfoEndpoint :: URI
     , logoutEndpoint :: URI
-    , scopes :: [Text]
+    , scopes :: Text
     }
 
 data AppSettings = AppSettings

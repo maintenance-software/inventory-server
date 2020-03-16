@@ -38,12 +38,12 @@ database:
   poolsize: "_env:YESOD_PGPOOLSIZE:10"
 
 oauth2:
-  clientId: "app"
-  clientSecret: "appsecret"
-  authorizeEndpoint: "http://192.168.0.100:4200/oauth/authorize"
-  accessTokenEndpoint: "http://192.168.0.100:4200/oauth/token"
-  userInfoEndpoint: "http://192.168.0.100:4200/connect/userinfo"
-  logoutEndpoint: "http://192.168.0.100:4200/logout"
-  scopes: ["openid"]
+  clientId: "_env:OAUTH2_CLIENT_ID:app"
+  clientSecret: "_env:OAUTH2_SECRET:appsecret"
+  authorizeEndpoint: "_env:OAUTH2_AUTHORIZE:http://192.168.0.100:4200/oauth/authorize"
+  accessTokenEndpoint: "_env:OAUTH2_ACCESS_TOKEN:http://192.168.0.100:4200/oauth/token"
+  userInfoEndpoint: "_env:OAUTH2_USER_INFO:http://192.168.0.100:4200/connect/userinfo"
+  logoutEndpoint: "_env:OAUTH2_LOGOUT:http://192.168.0.100:4200/logout"
+  scopes: "_env:OAUTH2_SCOPES:openid"
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE
