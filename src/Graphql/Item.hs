@@ -86,13 +86,6 @@ getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item
 
---countItems <- runDB $ count ([InventoryItem_ItemId ==. itemId] :: [Filter InventoryItem_])
-getOperator "=" = (==.)
-getOperator ">" = (>.)
-getOperator ">=" = (>=.)
-getOperator "<=" = (<=.)
-getOperator "<" = (<.)
-
 getFilters Nothing = []
 getFilters (Just []) = []
 getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.strip value == ""  = getFilters $ Just xs
@@ -110,8 +103,11 @@ getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.st
 --itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
-                        countItems <- runDB $ count ((getFilters filters) :: [Filter Item_])
-                        items <- runDB $ selectList (getFilters filters) [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+                        let dbFilters = case searchString of
+                                          Nothing -> getFilters filters
+                                          Just s -> (Item_Name `like`  s) : (getFilters filters)
+                        countItems <- runDB $ count (dbFilters :: [Filter Item_])
+                        items <- runDB $ selectList dbFilters [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toItemQL r) items
                         return Page { totalCount = countItems
                                     , content = itemsQL
@@ -132,6 +128,7 @@ itemsPageResolver PageArg {..} = lift $ do
 --itemResolver :: () -> Res e Handler Items
 itemResolver _ = pure Items { item = getItemByIdResolver
                             , page = itemsPageResolver
+                            , saveItem = saveItemResolver
                             , changeItemStatus = changeItemStatusResolver
                             }
 
@@ -186,7 +183,7 @@ changeStatus (x:xs) status = do
                         _ <- changeStatus xs status
                         return ()
 
-saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
+--saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
 saveItemResolver arg = lift $ do
                               itemId <- createOrUpdateItem arg
                               item <- runDB $ getJustEntity itemId

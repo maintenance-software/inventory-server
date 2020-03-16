@@ -52,7 +52,7 @@ data EntityChangeStatusArg = EntityChangeStatusArg { entityIds :: [Int]
 --     type  KIND Pageable = INPUT_OBJECT
 --     description = const $ Just $ pack "The item that holds the pageable information"
 
-data PageArg = PageArg { queryString :: Maybe Text
+data PageArg = PageArg { searchString :: Maybe Text
                        , pageIndex :: Maybe Int
                        , pageSize :: Maybe Int
                        , filters :: Maybe [Predicate]
@@ -85,3 +85,11 @@ genRandomAlphaNumString n = do
 
 parseToInteger :: Text -> Int
 parseToInteger str = read $ T.unpack str :: Int
+
+getOperator "=" = (==.)
+getOperator ">" = (>.)
+getOperator ">=" = (>=.)
+getOperator "<=" = (<=.)
+getOperator "<" = (<.)
+
+like field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "like")
