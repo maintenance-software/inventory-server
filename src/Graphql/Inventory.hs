@@ -42,7 +42,7 @@ module Graphql.Inventory (
       inventoryResolver
     , saveInventoryResolver
     , toInventoryQL
-    , dbFetchInventoryById
+--    , dbFetchInventoryById
 ) where
 
 import Import
@@ -56,10 +56,13 @@ import Graphql.InventoryDataTypes
 import Data.Time
 import Graphql.InventoryItem
 
-inventoryResolver :: () -> Res e Handler Inventories
-inventoryResolver _ = pure Inventories {  inventory = getInventoryByIdResolver, list = listInventoryResolver }
+--inventoryResolver :: () -> Res e Handler Inventories
+inventoryResolver _ = pure Inventories { inventory = getInventoryByIdResolver
+                                       , list = listInventoryResolver
+                                       , saveInventory = saveInventoryResolver
+                                       }
 
-getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
+--getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
 getInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id
                                               inventory <- runDB $ getJustEntity inventoryId
@@ -67,22 +70,27 @@ getInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
 
 -- DB ACTIONS
 --dbFetchInventoryById:: Inventory_Id -> Handler (Inventory Res)
-dbFetchInventoryById inventoryId = do
-                                      inventory <- runDB $ getJustEntity inventoryId
-                                      return $ toInventoryQL inventory
+--dbFetchInventoryById inventoryId = do
+--                                      inventory <- runDB $ getJustEntity inventoryId
+--                                      return $ toInventoryQL inventory
 
-dbFetchInventories:: Handler [Inventory Res]
-dbFetchInventories = do
-                       inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
-                       return $ P.map toInventoryQL inventories
+--dbFetchInventories:: Handler [Inventory Res]
+--dbFetchInventories = do
+--                       inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
+--                       return $ P.map toInventoryQL inventories
 
-listInventoryResolver :: () -> Res e Handler [Inventory Res]
-listInventoryResolver _ = lift $ dbFetchInventories
+--listInventoryResolver :: () -> Res e Handler [Inventory Res]
+listInventoryResolver _ = lift $ do
+                            inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
+                            return $ P.map toInventoryQL inventories
 
-saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)
-saveInventoryResolver arg = lift $ createOrUpdateInventory arg
+--saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)
+saveInventoryResolver arg = lift $ do
+                                  inventoryId <- createOrUpdateInventory arg
+                                  inventory <- runDB $ getJustEntity inventoryId
+                                  return $ toInventoryQL inventory
 
-createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
+--createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
 createOrUpdateInventory inventory = do
                 let InventoryArg {..} = inventory
                 now <- liftIO getCurrentTime
@@ -97,14 +105,14 @@ createOrUpdateInventory inventory = do
                                else do
                                   inventoryKey <- runDB $ insert $ fromCategoryQL inventory now Nothing
                                   return inventoryKey
-                response <- dbFetchInventoryById entityId
-                return response
+                return entityId
 
 -- CONVERTERS
 --toInventoryQL :: Entity Inventory_ -> Inventory
 toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
                                                          , name = inventory_Name
                                                          , description = inventory_Description
+                                                         , allowNegativeStocks = inventory_AllowNegativeStocks
                                                          , inventoryItems = inventoryItemsPageResolver_ inventoryId
                                                          , createdDate = fromString $ show inventory_CreatedDate
                                                          , modifiedDate = m
@@ -119,6 +127,7 @@ fromCategoryQL :: InventoryArg -> UTCTime -> Maybe UTCTime -> Inventory_
 fromCategoryQL (InventoryArg {..}) cd md = Inventory_ { inventory_Name = name
                                                       , inventory_Description = description
                                                       , inventory_Active = active
+                                                      , inventory_AllowNegativeStocks = allowNegativeStocks
                                                       , inventory_CreatedDate = cd
                                                       , inventory_ModifiedDate = md
                                                       }

@@ -48,7 +48,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , users :: () -> m Users
                          , categories :: () -> m [Category]
                          , units :: () -> m [Unit]
-                         , inventories :: () -> m Inventories
+                         , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
                          , inventoryItems :: () -> m InventoryItems
                          } deriving (Generic, GQLType)
@@ -58,10 +58,11 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
                            , saveUnit :: UnitArg -> m Unit
-                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
-                           , saveItem :: ItemArg -> m (Item MutRes)
+--                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
+--                           , saveItem :: ItemArg -> m (Item MutRes)
                            , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
                            , items :: () -> MutRes () Handler (Items MutRes)
+                           , inventories :: () -> MutRes () Handler (Inventories MutRes)
                            } deriving (Generic, GQLType)
 
 --data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
@@ -87,7 +88,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , savePerson = resolveSavePerson
                            , saveCategory = saveCategoryResolver
                            , saveUnit = saveUnitResolver
-                           , saveInventory = saveInventoryResolver
+--                           , saveInventory = saveInventoryResolver
 --                           , saveItem =  saveItemResolver
                            , saveInventoryItem =  saveInventoryItemResolver
                            , items = itemResolver

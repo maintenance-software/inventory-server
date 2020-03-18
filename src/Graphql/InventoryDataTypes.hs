@@ -36,19 +36,22 @@ import Enums
 data Inventory o = Inventory { inventoryId :: Int
                              , name :: Text
                              , description :: Text
+                             , allowNegativeStocks :: Bool
                              , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
 
-data Inventories = Inventories { inventory :: GetEntityByIdArg ->  Res () Handler (Inventory Res)
-                               , list :: () -> Res () Handler [Inventory Res]
-                               } deriving (Generic, GQLType)
+data Inventories o = Inventories { inventory :: GetEntityByIdArg ->  o () Handler (Inventory o)
+                                 , list :: () -> o () Handler [Inventory o]
+                                 , saveInventory :: InventoryArg -> o () Handler (Inventory o)
+                                 } deriving (Generic, GQLType)
 
 -- Mutation
 data InventoryArg = InventoryArg { inventoryId :: Int
                                  , name :: Text
                                  , description :: Text
+                                 , allowNegativeStocks :: Bool
                                  , active :: Bool
                                  } deriving (Generic)
 

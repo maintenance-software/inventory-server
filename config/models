@@ -116,6 +116,7 @@ Inventory_ json sql=t_inventory
     name Text
     description Text
     active Bool
+    allowNegativeStocks Bool
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     UniqueInventoryName name
@@ -172,6 +173,7 @@ Order_ sql=t_order
     deliveredLeadTime UTCTime
     status EntityStatus
     notes Text
+    inventoryId Inventory_Id
     supplierId Supplier_Id
     emitterId User_Id
     createdDate UTCTime
