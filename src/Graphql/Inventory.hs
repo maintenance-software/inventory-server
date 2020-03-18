@@ -19,6 +19,8 @@
 toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
                                                          , name = inventory_Name
                                                          , description = inventory_Description
+                                                         , allowNegativeStocks = inventory_AllowNegativeStocks
+                                                         , status = T.pack $ show inventory_Status
                                                          , inventoryItems = inventoryItemsPageResolver_ inventoryId
                                                          , createdDate = fromString $ show inventory_CreatedDate
                                                          , modifiedDate = m
@@ -51,6 +53,8 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
+import qualified Data.Text as T
+import Enums
 import Graphql.Utils
 import Graphql.InventoryDataTypes
 import Data.Time
@@ -99,11 +103,13 @@ createOrUpdateInventory inventory = do
                                   let inventoryKey = (toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id
                                   _ <- runDB $ update inventoryKey [ Inventory_Name =. name
                                                                    , Inventory_Description =. description
+                                                                   , Inventory_AllowNegativeStocks =. allowNegativeStocks
+                                                                   , Inventory_Status =. readEntityStatus status
                                                                    , Inventory_ModifiedDate =. Just now
                                                                    ]
                                   return inventoryKey
                                else do
-                                  inventoryKey <- runDB $ insert $ fromCategoryQL inventory now Nothing
+                                  inventoryKey <- runDB $ insert $ fromInventoryQL inventory now Nothing
                                   return inventoryKey
                 return entityId
 
@@ -113,6 +119,7 @@ toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromInt
                                                          , name = inventory_Name
                                                          , description = inventory_Description
                                                          , allowNegativeStocks = inventory_AllowNegativeStocks
+                                                         , status = T.pack $ show inventory_Status
                                                          , inventoryItems = inventoryItemsPageResolver_ inventoryId
                                                          , createdDate = fromString $ show inventory_CreatedDate
                                                          , modifiedDate = m
@@ -123,10 +130,10 @@ toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromInt
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
 
-fromCategoryQL :: InventoryArg -> UTCTime -> Maybe UTCTime -> Inventory_
-fromCategoryQL (InventoryArg {..}) cd md = Inventory_ { inventory_Name = name
+fromInventoryQL :: InventoryArg -> UTCTime -> Maybe UTCTime -> Inventory_
+fromInventoryQL (InventoryArg {..}) cd md = Inventory_ { inventory_Name = name
                                                       , inventory_Description = description
-                                                      , inventory_Active = active
+                                                      , inventory_Status = readEntityStatus status
                                                       , inventory_AllowNegativeStocks = allowNegativeStocks
                                                       , inventory_CreatedDate = cd
                                                       , inventory_ModifiedDate = md

@@ -111,11 +111,11 @@ Item_ sql=t_item
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-Inventory_ json sql=t_inventory
+Inventory_ sql=t_inventory
     Id sql=inventory_id
     name Text
     description Text
-    active Bool
+    status EntityStatus
     allowNegativeStocks Bool
     createdDate UTCTime
     modifiedDate UTCTime Maybe

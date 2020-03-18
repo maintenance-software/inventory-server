@@ -37,6 +37,7 @@ data Inventory o = Inventory { inventoryId :: Int
                              , name :: Text
                              , description :: Text
                              , allowNegativeStocks :: Bool
+                             , status :: Text
                              , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
@@ -52,7 +53,7 @@ data InventoryArg = InventoryArg { inventoryId :: Int
                                  , name :: Text
                                  , description :: Text
                                  , allowNegativeStocks :: Bool
-                                 , active :: Bool
+                                 , status :: Text
                                  } deriving (Generic)
 
 data InventoryItem o = InventoryItem { inventoryItemId :: Int
