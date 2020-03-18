@@ -50,7 +50,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , units :: () -> m [Unit]
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
-                         , inventoryItems :: () -> m InventoryItems
+                         , inventoryItems :: () -> Res () Handler (InventoryItems Res)
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
@@ -60,7 +60,8 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveUnit :: UnitArg -> m Unit
 --                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
 --                           , saveItem :: ItemArg -> m (Item MutRes)
-                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
+--                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
+                           , inventoryItems :: () -> MutRes () Handler (InventoryItems MutRes)
                            , items :: () -> MutRes () Handler (Items MutRes)
                            , inventories :: () -> MutRes () Handler (Inventories MutRes)
                            } deriving (Generic, GQLType)
@@ -90,8 +91,10 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveUnit = saveUnitResolver
 --                           , saveInventory = saveInventoryResolver
 --                           , saveItem =  saveItemResolver
-                           , saveInventoryItem =  saveInventoryItemResolver
+--                           , saveInventoryItem =  saveInventoryItemResolver
+                           , inventories = inventoryResolver
                            , items = itemResolver
+                           , inventoryItems = inventoryItemsResolver
                            }
 
 

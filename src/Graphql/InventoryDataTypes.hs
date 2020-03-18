@@ -68,9 +68,10 @@ data InventoryItem o = InventoryItem { inventoryItemId :: Int
                                    , modifiedDate :: Maybe Text
                                    } deriving (Generic, GQLType)
 
-data InventoryItems = InventoryItems { inventoryItem :: GetEntityByIdArg -> Res () Handler (InventoryItem Res)
-                                     , page :: PageArg -> Res () Handler (Page (InventoryItem Res))
-                                     } deriving (Generic, GQLType)
+data InventoryItems o = InventoryItems { inventoryItem :: GetEntityByIdArg -> o () Handler (InventoryItem o)
+                                       , page :: PageArg -> o () Handler (Page (InventoryItem o))
+                                       , saveInventoryItem :: InventoryItemArg -> o () Handler (InventoryItem o)
+                                       } deriving (Generic, GQLType)
 
 data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
                                          , level :: Int

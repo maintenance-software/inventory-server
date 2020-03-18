@@ -43,7 +43,7 @@ import Enums
 
 
 -- Query Resolvers
-findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
+--findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
 findInventoryItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let inventoryItemId = (toSqlKey $ fromIntegral $ entityId)::InventoryItem_Id
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
@@ -96,7 +96,7 @@ inventoryItemsItemPageResolver_ itemId (PageArg {..}) = lift $ do
                                                       Just y -> y
                                                       Nothing -> 10
 
-inventoryItemsPageResolver :: PageArg -> Res e Handler (Page (InventoryItem Res))
+--inventoryItemsPageResolver :: PageArg -> Res e Handler (Page (InventoryItem Res))
 inventoryItemsPageResolver PageArg {..} = lift $ do
                         countItems <- runDB $ count ([] :: [Filter InventoryItem_])
                         items <- runDB $ selectList [] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
@@ -117,8 +117,11 @@ inventoryItemsPageResolver PageArg {..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-inventoryItemsResolver :: () -> Res e Handler InventoryItems
-inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver, page = inventoryItemsPageResolver }
+--inventoryItemsResolver :: () -> Res e Handler InventoryItems
+inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver
+                                               , page = inventoryItemsPageResolver
+                                               , saveInventoryItem = saveInventoryItemResolver
+                                               }
 
 --toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
 toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
@@ -144,7 +147,7 @@ toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inven
                                     Nothing -> Nothing
 
 -- Mutation Resolvers
-saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler (InventoryItem MutRes)
+--saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler (InventoryItem MutRes)
 saveInventoryItemResolver arg = lift $ do
                               inventoryItemId <- createOrUpdateInventoryItem arg
                               inventoryItem <- runDB $ getJustEntity inventoryItemId
