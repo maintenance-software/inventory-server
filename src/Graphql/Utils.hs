@@ -62,7 +62,12 @@ data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
 
 data EntityIdsArg = EntityIdsArg { entityIds :: [Int] } deriving (Generic)
 
-data Predicate = Predicate { field :: Text, operator :: Text, value :: Text} deriving (Generic)
+data Predicate = Predicate { field :: Text
+                           , operator :: Text
+                           , value :: Text
+                           , union :: Maybe [Predicate]
+                           , conjunction :: Maybe [Predicate]
+                           } deriving (Generic)
 
 instance GQLType Predicate where
     type  KIND Predicate = INPUT_OBJECT
@@ -92,4 +97,5 @@ getOperator ">=" = (>=.)
 getOperator "<=" = (<=.)
 getOperator "<" = (<.)
 
+into field val = Filter field (Left val) (BackendSpecificFilter "in")
 like field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "like")

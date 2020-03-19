@@ -86,26 +86,55 @@ getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item
 
-getFilters Nothing = []
-getFilters (Just []) = []
-getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.strip value == ""  = getFilters $ Just xs
-                         | T.strip field == "status" = ((getOperator operator) Item_Status (readEntityStatus $ T.strip value)) : (getFilters $ Just xs)
-                         | T.strip field == "itemType" = ((getOperator operator) Item_ItemType (readItemType $ T.strip value)) : (getFilters $ Just xs)
-                         | T.strip field == "name" = ((getOperator operator) Item_Name (T.strip value)) : (getFilters $ Just xs)
-                         | T.strip field == "partNumber" = ((getOperator operator) Item_PartNumber (Just $ T.strip value)) : (getFilters $ Just xs)
-                         | T.strip field == "manufacturer" = ((getOperator operator) Item_Manufacturer (Just $ T.strip value)) : (getFilters $ Just xs)
-                         | T.strip field == "model" = ((getOperator operator) Item_Model (Just $ T.strip value)) : (getFilters $ Just xs)
-                         | T.strip field == "categoryId" = ((getOperator operator) Item_CategoryId (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)) : (getFilters $ Just xs)
-                         | otherwise = getFilters $ Just xs
+--getFilters Nothing = []
+--getFilters (Just []) = []
+--getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.strip value == ""  = getFilters $ Just xs
+--                         | T.strip field == "status" = ((getOperator operator) Item_Status (readEntityStatus $ T.strip value)) : (getFilters $ Just xs)
+--                         | T.strip field == "itemType" = ((getOperator operator) Item_ItemType (readItemType $ T.strip value)) : (getFilters $ Just xs)
+--                         | T.strip field == "name" = ((getOperator operator) Item_Name (T.strip value)) : (getFilters $ Just xs)
+--                         | T.strip field == "partNumber" = ((getOperator operator) Item_PartNumber (Just $ T.strip value)) : (getFilters $ Just xs)
+--                         | T.strip field == "manufacturer" = ((getOperator operator) Item_Manufacturer (Just $ T.strip value)) : (getFilters $ Just xs)
+--                         | T.strip field == "model" = ((getOperator operator) Item_Model (Just $ T.strip value)) : (getFilters $ Just xs)
+--                         | T.strip field == "categoryId" = ((getOperator operator) Item_CategoryId (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)) : (getFilters $ Just xs)
+--                         | otherwise = getFilters $ Just xs
+--                   where
+--                      Predicate {..} = x
+
+getPredicate Predicate {..} | T.strip field == "" || T.strip operator == "" || T.strip value == "" = []
+                            | T.strip field == "status" = [((getOperator operator) Item_Status (readEntityStatus $ T.strip value))]
+                            | T.strip field == "itemType" = [((getOperator operator) Item_ItemType (readItemType $ T.strip value))]
+                            | T.strip field == "name" = [((getOperator operator) Item_Name (T.strip value))]
+                            | T.strip field == "partNumber" = [((getOperator operator) Item_PartNumber (Just $ T.strip value))]
+                            | T.strip field == "manufacturer" = [((getOperator operator) Item_Manufacturer (Just $ T.strip value))]
+                            | T.strip field == "model" = [((getOperator operator) Item_Model (Just $ T.strip value))]
+                            | T.strip field == "categoryId" = [((getOperator operator) Item_CategoryId (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                            | otherwise = []
+
+getPredicates [] = []
+getPredicates (x:xs) | P.length p == 0 = getPredicates xs
+                     | otherwise = p : getPredicates xs
                    where
+                      p = getPredicate x
                       Predicate {..} = x
+                      u = case union of
+                            Nothing -> []
+                            Just f -> unionFilters $ getPredicates f
+                      c = case conjunction of
+                            Nothing -> []
+                            Just f -> conjunctionFilters $ getPredicates f
+
+conjunctionFilters xs = P.concat xs
+unionFilters (x:xs) = foldl (||.) x xs
 
 --itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
-                        let dbFilters = case searchString of
-                                          Nothing -> getFilters filters
-                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ (getFilters filters)
+                        let dbFilters = case filters of
+                                            Nothing -> []
+                                            Just f -> unionFilters $ getPredicates f
+--                        let dbFilters = case searchString of
+--                                          Nothing -> conjunctionFilters filters
+--                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ (conjunctionFilters filters)
                         countItems <- runDB $ count (dbFilters :: [Filter Item_])
                         items <- runDB $ selectList dbFilters [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toItemQL r) items
