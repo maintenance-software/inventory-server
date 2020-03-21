@@ -100,7 +100,7 @@ getItemByIdResolver GetEntityByIdArg {..} = lift $ do
 --                   where
 --                      Predicate {..} = x
 
-getPredicate Predicate {..} | T.strip field == "" || T.strip operator == "" || T.strip value == "" = []
+getPredicate Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                             | T.strip field == "status" = [((getOperator operator) Item_Status (readEntityStatus $ T.strip value))]
                             | T.strip field == "itemType" = [((getOperator operator) Item_ItemType (readItemType $ T.strip value))]
                             | T.strip field == "name" = [((getOperator operator) Item_Name (T.strip value))]
@@ -110,18 +110,21 @@ getPredicate Predicate {..} | T.strip field == "" || T.strip operator == "" || T
                             | T.strip field == "categoryId" = [((getOperator operator) Item_CategoryId (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
                             | otherwise = []
 
+getInPredicate Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
+                              | T.strip field == "status" = [Item_Status <-. textToList value readEntityStatus]
+                              | T.strip field == "itemType" = [Item_ItemType <-. textToList value readItemType]
+                              | T.strip field == "name" = [Item_Name <-. textToList value P.id]
+                              | T.strip field == "partNumber" = [Item_PartNumber <-. textToList value Just]
+                              | T.strip field == "manufacturer" = [Item_Manufacturer <-. textToList value Just]
+                              | T.strip field == "model" = [Item_Model <-. textToList value Just]
+                              | T.strip field == "categoryId" = [Item_CategoryId <-. textToList value (\ e -> toSqlKey $ fromIntegral $ parseToInteger $ T.strip e)]
+                              | otherwise = []
+
 getPredicates [] = []
 getPredicates (x:xs) | P.length p == 0 = getPredicates xs
                      | otherwise = p : getPredicates xs
                    where
-                      p = getPredicate x
-                      Predicate {..} = x
-                      u = case union of
-                            Nothing -> []
-                            Just f -> unionFilters $ getPredicates f
-                      c = case conjunction of
-                            Nothing -> []
-                            Just f -> conjunctionFilters $ getPredicates f
+                      p = (getPredicate x) P.++ (getInPredicate x)
 
 conjunctionFilters xs = P.concat xs
 unionFilters (x:xs) = foldl (||.) x xs
@@ -131,7 +134,7 @@ itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
                         let dbFilters = case filters of
                                             Nothing -> []
-                                            Just f -> unionFilters $ getPredicates f
+                                            Just f -> conjunctionFilters $ getPredicates f
 --                        let dbFilters = case searchString of
 --                                          Nothing -> conjunctionFilters filters
 --                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ (conjunctionFilters filters)

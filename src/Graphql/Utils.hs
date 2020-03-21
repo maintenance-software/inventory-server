@@ -91,6 +91,11 @@ genRandomAlphaNumString n = do
 parseToInteger :: Text -> Int
 parseToInteger str = read $ T.unpack str :: Int
 
+--textToList :: Text -> [Text]
+textToList "" _ = []
+textToList text f | T.strip text == "" = []
+                  | otherwise = P.map  (\e -> f $ T.strip e) (T.splitOn "," text)
+
 getOperator "=" = (==.)
 getOperator ">" = (>.)
 getOperator ">=" = (>=.)
