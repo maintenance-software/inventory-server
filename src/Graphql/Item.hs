@@ -132,12 +132,12 @@ unionFilters (x:xs) = foldl (||.) x xs
 --itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
-                        let dbFilters = case filters of
-                                            Nothing -> []
-                                            Just f -> conjunctionFilters $ getPredicates f
---                        let dbFilters = case searchString of
---                                          Nothing -> conjunctionFilters filters
---                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ (conjunctionFilters filters)
+                        let f = case filters of
+                                  Nothing -> []
+                                  Just f -> conjunctionFilters $ getPredicates f
+                        let dbFilters = case searchString of
+                                          Nothing -> f
+                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ f
                         countItems <- runDB $ count (dbFilters :: [Filter Item_])
                         items <- runDB $ selectList dbFilters [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                         let itemsQL = P.map (\r -> toItemQL r) items
