@@ -64,6 +64,7 @@ import Graphql.InventoryItem
 inventoryResolver _ = pure Inventories { inventory = getInventoryByIdResolver
                                        , list = listInventoryResolver
                                        , saveInventory = saveInventoryResolver
+                                       , saveInventoryItems = saveInventoryItemsResolver
                                        }
 
 --getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)

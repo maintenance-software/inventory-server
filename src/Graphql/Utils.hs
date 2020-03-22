@@ -104,3 +104,6 @@ getOperator "<" = (<.)
 
 into field val = Filter field (Left val) (BackendSpecificFilter "in")
 like field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "like")
+
+conjunctionFilters xs = P.concat xs
+unionFilters (x:xs) = foldl (||.) x xs

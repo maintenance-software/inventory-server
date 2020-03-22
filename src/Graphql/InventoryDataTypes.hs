@@ -19,6 +19,7 @@ module Graphql.InventoryDataTypes (
   , InventoryItems(..)
   , InventoryItem(..)
   , InventoryItemArg(..)
+  , InventoryItemsArg(..)
   , Item(..)
   , Items(..)
   , ItemArg(..)
@@ -46,6 +47,7 @@ data Inventory o = Inventory { inventoryId :: Int
 data Inventories o = Inventories { inventory :: GetEntityByIdArg ->  o () Handler (Inventory o)
                                  , list :: () -> o () Handler [Inventory o]
                                  , saveInventory :: InventoryArg -> o () Handler (Inventory o)
+                                 , saveInventoryItems :: InventoryItemsArg -> o () Handler [InventoryItem o]
                                  } deriving (Generic, GQLType)
 
 -- Mutation
@@ -79,13 +81,21 @@ data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
                                          , maxLevelAllowed :: Int
                                          , minLevelAllowed :: Int
                                          , price :: Float
-                                         , code :: Text
                                          , location :: Text
---                                         , status :: Text
                                          , inventoryId :: Int
                                          , dateExpiry :: Maybe Text
                                          , itemId :: Int
                                          } deriving (Generic, GQLType)
+
+data InventoryItemsArg = InventoryItemsArg { level :: Int
+                                           , maxLevelAllowed :: Int
+                                           , minLevelAllowed :: Int
+                                           , price :: Float
+                                           , location :: Text
+                                           , dateExpiry :: Maybe Text
+                                           , inventoryId :: Int
+                                           , itemIds :: [Int]
+                                           } deriving (Generic, GQLType)
 
 
 data Item o = Item { itemId :: Int

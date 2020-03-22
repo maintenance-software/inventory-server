@@ -19,6 +19,7 @@ module Graphql.InventoryItem (
       , inventoryItemsPageResolver_
       , inventoryItemsItemPageResolver_
       , saveInventoryItemResolver
+      , saveInventoryItemsResolver
       , toInventoryItemQL
 ) where
 
@@ -152,6 +153,29 @@ saveInventoryItemResolver arg = lift $ do
                               inventoryItemId <- createOrUpdateInventoryItem arg
                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                               return $ toInventoryItemQL inventoryItem
+
+saveInventoryItemsResolver arg = lift $ do
+                              let InventoryItemsArg {..} = arg
+                              let inventoryItemArgs =  P.map (\itemId -> InventoryItemArg { inventoryItemId = 0
+                                                                                          , level = level
+                                                                                          , maxLevelAllowed = maxLevelAllowed
+                                                                                          , minLevelAllowed = minLevelAllowed
+                                                                                          , price = price
+                                                                                          , location = location
+                                                                                          , inventoryId = inventoryId
+                                                                                          , dateExpiry = dateExpiry
+                                                                                          , itemId = itemId
+                                                                                          }) itemIds
+                              inventoryItemIds <- createOrUpdateInventoryItems inventoryItemArgs
+                              inventoryItems <- runDB $ mapM getJustEntity inventoryItemIds
+                              return $ P.map toInventoryItemQL inventoryItems
+
+createOrUpdateInventoryItems :: [InventoryItemArg] -> Handler [InventoryItem_Id]
+createOrUpdateInventoryItems [] = pure []
+createOrUpdateInventoryItems (x: xs) = do
+                                        inventoryItemId <- createOrUpdateInventoryItem x
+                                        inventoryItemIds <- createOrUpdateInventoryItems xs
+                                        return (inventoryItemId : inventoryItemIds)
 
 createOrUpdateInventoryItem :: InventoryItemArg -> Handler InventoryItem_Id
 createOrUpdateInventoryItem inventoryItem = do

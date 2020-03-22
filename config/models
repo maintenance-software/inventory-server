@@ -150,6 +150,7 @@ InventoryItem_ sql=t_inventory_item
     inventoryId Inventory_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
+    UniqueInventoryIdItemId inventoryId itemId
     deriving Typeable Show
 
 InventoryItemOrder_ sql=t_inventory_item_order

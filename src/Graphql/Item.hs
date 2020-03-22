@@ -126,9 +126,6 @@ getPredicates (x:xs) | P.length p == 0 = getPredicates xs
                    where
                       p = (getPredicate x) P.++ (getInPredicate x)
 
-conjunctionFilters xs = P.concat xs
-unionFilters (x:xs) = foldl (||.) x xs
-
 --itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver PageArg {..} = lift $ do
 --                        countItems <- runDB $ count ([Filter Item_Name (Left "%Michael%") (BackendSpecificFilter "like")] :: [Filter Item_])
