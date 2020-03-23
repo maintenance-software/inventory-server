@@ -61,6 +61,7 @@ module Graphql.Item (
         itemResolver
       , saveItemResolver
       , toItemQL
+      , availableItemsPageResolver
 ) where
 
 import Import
@@ -153,6 +154,34 @@ itemsPageResolver PageArg {..} = lift $ do
                           pageSize' = case pageSize of
                                           Just y -> y
                                           Nothing -> 10
+
+availableItemsPageResolver inventoryId PageArg {..} = lift $ do
+                        inventoryItems <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] []
+                        let itemIds = P.map (\ (Entity _ (InventoryItem_ {..})) -> inventoryItem_ItemId) inventoryItems
+                        let f = case filters of
+                                  Nothing -> [Item_Id /<-. itemIds]
+                                  Just f -> conjunctionFilters $ [Item_Id /<-. itemIds] : (getPredicates f)
+                        let dbFilters = case searchString of
+                                          Nothing -> f
+                                          Just s -> ([Item_PartNumber ==. Just s] ||. [Item_Code ==. s] ||. [Item_Name `like`  s]) P.++ f
+                        countItems <- runDB $ count (dbFilters :: [Filter Item_])
+                        items <- runDB $ selectList dbFilters [Asc Item_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+                        let itemsQL = P.map (\r -> toItemQL r) items
+                        return Page { totalCount = countItems
+                                    , content = itemsQL
+                                    , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                          , hasPreview = pageIndex' * pageSize' > 0
+                                                          , pageSize = pageSize'
+                                                          , pageIndex = pageIndex'
+                                    }
+                        }
+                         where
+                            pageIndex' = case pageIndex of
+                                          Just  x  -> x
+                                          Nothing -> 0
+                            pageSize' = case pageSize of
+                                            Just y -> y
+                                            Nothing -> 10
 
 --itemResolver :: () -> Res e Handler Items
 itemResolver _ = pure Items { item = getItemByIdResolver

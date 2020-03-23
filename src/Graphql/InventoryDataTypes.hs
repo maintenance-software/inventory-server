@@ -40,6 +40,7 @@ data Inventory o = Inventory { inventoryId :: Int
                              , allowNegativeStocks :: Bool
                              , status :: Text
                              , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
+                             , availableItems :: PageArg -> o () Handler (Page (Item o))
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
