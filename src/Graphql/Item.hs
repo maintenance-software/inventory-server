@@ -13,52 +13,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-#ifdef ITEM_DEF
-
--- toItemQL :: Entity Item_ -> (Item Res)
-toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
-                                     , name = item_Name
-                                     , defaultPrice = realToFrac item_DefaultPrice
-                                     , description = item_Description
-                                     , partNumber = item_PartNumber
-                                     , manufacturer = item_Manufacturer
-                                     , model = item_Model
-                                     , itemType = T.pack $ show item_ItemType
-                                     , notes = item_Notes
-                                     , status = T.pack $ show item_Status
-                                     , images = item_Images
-                                     , category = categoryResolver item_CategoryId
-                                     , unit = getUnitByIdResolver_ item_UnitId
-                                     , inventoryItems = inventoryItemsItemPageResolver_ itemId
-                                     , createdDate = fromString $ show item_CreatedDate
-                                     , modifiedDate = m
-                                     }
-                            where
-                              Item_ {..} = item
-                              m = case item_ModifiedDate of
-                                    Just d -> Just $ fromString $ show d
-                                    Nothing -> Nothing
-
-
---getItemByIdResolver_ :: Item_Id -> ()-> Res e Handler (Item Res)
-getItemByIdResolver_ itemId _ = lift $ do
-                                         item <- runDB $ getJustEntity itemId
-                                         return $ toItemQL item
-
-categoryResolver categoryId arg = lift $ do
-                                      category <- dbFetchCategoryById categoryId
-                                      return category
-
-getUnitByIdResolver_ unitId _ = lift $ do
-                                      unit <- dbFetchUnitById unitId
-                                      return unit
-
-#undef ITEM_DEF
-
-#elif 1
-
 module Graphql.Item (
         itemResolver
+      , getItemByIdResolver_
       , saveItemResolver
       , toItemQL
       , availableItemsPageResolver
@@ -361,4 +318,3 @@ mutation {
 }
 
 -}
-#endif
