@@ -70,6 +70,7 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Data.Text as T
+import Data.Typeable (typeOf)
 import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
@@ -202,7 +203,7 @@ getUnitByIdResolver_ unitId _ = lift $ do
                                       unit <- dbFetchUnitById unitId
                                       return unit
 
--- toItemQL :: Entity Item_ -> (Item Res)
+toItemQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Item_ -> Item o
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , code = item_Code
                                      , name = item_Name
