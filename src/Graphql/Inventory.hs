@@ -33,6 +33,7 @@ import Graphql.Utils
 import Graphql.InventoryDataTypes
 import Data.Time
 import Graphql.InventoryItem
+import Graphql.Item
 
 --inventoryResolver :: () -> Res e Handler Inventories
 inventoryResolver _ = pure Inventories { inventory = getInventoryByIdResolver
@@ -102,6 +103,7 @@ toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromInt
                                                          , allowNegativeStocks = inventory_AllowNegativeStocks
                                                          , status = T.pack $ show inventory_Status
                                                          , inventoryItems = inventoryItemsPageResolver_ inventoryId
+                                                         , availableItems = availableItemsPageResolver_ inventoryId
                                                          , createdDate = fromString $ show inventory_CreatedDate
                                                          , modifiedDate = m
                                                          }

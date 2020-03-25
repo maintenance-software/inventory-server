@@ -18,7 +18,7 @@ module Graphql.Item (
       , getItemByIdResolver_
       , saveItemResolver
       , toItemQL
-      , availableItemsPageResolver
+      , availableItemsPageResolver_
 ) where
 
 import Import
@@ -129,7 +129,7 @@ itemsPageResolver PageArg {..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-availableItemsPageResolver inventoryId PageArg {..} = lift $ do
+availableItemsPageResolver_ inventoryId PageArg {..} = lift $ do
                         inventoryItems <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] []
                         let itemIds = P.map (\ (Entity _ (InventoryItem_ {..})) -> inventoryItem_ItemId) inventoryItems
                         let f = case filters of
