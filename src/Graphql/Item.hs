@@ -83,6 +83,7 @@ import Graphql.Unit
 
 -- Query Resolvers
 --getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
+getItemByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Item o)
 getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
                                               item <- runDB $ getJustEntity itemId
