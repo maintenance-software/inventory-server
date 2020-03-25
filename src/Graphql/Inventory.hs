@@ -13,35 +13,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-#ifdef INVENTORY_DEF
-
---toInventoryQL :: Entity Inventory_ -> Inventory
-toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
-                                                         , name = inventory_Name
-                                                         , description = inventory_Description
-                                                         , allowNegativeStocks = inventory_AllowNegativeStocks
-                                                         , status = T.pack $ show inventory_Status
-                                                         , inventoryItems = inventoryItemsPageResolver_ inventoryId
-                                                         , createdDate = fromString $ show inventory_CreatedDate
-                                                         , modifiedDate = m
-                                                         }
-                                          where
-                                            Inventory_ {..} = inventory
-                                            m = case inventory_ModifiedDate of
-                                                  Just d -> Just $ fromString $ show d
-                                                  Nothing -> Nothing
-
---inventoryResolver_ :: Inventory_Id -> () -> Res e Handler (Inventory Res)
-getInventoryByIdResolver_ inventoryId _ = lift $ do
-                                    inventory <- runDB $ getJustEntity inventoryId
-                                    return $ toInventoryQL inventory
-
-#undef INVENTORY_DEF
-
-#elif 1
-
 module Graphql.Inventory (
       inventoryResolver
+    , getInventoryByIdResolver_
     , saveInventoryResolver
     , toInventoryQL
 --    , dbFetchInventoryById
@@ -72,6 +46,11 @@ getInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id
                                               inventory <- runDB $ getJustEntity inventoryId
                                               return $ toInventoryQL inventory
+
+getInventoryByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Inventory_Id -> () -> o () Handler (Inventory o)
+getInventoryByIdResolver_ inventoryId _ = lift $ do
+                                    inventory <- runDB $ getJustEntity inventoryId
+                                    return $ toInventoryQL inventory
 
 -- DB ACTIONS
 --dbFetchInventoryById:: Inventory_Id -> Handler (Inventory Res)
@@ -116,6 +95,7 @@ createOrUpdateInventory inventory = do
 
 -- CONVERTERS
 --toInventoryQL :: Entity Inventory_ -> Inventory
+toInventoryQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Inventory_ -> Inventory o
 toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
                                                          , name = inventory_Name
                                                          , description = inventory_Description
@@ -156,4 +136,3 @@ mutation {
   }
 }
 -}
-#endif

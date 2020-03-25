@@ -35,12 +35,10 @@ import Graphql.Utils
 import Data.Time
 import Graphql.Category
 import {-# SOURCE #-} Graphql.Item
---import {-# SOURCE #-} Graphql.Inventory
+import {-# SOURCE #-} Graphql.Inventory
 import Graphql.Unit
 import Graphql.InventoryDataTypes
 import Enums
-#define INVENTORY_DEF
-#include "Inventory.hs"
 
 -- Query Resolvers
 --findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
