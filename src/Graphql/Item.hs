@@ -89,6 +89,21 @@ getItemByIdResolver GetEntityByIdArg {..} = lift $ do
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item
 
+getItemByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Item_Id -> () -> o () Handler (Item o)
+getItemByIdResolver_ itemId _ = lift $ do
+                                         item <- runDB $ getJustEntity itemId
+                                         return $ toItemQL item
+
+categoryResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Category_Id -> () -> o () Handler Category
+categoryResolver_ categoryId arg = lift $ do
+                                      category <- dbFetchCategoryById categoryId
+                                      return category
+
+getUnitByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Unit_Id -> () -> o () Handler Unit
+getUnitByIdResolver_ unitId _ = lift $ do
+                                      unit <- dbFetchUnitById unitId
+                                      return unit
+
 --getFilters Nothing = []
 --getFilters (Just []) = []
 --getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.strip value == ""  = getFilters $ Just xs
@@ -196,13 +211,13 @@ itemResolver _ = pure Items { item = getItemByIdResolver
 -- itemResolver = Items {  item = getItemByIdResolver, page = itemsPageResolver }
 
 -- categoryResolver :: Category_Id -> () -> Res e Handler Category
-categoryResolver categoryId arg = lift $ do
-                                      category <- dbFetchCategoryById categoryId
-                                      return category
+--categoryResolver categoryId arg = lift $ do
+--                                      category <- dbFetchCategoryById categoryId
+--                                      return category
 
-getUnitByIdResolver_ unitId _ = lift $ do
-                                      unit <- dbFetchUnitById unitId
-                                      return unit
+--getUnitByIdResolver_ unitId _ = lift $ do
+--                                      unit <- dbFetchUnitById unitId
+--                                      return unit
 
 toItemQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Item_ -> Item o
 toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
@@ -217,7 +232,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , notes = item_Notes
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
-                                     , category = categoryResolver item_CategoryId
+                                     , category = categoryResolver_ item_CategoryId
                                      , unit = getUnitByIdResolver_ item_UnitId
                                      , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate
