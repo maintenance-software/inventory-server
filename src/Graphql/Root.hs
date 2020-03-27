@@ -35,6 +35,7 @@ import           Graphql.Category
 import           Graphql.Unit
 import           Graphql.Item
 import           Graphql.Inventory
+import           Graphql.Equipment
 import           Graphql.InventoryItem
 import           Graphql.Utils (PageArg)
 import           Graphql.InventoryDataTypes
@@ -50,6 +51,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , units :: () -> m [Unit]
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
+                         , equipments :: () -> Res () Handler (Equipments Res)
                          , inventoryItems :: () -> Res () Handler (InventoryItems Res)
                          } deriving (Generic, GQLType)
 
@@ -80,6 +82,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , units = listUnitResolver
                        , inventories = inventoryResolver
                        , items = itemResolver
+                       , equipments = equipmentResolver
                        , inventoryItems = inventoryItemsResolver
                        }
 -- | The mutation resolver

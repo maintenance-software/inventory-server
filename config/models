@@ -190,6 +190,17 @@ Supplier_ json sql=t_supplier
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
+Equipment_ sql=t_equipment
+    itemId Item_Id
+    Primary itemId
+	  priority Int
+	  hoursAverageDailyUse Int
+	  outOfService Bool
+	  purchaseDate UTCTime Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
 Asset_ sql=t_asset
     Id sql=asset_id
 	  name Text
