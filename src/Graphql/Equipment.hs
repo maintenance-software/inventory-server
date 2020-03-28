@@ -27,12 +27,12 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), notIn, in_)
+import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Data.Maybe (maybeToList, listToMaybe)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
-import Graphql.Utils hiding (getOperator, conjunctionFilters)
+import Graphql.Utils hiding (getOperator, conjunctionFilters, unionFilters)
 import Graphql.InventoryDataTypes
 import Data.Time
 import Graphql.InventoryItem
@@ -42,6 +42,7 @@ import Graphql.Category
 data Equipment o = Equipment { equipmentId :: Int
                              , name :: Text
                              , description :: Maybe Text
+                             , code :: Text
                              , partNumber :: Maybe Text
                              , manufacturer :: Maybe Text
                              , model :: Maybe Text
@@ -66,6 +67,7 @@ data Equipments o = Equipments { equipment :: GetEntityByIdArg -> o () Handler (
 data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  , name :: Text
                                  , description :: Maybe Text
+                                 , code :: Text
                                  , partNumber :: Maybe Text
                                  , manufacturer :: Maybe Text
                                  , model :: Maybe Text
@@ -131,34 +133,44 @@ getEquipmentByIdResolver GetEntityByIdArg {..} = lift $ do
                                               itemEntity <- runDB $ getJustEntity itemId
                                               return $ toEquipmentQL equipmentEntity itemEntity
 
+queryFilters item PageArg {..} = do
+                            let justFilters = case filters of Just a -> a; Nothing -> []
+                            let predicates = P.concat $ getPredicates item justFilters
+                            let predicates_ = if P.length predicates > 0 then
+                                                  conjunctionFilters predicates
+                                              else
+                                                  (item ^. Item_Id E.==. item ^. Item_Id)
+                            let searchFilters = case searchString of
+                                                  Just s -> [item ^. Item_Code E.==. E.val s, item ^. Item_Name `E.like` (%) ++. E.val s ++. (%)]
+                                                  Nothing -> [item ^. Item_Id E.==. item ^. Item_Id]
+                            let searchFilters_ = unionFilters searchFilters
+                            return (searchFilters_ E.&&. predicates_)
+
 equipmentQueryCount :: PageArg -> Handler Int
-equipmentQueryCount PageArg {..} =  do
+equipmentQueryCount page =  do
                       res  <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
-                                        _ <- E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        let justFilters = case filters of Just a -> a; Nothing -> []
-                                        let p = P.concat $ getPredicates item justFilters
-                                        let f = conjunctionFilters p
-                                        _ <- if P.length p == 0 then return () else E.where_ f
+                                        E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        filters <- queryFilters item page
+                                        E.where_ filters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
 equipmentQuery :: PageArg -> Handler [(Entity Equipment_, Entity Item_)]
-equipmentQuery PageArg {..} =  do
+equipmentQuery page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
-                                        _ <- E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        let justFilters = case filters of Just a -> a; Nothing -> []
-                                        let p = P.concat $ getPredicates item justFilters
-                                        let f = conjunctionFilters p
-                                        _ <- if P.length p == 0 then return () else E.where_ f
-                                        _ <- E.offset $ pageIndex_ * pageSize_
-                                        _ <- E.limit pageSize_
+                                        E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        filters <- queryFilters item page
+                                        E.where_ filters
+                                        E.offset $ pageIndex_ * pageSize_
+                                        E.limit pageSize_
                                         return (equipment, item)
                       return result
                       where
+                        PageArg {..} = page
                         pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
@@ -220,6 +232,7 @@ equipmentsPageResolver page = lift $ do
 toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegral $ fromSqlKey itemId
                                                      , name  = item_Name
                                                      , description  = item_Description
+                                                     , code  = item_Code
                                                      , partNumber  = item_PartNumber
                                                      , manufacturer  = item_Manufacturer
                                                      , model  = item_Model
