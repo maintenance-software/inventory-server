@@ -26,10 +26,13 @@ import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import qualified Database.Esqueleto      as E
+import Database.Esqueleto      ((^.), (?.), notIn, in_)
+import Data.Maybe (maybeToList, listToMaybe)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
-import Graphql.Utils
+import Graphql.Utils hiding (getOperator, conjunctionFilters)
 import Graphql.InventoryDataTypes
 import Data.Time
 import Graphql.InventoryItem
@@ -75,9 +78,48 @@ data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  , outOfService :: Bool
                                  , purchaseDate :: Maybe Text
                                  } deriving (Generic, GQLType)
+
+getOperator "=" = (E.==.)
+getOperator ">" = (E.>.)
+getOperator ">=" = (E.>=.)
+getOperator "<=" = (E.<=.)
+getOperator "<" = (E.<.)
+
+getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
+                                 | T.strip field == "name" = [getOperator operator (item ^. Item_Name) (E.val value)]
+                                 | T.strip field == "code" = [getOperator operator (item ^. Item_Code) (E.val $ T.strip value)]
+                                 | T.strip field == "status" = [getOperator operator (item ^. Item_Status) (E.val (readEntityStatus $ T.strip value))]
+                                 | T.strip field == "partNumber" = [getOperator operator (item ^. Item_PartNumber) (E.val $ Just $ T.strip value)]
+                                 | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                                 | otherwise = []
+
+getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
+                                   | T.strip field == "name" = [(item ^. Item_Name) `in_` (E.valList $ fromText P.id value)]
+                                   | T.strip field == "code" = [(item ^. Item_Code) `in_` (E.valList $ fromText P.id value)]
+                                   | T.strip field == "status" = [(item ^. Item_Status) `in_` (E.valList $ fromText readEntityStatus value)]
+                                   | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `in_` (E.valList $ fromText (\e -> Just e) value)]
+                                   | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `in_` (E.valList $ fromText (\ e -> toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
+                                   | otherwise = []
+
+getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+                                      | T.strip field == "name" = [(item ^. Item_Name) `notIn` (E.valList $ fromText P.id value)]
+                                      | T.strip field == "code" = [(item ^. Item_Code) `notIn` (E.valList $ fromText P.id value)]
+                                      | T.strip field == "status" = [(item ^. Item_Status) `notIn` (E.valList $ fromText readEntityStatus value)]
+                                      | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `notIn` (E.valList $ fromText (\e -> Just e) value)]
+                                      | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `notIn` (E.valList $ fromText (\ e -> toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
+                                      | otherwise = []
+getPredicates item [] = []
+getPredicates item (x:xs) | P.length p == 0 = getPredicates item xs
+                          | otherwise = p : getPredicates item xs
+                   where
+                      p = (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
+
+conjunctionFilters (x:xs) = foldl (E.&&.) x xs
+unionFilters (x:xs) = foldl (E.||.) x xs
+
 --inventoryResolver :: () -> Res e Handler Inventories
 equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
---                                        page = pageEquipmentResolver
+                                      , page = equipmentsPageResolver
 --                                      , saveEquipment = saveEquipmentResolver
                                       }
 
@@ -89,8 +131,57 @@ getEquipmentByIdResolver GetEntityByIdArg {..} = lift $ do
                                               itemEntity <- runDB $ getJustEntity itemId
                                               return $ toEquipmentQL equipmentEntity itemEntity
 
-testEq::Equipment_Id -> Bool
-testEq _ = True
+equipmentQueryCount :: PageArg -> Handler Int
+equipmentQueryCount PageArg {..} =  do
+                      res  <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment `E.InnerJoin` item) -> do
+                                        _ <- E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        let justFilters = case filters of Just a -> a; Nothing -> []
+                                        let p = P.concat $ getPredicates item justFilters
+                                        let f = conjunctionFilters p
+                                        _ <- if P.length p == 0 then return () else E.where_ f
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
+
+equipmentQuery :: PageArg -> Handler [(Entity Equipment_, Entity Item_)]
+equipmentQuery PageArg {..} =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment `E.InnerJoin` item) -> do
+                                        _ <- E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        let justFilters = case filters of Just a -> a; Nothing -> []
+                                        let p = P.concat $ getPredicates item justFilters
+                                        let f = conjunctionFilters p
+                                        _ <- if P.length p == 0 then return () else E.where_ f
+                                        _ <- E.offset $ pageIndex_ * pageSize_
+                                        _ <- E.limit pageSize_
+                                        return (equipment, item)
+                      return result
+                      where
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
+
+equipmentsPageResolver page = lift $ do
+                        countItems <- equipmentQueryCount page
+                        result <- equipmentQuery page
+                        let itemsQL = P.map (\(e, i) -> toEquipmentQL e i) result
+                        return Page { totalCount = countItems
+                                    , content = itemsQL
+                                    , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
+                                                          , hasPreview = pageIndex' * pageSize' > 0
+                                                          , pageSize = pageSize'
+                                                          , pageIndex = pageIndex'
+                                    }
+                        }
+                         where
+                            PageArg {..} = page
+                            pageIndex' = case pageIndex of
+                                          Just  x  -> x
+                                          Nothing -> 0
+                            pageSize' = case pageSize of
+                                            Just y -> y
+                                            Nothing -> 10
 --getInventoryByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Inventory_Id -> () -> o () Handler (Inventory o)
 --getInventoryByIdResolver_ inventoryId _ = lift $ do
 --                                    inventory <- runDB $ getJustEntity inventoryId

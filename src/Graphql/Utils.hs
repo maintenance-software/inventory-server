@@ -96,6 +96,10 @@ textToList "" _ = []
 textToList text f | T.strip text == "" = []
                   | otherwise = P.map  (\e -> f $ T.strip e) (T.splitOn "," text)
 
+fromText _ "" = []
+fromText f text | T.strip text == "" = []
+                | otherwise = P.map  (\e -> f $ T.strip e) (T.splitOn "," text)
+
 getOperator "=" = (==.)
 getOperator ">" = (>.)
 getOperator ">=" = (>=.)
