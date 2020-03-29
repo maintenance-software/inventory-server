@@ -55,7 +55,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , outOfService :: Bool
                              , purchaseDate :: Maybe Text
                              , children :: PageArg -> o () Handler (Page (Equipment o))
-                             , parent :: () -> o () Handler (Equipment o)
+                             , parent :: Maybe(() -> o () Handler (Equipment o))
                              , category :: () -> o () Handler Category
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
@@ -311,7 +311,7 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                      , hoursAverageDailyUse  = equipment_HoursAverageDailyUse
                                                      , outOfService  = equipment_OutOfService
                                                      , purchaseDate  = pd
-                                                     , parent = getEquipmentByIdResolver_ itemId
+                                                     , parent = case equipment_ParentId of Nothing -> Nothing; Just parentId -> Just $ getEquipmentByIdResolver_ parentId
                                                      , children = childrenResolver itemId
                                                      , createdDate = fromString $ show equipment_CreatedDate
                                                      , modifiedDate = m
