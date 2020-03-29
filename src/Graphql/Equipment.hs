@@ -54,6 +54,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , hoursAverageDailyUse :: Int
                              , outOfService :: Bool
                              , purchaseDate :: Maybe Text
+                             , children :: () -> o () Handler [Equipment o]
                              , category :: () -> o () Handler Category
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
@@ -157,6 +158,16 @@ equipmentQueryCount page =  do
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
+
+equipmentChildrenQuery :: Item_Id -> Handler [(Entity Equipment_, Entity Item_)]
+equipmentChildrenQuery parentId =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment, item) -> do
+                                     E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId) E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id)
+                                     return (equipment, item)
+                      return result
+
 equipmentQuery :: PageArg -> Handler [(Entity Equipment_, Entity Item_)]
 equipmentQuery page =  do
                       result <- runDB
@@ -194,6 +205,10 @@ equipmentsPageResolver page = lift $ do
                             pageSize' = case pageSize of
                                             Just y -> y
                                             Nothing -> 10
+
+childrenResolver itemId _ = lift $ do
+                        result <- equipmentChildrenQuery itemId
+                        return (P.map (\(e, i) -> toEquipmentQL e i) result)
 
 --saveEquipmentResolver :: EquipmentArg -> MutRes e Handler (Equipment MutRes)
 saveEquipmentResolver arg = lift $ do
@@ -257,6 +272,7 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                      , hoursAverageDailyUse  = equipment_HoursAverageDailyUse
                                                      , outOfService  = equipment_OutOfService
                                                      , purchaseDate  = pd
+                                                     , children = childrenResolver itemId
                                                      , createdDate = fromString $ show equipment_CreatedDate
                                                      , modifiedDate = m
                                                      }
@@ -285,6 +301,26 @@ fromEquipmentQL itemEntityId (EquipmentArg {..}) cd md = Equipment_ { equipment_
 
 {-
 query {
+  equipments  {
+    page {
+      totalCount
+      content {
+        equipmentId
+        status
+        name
+        code
+        priority
+        outOfService
+        children {
+          equipmentId
+          name
+        }
+      }
+    }
+  }
+}
+
+mutation {
   equipments  {
    saveEquipment(
     equipmentId : 121
