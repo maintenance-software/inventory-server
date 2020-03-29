@@ -18,7 +18,7 @@ import Data.Morpheus.Types (GQLType(..))
 data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | UNKNOWN  deriving (Show, Read, Eq, Generic, GQLType)
 derivePersistField "EntityStatus"
 
-data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | NONE deriving (Show, Read, Eq, Generic)
+data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | EQUIPMENT | NONE deriving (Show, Read, Eq, Generic)
 derivePersistField "ItemType"
 
 -- instance GQLType EntityStatus where
@@ -56,4 +56,5 @@ readItemType :: Text -> ItemType
 readItemType "SPARE_PARTS" = SPARE_PARTS
 readItemType "TOOLS" = TOOLS
 readItemType "SUPPLIES" = SUPPLIES
+readItemType "EQUIPMENT" = EQUIPMENT
 readItemType _ = NONE

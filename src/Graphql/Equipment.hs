@@ -71,7 +71,6 @@ data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  , partNumber :: Maybe Text
                                  , manufacturer :: Maybe Text
                                  , model :: Maybe Text
-                                 , itemType :: Text
                                  , notes:: Maybe Text
                                  , status :: Text
                                  , images :: [Text]
@@ -79,6 +78,7 @@ data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  , hoursAverageDailyUse :: Int
                                  , outOfService :: Bool
                                  , purchaseDate :: Maybe Text
+                                 , parentId :: Maybe Int
                                  } deriving (Generic, GQLType)
 
 getOperator "=" = (E.==.)
@@ -92,7 +92,7 @@ getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.
                                  | T.strip field == "code" = [getOperator operator (item ^. Item_Code) (E.val $ T.strip value)]
                                  | T.strip field == "status" = [getOperator operator (item ^. Item_Status) (E.val (readEntityStatus $ T.strip value))]
                                  | T.strip field == "partNumber" = [getOperator operator (item ^. Item_PartNumber) (E.val $ Just $ T.strip value)]
-                                 | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                                 | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
                                  | otherwise = []
 
 getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
@@ -100,7 +100,7 @@ getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value =
                                    | T.strip field == "code" = [(item ^. Item_Code) `in_` (E.valList $ fromText P.id value)]
                                    | T.strip field == "status" = [(item ^. Item_Status) `in_` (E.valList $ fromText readEntityStatus value)]
                                    | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `in_` (E.valList $ fromText (\e -> Just e) value)]
-                                   | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `in_` (E.valList $ fromText (\ e -> toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
+                                   | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `in_` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
                                    | otherwise = []
 
 getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
@@ -108,7 +108,7 @@ getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip 
                                       | T.strip field == "code" = [(item ^. Item_Code) `notIn` (E.valList $ fromText P.id value)]
                                       | T.strip field == "status" = [(item ^. Item_Status) `notIn` (E.valList $ fromText readEntityStatus value)]
                                       | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `notIn` (E.valList $ fromText (\e -> Just e) value)]
-                                      | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `notIn` (E.valList $ fromText (\ e -> toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
+                                      | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `notIn` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
                                       | otherwise = []
 getPredicates item [] = []
 getPredicates item (x:xs) | P.length p == 0 = getPredicates item xs
@@ -122,7 +122,7 @@ unionFilters (x:xs) = foldl (E.||.) x xs
 --inventoryResolver :: () -> Res e Handler Inventories
 equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
                                       , page = equipmentsPageResolver
---                                      , saveEquipment = saveEquipmentResolver
+                                      , saveEquipment = saveEquipmentResolver
                                       }
 
 --getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
@@ -194,40 +194,53 @@ equipmentsPageResolver page = lift $ do
                             pageSize' = case pageSize of
                                             Just y -> y
                                             Nothing -> 10
---getInventoryByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Inventory_Id -> () -> o () Handler (Inventory o)
---getInventoryByIdResolver_ inventoryId _ = lift $ do
---                                    inventory <- runDB $ getJustEntity inventoryId
---                                    return $ toInventoryQL inventory
 
+--saveEquipmentResolver :: EquipmentArg -> MutRes e Handler (Equipment MutRes)
+saveEquipmentResolver arg = lift $ do
+                                  itemId <- createOrUpdateItem itemArg
+                                  equipmentId <- createOrUpdateEquipment itemId arg
+                                  itemEntity <- runDB $ getJustEntity itemId
+                                  equipmentEntity <- runDB $ getJustEntity equipmentId
+                                  return $ toEquipmentQL equipmentEntity itemEntity
+                      where
+                        EquipmentArg {..} = arg
+                        itemArg = ItemArg { itemId = equipmentId
+                                          , code = code
+                                          , name = name
+                                          , defaultPrice = 0
+                                          , description = description
+                                          , partNumber = partNumber
+                                          , manufacturer = manufacturer
+                                          , model = model
+                                          , itemType = "EQUIPMENT"
+                                          , notes = notes
+                                          , status = status
+                                          , images = images
+                                          , categoryId = Nothing
+                                          , unitId = Nothing
+                        }
 
---saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)
---saveInventoryResolver arg = lift $ do
---                                  inventoryId <- createOrUpdateInventory arg
---                                  inventory <- runDB $ getJustEntity inventoryId
---                                  return $ toInventoryQL inventory
+--createOrUpdateEquipment :: EquipmentArg -> Handler (Equipment MutRes)
+createOrUpdateEquipment itemEntityId equipment = do
+                let EquipmentArg {..} = equipment
+                now <- liftIO getCurrentTime
+                entityId <- if equipmentId > 0 then
+                                do
+                                  let itemId = (toSqlKey $ fromIntegral $ equipmentId) :: Item_Id
+                                  let equipmentKey = Equipment_Key {unEquipment_Key  = itemId}
+                                  _ <- runDB $ update equipmentKey [ Equipment_Priority =. priority
+                                                                   , Equipment_HoursAverageDailyUse =. hoursAverageDailyUse
+                                                                   , Equipment_OutOfService =. outOfService
+                                                                   , Equipment_PurchaseDate =. case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ show pd :: UTCTime)
+                                                                   , Equipment_ParentId =. case parentId of Nothing -> Nothing; Just p -> Just (toSqlKey $ fromIntegral $ p :: Item_Id)
+                                                                   , Equipment_ModifiedDate =. Just now
+                                                                   ]
+                                  return equipmentKey
+                               else do
+                                  equipmentKey <- runDB $ insert $ fromEquipmentQL itemEntityId equipment now Nothing
+                                  return equipmentKey
+                return entityId
 
---createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
---createOrUpdateInventory inventory = do
---                let InventoryArg {..} = inventory
---                now <- liftIO getCurrentTime
---                entityId <- if inventoryId > 0 then
---                                do
---                                  let inventoryKey = (toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id
---                                  _ <- runDB $ update inventoryKey [ Inventory_Name =. name
---                                                                   , Inventory_Description =. description
---                                                                   , Inventory_AllowNegativeStocks =. allowNegativeStocks
---                                                                   , Inventory_Status =. readEntityStatus status
---                                                                   , Inventory_ModifiedDate =. Just now
---                                                                   ]
---                                  return inventoryKey
---                               else do
---                                  inventoryKey <- runDB $ insert $ fromInventoryQL inventory now Nothing
---                                  return inventoryKey
---                return entityId
-
--- CONVERTERS
---toInventoryQL :: Entity Inventory_ -> Inventory
---toInventoryQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Inventory_ -> Inventory o
 --toEquipmentQL (Entity equipmentId equipment)  = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
 toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegral $ fromSqlKey itemId
                                                      , name  = item_Name
@@ -259,28 +272,33 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                    Just d -> Just $ fromString $ show d
                                                    Nothing -> Nothing
 
---fromInventoryQL :: InventoryArg -> UTCTime -> Maybe UTCTime -> Inventory_
---fromInventoryQL (InventoryArg {..}) cd md = Inventory_ { inventory_Name = name
---                                                      , inventory_Description = description
---                                                      , inventory_Status = readEntityStatus status
---                                                      , inventory_AllowNegativeStocks = allowNegativeStocks
---                                                      , inventory_CreatedDate = cd
---                                                      , inventory_ModifiedDate = md
---                                                      }
+fromEquipmentQL :: Item_Id -> EquipmentArg -> UTCTime -> Maybe UTCTime -> Equipment_
+fromEquipmentQL itemEntityId (EquipmentArg {..}) cd md = Equipment_ { equipment_ItemId = itemEntityId
+                                                                    , equipment_Priority = priority
+                                                                    , equipment_HoursAverageDailyUse = hoursAverageDailyUse
+                                                                    , equipment_OutOfService = outOfService
+                                                                    , equipment_PurchaseDate = case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ show pd :: UTCTime)
+                                                                    , equipment_ParentId = case parentId of Nothing -> Nothing; Just p -> Just (toSqlKey $ fromIntegral $ p :: Item_Id)
+                                                                    , equipment_CreatedDate = cd
+                                                                    , equipment_ModifiedDate = md
+                                                                    }
 
 {-
 query {
-  inventories(queryString: "") {
-    inventoryId
-    name
-    description
+  equipments  {
+   saveEquipment(
+    equipmentId : 121
+   , name: "new item equipment"
+   , description: "Maybe Text"
+   , code: "Text_code"
+   , status: "ACTIVE"
+   , images: []
+   , priority: 9
+   , hoursAverageDailyUse: 7
+   , outOfService: true
+  ) {
+    equipmentId
   }
-}
-
-mutation {
-  saveCategory(inventoryId: 0, name: "test", description: "sss") {
-    inventoryId
-    name
   }
 }
 -}

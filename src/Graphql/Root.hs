@@ -65,6 +65,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
 --                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
                            , inventoryItems :: () -> MutRes () Handler (InventoryItems MutRes)
                            , items :: () -> MutRes () Handler (Items MutRes)
+                           , equipments :: () -> MutRes () Handler (Equipments MutRes)
                            , inventories :: () -> MutRes () Handler (Inventories MutRes)
                            } deriving (Generic, GQLType)
 
@@ -97,6 +98,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
 --                           , saveInventoryItem =  saveInventoryItemResolver
                            , inventories = inventoryResolver
                            , items = itemResolver
+                           , equipments = equipmentResolver
                            , inventoryItems = inventoryItemsResolver
                            }
 

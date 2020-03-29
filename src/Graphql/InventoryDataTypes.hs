@@ -111,8 +111,8 @@ data Item o = Item { itemId :: Int
                    , notes:: Maybe Text
                    , status :: Text
                    , images :: [Text]
-                   , category :: () -> o () Handler Category
-                   , unit :: () -> o () Handler Unit
+                   , category :: Maybe(() -> o () Handler Category)
+                   , unit :: Maybe (() -> o () Handler Unit)
                    , inventoryItems :: PageArg -> o () Handler (Page (InventoryItem o))
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
@@ -136,6 +136,6 @@ data ItemArg = ItemArg { itemId :: Int
                        , notes :: Maybe Text
                        , status :: Text
                        , images :: [Text]
-                       , categoryId :: Int
-                       , unitId :: Int
+                       , categoryId :: Maybe Int
+                       , unitId :: Maybe Int
                        } deriving (Generic, GQLType)

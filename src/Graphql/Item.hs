@@ -17,6 +17,7 @@ module Graphql.Item (
         itemResolver
       , getItemByIdResolver_
       , saveItemResolver
+      , createOrUpdateItem
       , toItemQL
       , availableItemsPageResolver_
 ) where
@@ -82,7 +83,7 @@ getPredicate Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem`
                             | T.strip field == "partNumber" = [((getOperator operator) Item_PartNumber (Just $ T.strip value))]
                             | T.strip field == "manufacturer" = [((getOperator operator) Item_Manufacturer (Just $ T.strip value))]
                             | T.strip field == "model" = [((getOperator operator) Item_Model (Just $ T.strip value))]
-                            | T.strip field == "categoryId" = [((getOperator operator) Item_CategoryId (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                            | T.strip field == "categoryId" = [((getOperator operator) Item_CategoryId (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
                             | otherwise = []
 
 getInPredicate Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
@@ -92,7 +93,7 @@ getInPredicate Predicate {..} | T.strip operator /= "in" || T.strip value == "" 
                               | T.strip field == "partNumber" = [Item_PartNumber <-. textToList value Just]
                               | T.strip field == "manufacturer" = [Item_Manufacturer <-. textToList value Just]
                               | T.strip field == "model" = [Item_Model <-. textToList value Just]
-                              | T.strip field == "categoryId" = [Item_CategoryId <-. textToList value (\ e -> toSqlKey $ fromIntegral $ parseToInteger $ T.strip e)]
+                              | T.strip field == "categoryId" = [Item_CategoryId <-. textToList value (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e)]
                               | otherwise = []
 
 getPredicates [] = []
@@ -189,8 +190,8 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , notes = item_Notes
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
-                                     , category = categoryResolver_ item_CategoryId
-                                     , unit = getUnitByIdResolver_ item_UnitId
+                                     , category = case item_CategoryId of Nothing -> Nothing; Just c -> Just $ categoryResolver_ c
+                                     , unit = case item_UnitId of Nothing -> Nothing; Just u -> Just $ getUnitByIdResolver_ u
                                      , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate
                                      , modifiedDate = m
@@ -239,8 +240,8 @@ createOrUpdateItem item = do
                                                                      , Item_Notes =. notes
                                                                      , Item_Status =. readEntityStatus status
                                                                      , Item_Images =. images
-                                                                     , Item_CategoryId =. ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
-                                                                     , Item_UnitId =. ((toSqlKey $ fromIntegral $ unitId)::Unit_Id)
+                                                                     , Item_CategoryId =. case categoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
+                                                                     , Item_UnitId =. case unitId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Unit_Id)
                                                                      , Item_ModifiedDate =. Just now
                                                                      ]
                                          return itemKey
@@ -261,8 +262,8 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Code = code
                                         , item_Notes = notes
                                         , item_Status = readEntityStatus status
                                         , item_Images = images
-                                        , item_CategoryId = ((toSqlKey $ fromIntegral $ categoryId)::Category_Id)
-                                        , item_UnitId = ((toSqlKey $ fromIntegral $ unitId)::Unit_Id)
+                                        , item_CategoryId = case categoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
+                                        , item_UnitId = case unitId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Unit_Id)
                                         , item_CreatedDate = cd
                                         , item_ModifiedDate = md
                                         }

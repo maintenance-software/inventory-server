@@ -105,8 +105,8 @@ Item_ sql=t_item
     itemType ItemType
     notes Text Maybe
     status EntityStatus
-    categoryId Category_Id
-    unitId Unit_Id
+    categoryId Category_Id Maybe
+    unitId Unit_Id Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
