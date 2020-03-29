@@ -97,6 +97,9 @@ getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.
                                  | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
                                  | otherwise = []
 
+getEquipmentPredicate equipment Predicate {..} | T.strip field == "parentId" && T.strip operator == "=" && T.strip value == "null" = [E.isNothing (equipment ^. Equipment_ParentId)]
+                                               | otherwise = []
+
 getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
                                    | T.strip field == "name" = [(item ^. Item_Name) `in_` (E.valList $ fromText P.id value)]
                                    | T.strip field == "code" = [(item ^. Item_Code) `in_` (E.valList $ fromText P.id value)]
@@ -112,11 +115,11 @@ getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip 
                                       | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `notIn` (E.valList $ fromText (\e -> Just e) value)]
                                       | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `notIn` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
                                       | otherwise = []
-getPredicates item [] = []
-getPredicates item (x:xs) | P.length p == 0 = getPredicates item xs
-                          | otherwise = p : getPredicates item xs
+getPredicates equipment item [] = []
+getPredicates equipment item (x:xs) | P.length p == 0 = getPredicates equipment item xs
+                          | otherwise = p : getPredicates equipment item xs
                    where
-                      p = (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
+                      p = (getEquipmentPredicate equipment x) P.++ (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
 
 conjunctionFilters (x:xs) = foldl (E.&&.) x xs
 unionFilters (x:xs) = foldl (E.||.) x xs
@@ -142,9 +145,9 @@ getEquipmentByIdResolver_ itemId _ = lift $ do
                                             return $ toEquipmentQL equipmentEntity itemEntity
 
 
-queryFilters item PageArg {..} = do
+queryFilters equipment item PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
-                            let predicates = P.concat $ getPredicates item justFilters
+                            let predicates = P.concat $ getPredicates equipment item justFilters
                             let predicates_ = if P.length predicates > 0 then
                                                   conjunctionFilters predicates
                                               else
@@ -161,7 +164,7 @@ equipmentQueryCount page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        filters <- queryFilters item page
+                                        filters <- queryFilters equipment item page
                                         E.where_ filters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
@@ -171,7 +174,7 @@ childrenQueryCount parentId page =  do
                       res  <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment, item) -> do
-                                        filters <- queryFilters item page
+                                        filters <- queryFilters equipment item page
                                         E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
                                                  E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                                  E.&&. filters
@@ -184,7 +187,7 @@ equipmentChildrenQuery parentId page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment, item) -> do
-                                     filters <- queryFilters item page
+                                     filters <- queryFilters equipment item page
                                      E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
                                                 E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                                 E.&&. filters
@@ -204,7 +207,7 @@ equipmentQuery page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        filters <- queryFilters item page
+                                        filters <- queryFilters equipment item page
                                         E.where_ filters
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
