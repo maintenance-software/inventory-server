@@ -46,7 +46,6 @@ data Equipment o = Equipment { equipmentId :: Int
                              , partNumber :: Maybe Text
                              , manufacturer :: Maybe Text
                              , model :: Maybe Text
-                             , itemType :: Text
                              , notes:: Maybe Text
                              , status :: Text
                              , images :: [Text]
@@ -306,7 +305,6 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                      , partNumber  = item_PartNumber
                                                      , manufacturer  = item_Manufacturer
                                                      , model  = item_Model
-                                                     , itemType  = T.pack $ show item_ItemType
                                                      , notes = item_Notes
                                                      , status  = T.pack $ show item_Status
                                                      , images  = item_Images
