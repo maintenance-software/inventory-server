@@ -54,7 +54,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , hoursAverageDailyUse :: Int
                              , outOfService :: Bool
                              , purchaseDate :: Maybe Text
-                             , children :: () -> o () Handler [Equipment o]
+                             , children :: PageArg -> o () Handler (Page (Equipment o))
                              , category :: () -> o () Handler Category
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
@@ -158,15 +158,37 @@ equipmentQueryCount page =  do
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
+childrenQueryCount :: Item_Id -> PageArg -> Handler Int
+childrenQueryCount parentId page =  do
+                      res  <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment, item) -> do
+                                        filters <- queryFilters item page
+                                        E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
+                                                 E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                                 E.&&. filters
+                                                 )
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
-equipmentChildrenQuery :: Item_Id -> Handler [(Entity Equipment_, Entity Item_)]
-equipmentChildrenQuery parentId =  do
+equipmentChildrenQuery :: Item_Id -> PageArg -> Handler [(Entity Equipment_, Entity Item_)]
+equipmentChildrenQuery parentId page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment, item) -> do
-                                     E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId) E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id)
+                                     filters <- queryFilters item page
+                                     E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
+                                                E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                                E.&&. filters
+                                              )
+                                     E.offset $ pageIndex_ * pageSize_
+                                     E.limit pageSize_
                                      return (equipment, item)
                       return result
+                      where
+                        PageArg {..} = page
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
 equipmentQuery :: PageArg -> Handler [(Entity Equipment_, Entity Item_)]
 equipmentQuery page =  do
@@ -191,24 +213,33 @@ equipmentsPageResolver page = lift $ do
                         let itemsQL = P.map (\(e, i) -> toEquipmentQL e i) result
                         return Page { totalCount = countItems
                                     , content = itemsQL
-                                    , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
-                                                          , hasPreview = pageIndex' * pageSize' > 0
-                                                          , pageSize = pageSize'
-                                                          , pageIndex = pageIndex'
+                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
+                                                          , hasPreview = pageIndex_ * pageSize_ > 0
+                                                          , pageSize = pageSize_
+                                                          , pageIndex = pageIndex_
                                     }
                         }
                          where
                             PageArg {..} = page
-                            pageIndex' = case pageIndex of
-                                          Just  x  -> x
-                                          Nothing -> 0
-                            pageSize' = case pageSize of
-                                            Just y -> y
-                                            Nothing -> 10
+                            pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
+                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
-childrenResolver itemId _ = lift $ do
-                        result <- equipmentChildrenQuery itemId
-                        return (P.map (\(e, i) -> toEquipmentQL e i) result)
+childrenResolver itemId page = lift $ do
+                        countItems <- childrenQueryCount itemId page
+                        result <- equipmentChildrenQuery itemId page
+                        let itemsQL = P.map (\(e, i) -> toEquipmentQL e i) result
+                        return Page { totalCount = countItems
+                                    , content = itemsQL
+                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
+                                                          , hasPreview = pageIndex_ * pageSize_ > 0
+                                                          , pageSize = pageSize_
+                                                          , pageIndex = pageIndex_
+                                    }
+                        }
+                         where
+                            PageArg {..} = page
+                            pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
+                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
 --saveEquipmentResolver :: EquipmentArg -> MutRes e Handler (Equipment MutRes)
 saveEquipmentResolver arg = lift $ do
