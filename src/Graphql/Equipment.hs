@@ -55,6 +55,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , outOfService :: Bool
                              , purchaseDate :: Maybe Text
                              , children :: PageArg -> o () Handler (Page (Equipment o))
+                             , parent :: () -> o () Handler (Equipment o)
                              , category :: () -> o () Handler Category
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
@@ -133,6 +134,13 @@ getEquipmentByIdResolver GetEntityByIdArg {..} = lift $ do
                                               equipmentEntity <- runDB $ getJustEntity equipmentId
                                               itemEntity <- runDB $ getJustEntity itemId
                                               return $ toEquipmentQL equipmentEntity itemEntity
+
+getEquipmentByIdResolver_ itemId _ = lift $ do
+                                            let equipmentId = Equipment_Key {unEquipment_Key  = itemId}
+                                            equipmentEntity <- runDB $ getJustEntity equipmentId
+                                            itemEntity <- runDB $ getJustEntity itemId
+                                            return $ toEquipmentQL equipmentEntity itemEntity
+
 
 queryFilters item PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
@@ -303,6 +311,7 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                      , hoursAverageDailyUse  = equipment_HoursAverageDailyUse
                                                      , outOfService  = equipment_OutOfService
                                                      , purchaseDate  = pd
+                                                     , parent = getEquipmentByIdResolver_ itemId
                                                      , children = childrenResolver itemId
                                                      , createdDate = fromString $ show equipment_CreatedDate
                                                      , modifiedDate = m
