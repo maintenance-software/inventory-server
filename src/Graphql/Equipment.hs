@@ -97,6 +97,7 @@ getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.
                                  | otherwise = []
 
 getEquipmentPredicate equipment Predicate {..} | T.strip field == "parentId" && T.strip operator == "=" && T.strip value == "null" = [E.isNothing (equipment ^. Equipment_ParentId)]
+                                               | T.strip field == "parentId" && T.strip operator == "=" && T.strip value /= "" = [equipment ^. Equipment_ParentId E.==. E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)]
                                                | otherwise = []
 
 getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
