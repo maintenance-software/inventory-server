@@ -83,6 +83,7 @@ data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  } deriving (Generic, GQLType)
 
 getOperator "=" = (E.==.)
+getOperator "!=" = (E.!=.)
 getOperator ">" = (E.>.)
 getOperator ">=" = (E.>=.)
 getOperator "<=" = (E.<=.)
@@ -94,10 +95,12 @@ getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.
                                  | T.strip field == "status" = [getOperator operator (item ^. Item_Status) (E.val (readEntityStatus $ T.strip value))]
                                  | T.strip field == "partNumber" = [getOperator operator (item ^. Item_PartNumber) (E.val $ Just $ T.strip value)]
                                  | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                                 | T.strip field == "itemId" = [getOperator operator (item ^. Item_Id) (E.val (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
                                  | otherwise = []
 
 getEquipmentPredicate equipment Predicate {..} | T.strip field == "parentId" && T.strip operator == "=" && T.strip value == "null" = [E.isNothing (equipment ^. Equipment_ParentId)]
                                                | T.strip field == "parentId" && T.strip operator == "=" && T.strip value /= "" = [equipment ^. Equipment_ParentId E.==. E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)]
+                                               | T.strip field == "parentId" && T.strip operator == "!=" && T.strip value /= "" = [equipment ^. Equipment_ParentId E.!=. E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)]
                                                | otherwise = []
 
 getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
