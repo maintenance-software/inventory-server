@@ -205,7 +205,7 @@ Equipment_ sql=t_equipment
 Maintenance_ sql=t_maintenance
     Id sql=maintenance_id
 	  name Text
-	  description Text
+	  description Text Maybe
 	  status EntityStatus
     createdDate UTCTime
     modifiedDate UTCTime Maybe

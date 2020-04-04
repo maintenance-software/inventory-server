@@ -35,6 +35,7 @@ import           Graphql.Category
 import           Graphql.Unit
 import           Graphql.Item
 import           Graphql.Inventory
+import           Graphql.Maintenance
 import           Graphql.Equipment
 import           Graphql.InventoryItem
 import           Graphql.Utils (PageArg)
@@ -53,6 +54,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , items :: () -> Res () Handler (Items Res)
                          , equipments :: () -> Res () Handler (Equipments Res)
                          , inventoryItems :: () -> Res () Handler (InventoryItems Res)
+                         , maintenances :: () -> Res () Handler (Maintenances Res)
                          } deriving (Generic, GQLType)
 
 data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
@@ -67,6 +69,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , items :: () -> MutRes () Handler (Items MutRes)
                            , equipments :: () -> MutRes () Handler (Equipments MutRes)
                            , inventories :: () -> MutRes () Handler (Inventories MutRes)
+                           , maintenances :: () -> MutRes () Handler (Maintenances MutRes)
                            } deriving (Generic, GQLType)
 
 --data DeityArgs = DeityArgs { name :: Text, mythology :: Maybe Text } deriving (Generic)
@@ -82,6 +85,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , categories = listCategoryResolver
                        , units = listUnitResolver
                        , inventories = inventoryResolver
+                       , maintenances = maintenanceResolver
                        , items = itemResolver
                        , equipments = equipmentResolver
                        , inventoryItems = inventoryItemsResolver
@@ -97,6 +101,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
 --                           , saveItem =  saveItemResolver
 --                           , saveInventoryItem =  saveInventoryItemResolver
                            , inventories = inventoryResolver
+                           , maintenances = maintenanceResolver
                            , items = itemResolver
                            , equipments = equipmentResolver
                            , inventoryItems = inventoryItemsResolver
