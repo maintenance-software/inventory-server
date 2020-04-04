@@ -139,18 +139,17 @@ Unit_ json sql=t_unit
     deriving Typeable Show
 
 InventoryItem_ sql=t_inventory_item
-    Id sql=inventory_item_id
+    itemId Item_Id
+    Primary itemId
     level Int
     maxLevelAllowed Int
     minLevelAllowed Int
     price Double
     location Text
     dateExpiry UTCTime Maybe
-    itemId Item_Id
     inventoryId Inventory_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
-    UniqueInventoryIdItemId inventoryId itemId
     deriving Typeable Show
 
 InventoryItemOrder_ sql=t_inventory_item_order
@@ -160,10 +159,11 @@ InventoryItemOrder_ sql=t_inventory_item_order
     discount Double
     subTotalPrice Double
     notes Text
-    inventoryItemId InventoryItem_Id
+    inventoryItemId Item_Id
     oderId Order_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
+    Foreign InventoryItem_ fkInventoryItem inventoryItemId
     deriving Typeable Show
 
 Order_ sql=t_order

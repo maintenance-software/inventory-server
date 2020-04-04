@@ -43,7 +43,8 @@ import Enums
 -- Query Resolvers
 --findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
 findInventoryItemByIdResolver GetEntityByIdArg {..} = lift $ do
-                                              let inventoryItemId = (toSqlKey $ fromIntegral $ entityId)::InventoryItem_Id
+                                              let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
+                                              let inventoryItemId = InventoryItem_Key {unInventoryItem_Key  = itemId}
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 
@@ -122,7 +123,7 @@ inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryIt
                                                }
 
 --toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
-toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
+toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItem_ItemId
                                                                          , level = inventoryItem_Level
                                                                          , maxLevelAllowed = inventoryItem_MaxLevelAllowed
                                                                          , minLevelAllowed = inventoryItem_MinLevelAllowed
@@ -180,8 +181,9 @@ createOrUpdateInventoryItem inventoryItem = do
                             now <- liftIO getCurrentTime
                             itemEntityId <- if inventoryItemId > 0 then
                                         do
-                                         let itemKey = (toSqlKey $ fromIntegral $ inventoryItemId)::InventoryItem_Id
-                                         _ <- runDB $ update itemKey [ InventoryItem_Level =. level
+                                         let itemId = (toSqlKey $ fromIntegral $ inventoryItemId)::Item_Id
+                                         let inventoryItemKey = InventoryItem_Key {unInventoryItem_Key  = itemId}
+                                         _ <- runDB $ update inventoryItemKey [ InventoryItem_Level =. level
                                                                      , InventoryItem_MaxLevelAllowed =. maxLevelAllowed
                                                                      , InventoryItem_MinLevelAllowed =. minLevelAllowed
                                                                      , InventoryItem_Price =. realToFrac price
@@ -189,10 +191,10 @@ createOrUpdateInventoryItem inventoryItem = do
 --                                                                     , InventoryItem_Status =. readEntityStatus status
                                                                      , InventoryItem_DateExpiry =.  Just now
                                                                      , InventoryItem_InventoryId =. ((toSqlKey $ fromIntegral inventoryId)::Inventory_Id)
-                                                                     , InventoryItem_ItemId =. ((toSqlKey $ fromIntegral itemId)::Item_Id)
+--                                                                     , InventoryItem_ItemId =. ((toSqlKey $ fromIntegral itemId)::Item_Id)
                                                                      , InventoryItem_ModifiedDate =. Just now
                                                                      ]
-                                         return itemKey
+                                         return inventoryItemKey
                                       else do
                                             itemKey <- runDB $ insert $ fromInventoryItemQL inventoryItem now Nothing
                                             return itemKey
