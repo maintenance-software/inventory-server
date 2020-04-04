@@ -202,28 +202,20 @@ Equipment_ sql=t_equipment
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-Asset_ sql=t_asset
-    Id sql=asset_id
+Maintenance_ sql=t_maintenance
+    Id sql=maintenance_id
 	  name Text
 	  description Text
-	  make Text
-	  model Text
-	  code Text
-	  priority Int
-	  images [Text]
-	  active Bool
-	  parentId Asset_Id Maybe
+	  status EntityStatus
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-TaskPlan_ sql=t_task_plan
-    Id sql=task_plan_id
-	  name Text
-	  description Text
-	  assetId Asset_Id
-    createdDate UTCTime
-    modifiedDate UTCTime Maybe
+MaintenanceEquipment_ sql=t_maintenance_equipment
+    Id sql=maintenance_equipment_id
+    maintenanceId Maintenance_Id
+    equipmentId Item_Id
+    Foreign Equipment_ fkt_equipment equipmentId
     deriving Typeable Show
 
 Task_ sql=t_task
@@ -236,7 +228,6 @@ Task_ sql=t_task
 	  downTimeDuration Int
 	  attribute1 Text
 	  attribute2 Text
-	  taskPlanId TaskPlan_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -246,10 +237,15 @@ SubTask_ sql=t_sub_task
 	  type Text
 	  description Text
 	  mandatory Bool
-	  partGroupId Asset_Id
 	  taskId Task_Id Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+MaintenanceTask_ sql=t_maintenance_task
+    Id sql=maintenance_task_id
+	  maintenanceId Maintenance_Id
+	  taskId Task_Id
     deriving Typeable Show
 
 -- User
