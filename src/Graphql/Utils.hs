@@ -16,6 +16,7 @@ module Graphql.Utils where
 import System.Random
 import Prelude as P
 import qualified Data.Text as T
+import qualified Database.Esqueleto      as E
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
@@ -100,14 +101,24 @@ fromText _ "" = []
 fromText f text | T.strip text == "" = []
                 | otherwise = P.map  (\e -> f $ T.strip e) (T.splitOn "," text)
 
-getOperator "=" = (==.)
-getOperator ">" = (>.)
-getOperator ">=" = (>=.)
-getOperator "<=" = (<=.)
-getOperator "<" = (<.)
+--getOperator "=" = (==.)
+--getOperator ">" = (>.)
+--getOperator ">=" = (>=.)
+--getOperator "<=" = (<=.)
+--getOperator "<" = (<.)
+--
+--into field val = Filter field (Left val) (BackendSpecificFilter "in")
+--like field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "like")
+--
+--conjunctionFilters xs = P.concat xs
+--unionFilters (x:xs) = foldl (||.) x xs
 
-into field val = Filter field (Left val) (BackendSpecificFilter "in")
-like field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "like")
+getOperator "=" = (E.==.)
+getOperator "!=" = (E.!=.)
+getOperator ">" = (E.>.)
+getOperator ">=" = (E.>=.)
+getOperator "<=" = (E.<=.)
+getOperator "<" = (E.<.)
 
-conjunctionFilters xs = P.concat xs
-unionFilters (x:xs) = foldl (||.) x xs
+conjunctionFilters (x:xs) = foldl (E.&&.) x xs
+unionFilters (x:xs) = foldl (E.||.) x xs

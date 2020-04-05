@@ -32,7 +32,7 @@ import Data.Maybe (maybeToList, listToMaybe)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
-import Graphql.Utils hiding (getOperator, conjunctionFilters, unionFilters)
+import Graphql.Utils
 import Graphql.InventoryDataTypes
 import Data.Time
 import Graphql.InventoryItem
@@ -82,13 +82,6 @@ data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  , parentId :: Maybe Int
                                  } deriving (Generic, GQLType)
 
-getOperator "=" = (E.==.)
-getOperator "!=" = (E.!=.)
-getOperator ">" = (E.>.)
-getOperator ">=" = (E.>=.)
-getOperator "<=" = (E.<=.)
-getOperator "<" = (E.<.)
-
 getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                  | T.strip field == "name" = [getOperator operator (item ^. Item_Name) (E.val value)]
                                  | T.strip field == "code" = [getOperator operator (item ^. Item_Code) (E.val $ T.strip value)]
@@ -120,12 +113,9 @@ getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip 
                                       | otherwise = []
 getPredicates equipment item [] = []
 getPredicates equipment item (x:xs) | P.length p == 0 = getPredicates equipment item xs
-                          | otherwise = p : getPredicates equipment item xs
+                                    | otherwise = p : getPredicates equipment item xs
                    where
                       p = (getEquipmentPredicate equipment x) P.++ (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
-
-conjunctionFilters (x:xs) = foldl (E.&&.) x xs
-unionFilters (x:xs) = foldl (E.||.) x xs
 
 --inventoryResolver :: () -> Res e Handler Inventories
 equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
