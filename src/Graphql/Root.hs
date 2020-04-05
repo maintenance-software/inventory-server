@@ -33,6 +33,7 @@ import           Graphql.Role
 import           Graphql.Person
 import           Graphql.Category
 import           Graphql.Unit
+import           Graphql.TaskCategory
 import           Graphql.Item
 import           Graphql.Inventory
 import           Graphql.Maintenance
@@ -50,6 +51,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , users :: () -> m Users
                          , categories :: () -> m [Category]
                          , units :: () -> m [Unit]
+                         , taskCategories :: () -> m [TaskCategory]
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
                          , equipments :: () -> Res () Handler (Equipments Res)
@@ -62,6 +64,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
                            , saveUnit :: UnitArg -> m Unit
+                           , saveTaskCategory :: TaskCategoryArg -> m TaskCategory
 --                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
 --                           , saveItem :: ItemArg -> m (Item MutRes)
 --                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
@@ -84,6 +87,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , users = resolveUser
                        , categories = listCategoryResolver
                        , units = listUnitResolver
+                       , taskCategories = listTaskCategoryResolver
                        , inventories = inventoryResolver
                        , maintenances = maintenanceResolver
                        , items = itemResolver
@@ -97,6 +101,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , savePerson = resolveSavePerson
                            , saveCategory = saveCategoryResolver
                            , saveUnit = saveUnitResolver
+                           , saveTaskCategory = saveTaskCategoryResolver
 --                           , saveInventory = saveInventoryResolver
 --                           , saveItem =  saveItemResolver
 --                           , saveInventoryItem =  saveInventoryItemResolver

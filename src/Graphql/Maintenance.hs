@@ -15,11 +15,10 @@
 
 module Graphql.Maintenance (
       maintenanceResolver
-    , getMaintenaceByIdResolver_
+    , getMaintenanceByIdResolver_
     , saveMaintenanceResolver
     , toMaintenanceQL
     , Maintenances
---    , dbFetchInventoryById
 ) where
 
 import Import
@@ -33,10 +32,8 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
-import Graphql.InventoryDataTypes
 import Data.Time
-import Graphql.Item
-import Graphql.Category
+import Graphql.Task
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -44,20 +41,24 @@ data Maintenance o = Maintenance { maintenanceId :: Int
                                  , status :: Text
                                  , createdDate :: Text
                                  , modifiedDate :: Maybe Text
-                                 , category :: Maybe(() -> o () Handler Category)
+                                 , tasks :: () -> o () Handler [Task o]
                                  } deriving (Generic, GQLType)
 
 data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
+                                   , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    } deriving (Generic, GQLType)
 
--- Mutation
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
                                      , name :: Text
                                      , description :: Maybe Text
                                      , status :: Text
                                      } deriving (Generic)
+
+data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Int
+                                             , tasks :: [TaskArg]
+                                             } deriving (Generic)
 
 
 getOperator "=" = (E.==.)
@@ -89,7 +90,6 @@ getMaintenancePredicates maintenance (x:xs) | P.length p == 0 = getMaintenancePr
 
 conjunctionFilters (x:xs) = foldl (E.&&.) x xs
 unionFilters (x:xs) = foldl (E.||.) x xs
-
 
 maintenanceFilters maintenance PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
@@ -134,15 +134,17 @@ maintenanceQuery page =  do
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , saveMaintenance = saveMaintenanceResolver
+                                          , createUpdateTasks = createUpdateTasksResolver
                                           }
+
 --getMaintenanceByIdResolver :: GetEntityByIdArg -> Res e Handler (Maintenance Res)
 getMaintenanceByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let maintenanceId = (toSqlKey $ fromIntegral $ entityId)::Maintenance_Id
                                               maintenance <- runDB $ getJustEntity maintenanceId
                                               return $ toMaintenanceQL maintenance
 
-getMaintenaceByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Maintenance_Id -> () -> o () Handler (Maintenance o)
-getMaintenaceByIdResolver_ maintenanceId _ = lift $ do
+getMaintenanceByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Maintenance_Id -> () -> o () Handler (Maintenance o)
+getMaintenanceByIdResolver_ maintenanceId _ = lift $ do
                                     maintenance <- runDB $ getJustEntity maintenanceId
                                     return $ toMaintenanceQL maintenance
 
@@ -169,6 +171,12 @@ saveMaintenanceResolver arg = lift $ do
                                   maintenance <- runDB $ getJustEntity maintenanceId
                                   return $ toMaintenanceQL maintenance
 
+createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
+                         let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
+                         taskIds <- saveTasks entityId tasks
+                         entityTasks <- runDB $ mapM getJustEntity taskIds
+                         return $ P.map (\t -> toTaskQL t) entityTasks
+
 --createOrUpdateMaintenance :: MaintenanceArg -> Handler (Maintenance MutRes)
 createOrUpdateMaintenance maintenance = do
                 let MaintenanceArg {..} = maintenance
@@ -194,6 +202,7 @@ toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId
                                                                  , name = maintenance_Name
                                                                  , description = maintenance_Description
                                                                  , status = T.pack $ show maintenance_Status
+                                                                 , tasks = taskResolver_ maintenanceId
                                                                  , createdDate = fromString $ show maintenance_CreatedDate
                                                                  , modifiedDate = m
                                                                  }

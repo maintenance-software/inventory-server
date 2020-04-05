@@ -221,15 +221,16 @@ MaintenanceEquipment_ sql=t_maintenance_equipment
 Task_ sql=t_task
     Id sql=task_id
 	  name Text
-	  description Text
-	  type Text
+	  description Text Maybe
 	  priority Int
 	  duration Int
 	  downTimeDuration Int
-	  attribute1 Text
-	  attribute2 Text
+	  attribute1 Text Maybe
+	  attribute2 Text Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
+    taskCategoryId TaskCategory_Id Maybe
+    maintenanceId Maintenance_Id
     deriving Typeable Show
 
 SubTask_ sql=t_sub_task
@@ -242,10 +243,28 @@ SubTask_ sql=t_sub_task
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-MaintenanceTask_ sql=t_maintenance_task
-    Id sql=maintenance_task_id
-	  maintenanceId Maintenance_Id
-	  taskId Task_Id
+-- MaintenanceTask_ sql=t_maintenance_task
+--     Id sql=maintenance_task_id
+-- 	  maintenanceId Maintenance_Id
+-- 	  taskId Task_Id
+--     deriving Typeable Show
+
+TaskTrigger_ json sql=t_task_trigger
+    Id sql=task_trigger_id
+    kind Text
+    description Text
+    fixedSchedule Bool
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    taskId Task_Id
+    deriving Typeable Show
+
+TaskCategory_ json sql=t_task_category
+    Id sql=task_category_id
+    name Text
+    description Text Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 -- User
