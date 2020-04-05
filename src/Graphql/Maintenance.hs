@@ -174,7 +174,8 @@ saveMaintenanceResolver arg = lift $ do
 createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
                          let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
                          taskIds <- saveTasks entityId tasks
-                         entityTasks <- runDB $ mapM getJustEntity taskIds
+                         entityTasks <- taskQuery entityId
+--                         entityTasks <- runDB $ mapM getJustEntity taskIds
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
 --createOrUpdateMaintenance :: MaintenanceArg -> Handler (Maintenance MutRes)

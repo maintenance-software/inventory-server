@@ -18,6 +18,7 @@ module Graphql.Task (
     , getTaskByIdResolver
     , saveTasks
     , toTaskQL
+    , taskQuery
     , Task
     , TaskArg
 ) where
@@ -35,6 +36,7 @@ import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Data.Time
 import Graphql.TaskCategory
+import Graphql.SubTask
 
 data Task o = Task { taskId :: Int
                    , name :: Text
@@ -47,6 +49,7 @@ data Task o = Task { taskId :: Int
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
                    , taskCategoryArg :: Maybe(() -> o () Handler TaskCategory)
+                   , subTasks :: () -> o () Handler [SubTask o]
                    } deriving (Generic, GQLType)
 
 data TaskArg = TaskArg { taskId :: Int
@@ -58,6 +61,7 @@ data TaskArg = TaskArg { taskId :: Int
                        , attribute1 :: Maybe Text
                        , attribute2 :: Maybe Text
                        , taskCategoryId :: Maybe Int
+                       , subTasks :: [SubTaskArg]
                        } deriving (Generic)
 
 instance GQLType TaskArg where
@@ -132,6 +136,7 @@ createOrUpdateTask maintenanceId task = do
                                else do
                                   taskKey <- runDB $ insert $ fromTaskQL maintenanceId task now Nothing
                                   return taskKey
+                subTaskIds <- saveSubTasks entityId subTasks
                 return entityId
 
 -- CONVERTERS
@@ -146,6 +151,7 @@ toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , attribute1 = task_Attribute1
                                      , attribute2 = task_Attribute2
                                      , taskCategoryArg = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getTaskCategoryByIdResolver_ c
+                                     , subTasks = subTaskResolver_ taskId
                                      , createdDate = fromString $ show task_CreatedDate
                                      , modifiedDate = m
                                      }

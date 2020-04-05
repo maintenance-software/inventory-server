@@ -235,10 +235,12 @@ Task_ sql=t_task
 
 SubTask_ sql=t_sub_task
     Id sql=sub_task_id
-	  type Text
-	  description Text
+    order Int
+	  group Text
+	  description Text Maybe
 	  mandatory Bool
-	  taskId Task_Id Maybe
+	  taskId Task_Id
+	  subTaskKindId SubTaskKind_Id Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -261,6 +263,14 @@ TaskTrigger_ json sql=t_task_trigger
 
 TaskCategory_ json sql=t_task_category
     Id sql=task_category_id
+    name Text
+    description Text Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+SubTaskKind_ json sql=t_sub_task_king
+    Id sql=sub_task_kind_id
     name Text
     description Text Maybe
     createdDate UTCTime
