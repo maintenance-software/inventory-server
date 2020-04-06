@@ -13,13 +13,10 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.SubTask (
-      subTaskResolver_
-    , getSubTaskByIdResolver
+module Graphql.Maintenance.SubTask.Persistence (
+      subTaskQuery
     , saveSubTasks
-    , toSubTaskQL
-    , SubTask
-    , SubTaskArg
+    , createOrUpdateSubTask
 ) where
 
 import Import
@@ -34,29 +31,8 @@ import qualified Data.Text as T
 import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Data.Time
-import Graphql.SubTaskKind
-
-data SubTask o = SubTask { subTaskId :: Int
-                         , order :: Int
-                   	     , group :: Text
-                   	     , description :: Maybe Text
-                   	     , mandatory :: Bool
-                         , createdDate :: Text
-                         , modifiedDate :: Maybe Text
-                   	     , subTaskKind :: Maybe(() -> o () Handler SubTaskKind)                   
-                         } deriving (Generic, GQLType)
-
-data SubTaskArg = SubTaskArg { subTaskId :: Int
-                             , order :: Int
-                             , group :: Text
-                             , description :: Maybe Text
-                             , mandatory :: Bool
-                             , subTaskKindId :: Maybe Int
-                             } deriving (Generic)
-
-instance GQLType SubTaskArg where
-    type  KIND SubTaskArg = INPUT_OBJECT
-    description = const $ Just $ pack "This field holds SubTask Input information"
+import Graphql.Maintenance.SubTask.SubTaskKind
+import Graphql.Maintenance.SubTask.DataTypes
 
 subTaskQuery :: Task_Id -> Handler [Entity SubTask_]
 subTaskQuery taskId =  do
@@ -66,17 +42,6 @@ subTaskQuery taskId =  do
                                         E.where_ (subTask ^. SubTask_TaskId E.==. E.val taskId)
                                         return subTask
                       return result
-
-subTaskResolver_ taskId _ = lift $ do
-                                subTasks <- subTaskQuery taskId
-                                return $ P.map (\t -> toSubTaskQL t) subTasks
-
---getSubTaskByIdResolver :: GetEntityByIdArg -> Res e Handler (SubTask Res)
-getSubTaskByIdResolver GetEntityByIdArg {..} = lift $ do
-                                              let subTaskId = (toSqlKey $ fromIntegral $ entityId)::SubTask_Id
-                                              subTask <- runDB $ getJustEntity subTaskId
-                                              return $ toSubTaskQL subTask
-
 
 --saveSubTasks :: SubTask_Id -> [SubTaskArg] -> Handler [SubTask_Id]
 saveSubTasks _ [] = pure []
@@ -106,24 +71,6 @@ createOrUpdateSubTask taskId subTask = do
                                   return subTaskKey
                 return entityId
 
--- CONVERTERS
---toSubTaskQL :: Entity SubTask_ -> SubTask
-toSubTaskQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity SubTask_ -> SubTask o
-toSubTaskQL (Entity subTaskId subTask) = SubTask { subTaskId = fromIntegral $ fromSqlKey subTaskId
-                                                 , order = subTask_Order
-                                                 , group = subTask_Group
-                                                 , description = subTask_Description
-                                                 , mandatory = subTask_Mandatory
-                                                 , subTaskKind = case subTask_SubTaskKindId of Nothing -> Nothing; Just c -> Just $ getSubTaskKindByIdResolver_ c
-                                                 , createdDate = fromString $ show subTask_CreatedDate
-                                                 , modifiedDate = m
-                                                 }
-                                          where
-                                            SubTask_ {..} = subTask
-                                            m = case subTask_ModifiedDate of
-                                                  Just d -> Just $ fromString $ show d
-                                                  Nothing -> Nothing
-
 fromTaskQL :: Task_Id -> SubTaskArg -> UTCTime -> Maybe UTCTime -> SubTask_
 fromTaskQL taskId (SubTaskArg {..}) cd md = SubTask_ { subTask_Order = order
                                                      , subTask_Group = group
@@ -134,20 +81,3 @@ fromTaskQL taskId (SubTaskArg {..}) cd md = SubTask_ { subTask_Order = order
                                                      , subTask_CreatedDate = cd
                                                      , subTask_ModifiedDate = md
                                                      }
-
-{-
-query {
-  inventories(queryString: "") {
-    subTaskId
-    name
-    description
-  }
-}
-
-mutation {
-  saveCategory(subTaskId: 0, name: "test", description: "sss") {
-    subTaskId
-    name
-  }
-}
--}

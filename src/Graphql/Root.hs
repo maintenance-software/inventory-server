@@ -33,12 +33,14 @@ import           Graphql.Role
 import           Graphql.Person
 import           Graphql.Category
 import           Graphql.Unit
-import           Graphql.TaskCategory
-import           Graphql.SubTaskKind
+import           Graphql.Maintenance.SubTask.SubTaskKind
+import           Graphql.Maintenance.Task.TaskCategory
 import           Graphql.Item
 import           Graphql.Inventory
-import           Graphql.Maintenance
-import           Graphql.Equipment
+import           Graphql.Maintenance.Resolvers
+import           Graphql.Maintenance.DataTypes
+import           Graphql.Equipment.Resolvers
+import           Graphql.Equipment.DataTypes
 import           Graphql.InventoryItem
 import           Graphql.Utils (PageArg)
 import           Graphql.InventoryDataTypes

@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.TaskCategory (
+module Graphql.Maintenance.Task.TaskCategory (
       TaskCategory
     , TaskCategoryArg
     , getTaskCategoryByIdResolver_

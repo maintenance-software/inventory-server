@@ -13,12 +13,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Maintenance (
-      maintenanceResolver
-    , getMaintenanceByIdResolver_
-    , saveMaintenanceResolver
-    , toMaintenanceQL
-    , Maintenances
+module Graphql.Maintenance.Persistence (
+        createOrUpdateMaintenance
+      , equipmentQuery
+      , maintenanceQuery
+      , maintenanceQueryCount
+      , maintenanceFilters
 ) where
 
 import Import
@@ -33,34 +33,7 @@ import qualified Data.Text as T
 import Enums
 import Graphql.Utils
 import Data.Time
-import Graphql.Task
-import Graphql.Equipment
-
-data Maintenance o = Maintenance { maintenanceId :: Int
-                                 , name :: Text
-                                 , description :: Maybe Text
-                                 , status :: Text
-                                 , createdDate :: Text
-                                 , modifiedDate :: Maybe Text
-                                 , tasks :: () -> o () Handler [Task o]
-                                 , equipments :: () -> o () Handler [Equipment o]
-                                 } deriving (Generic, GQLType)
-
-data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
-                                   , page :: PageArg -> o () Handler (Page (Maintenance o))
-                                   , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
-                                   , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
-                                   } deriving (Generic, GQLType)
-
-data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
-                                     , name :: Text
-                                     , description :: Maybe Text
-                                     , status :: Text
-                                     } deriving (Generic)
-
-data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Int
-                                             , tasks :: [TaskArg]
-                                             } deriving (Generic)
+import Graphql.Maintenance.DataTypes
 
 getMaintenancePredicate maintenance Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                                    | T.strip field == "name" = [getOperator operator (maintenance ^. Maintenance_Name) (E.val value)]
@@ -135,58 +108,6 @@ equipmentQuery maintenanceId =  do
                                         return (equipment, item)
                       return result
 
---maintenanceResolver :: () -> Res e Handler Maintenances
-maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
-                                          , page = maintenancePageResolver
-                                          , saveMaintenance = saveMaintenanceResolver
-                                          , createUpdateTasks = createUpdateTasksResolver
-                                          }
-
---getMaintenanceByIdResolver :: GetEntityByIdArg -> Res e Handler (Maintenance Res)
-getMaintenanceByIdResolver GetEntityByIdArg {..} = lift $ do
-                                              let maintenanceId = (toSqlKey $ fromIntegral $ entityId)::Maintenance_Id
-                                              maintenance <- runDB $ getJustEntity maintenanceId
-                                              return $ toMaintenanceQL maintenance
-
-getMaintenanceByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Maintenance_Id -> () -> o () Handler (Maintenance o)
-getMaintenanceByIdResolver_ maintenanceId _ = lift $ do
-                                    maintenance <- runDB $ getJustEntity maintenanceId
-                                    return $ toMaintenanceQL maintenance
-
-maintenancePageResolver page = lift $ do
-                        countItems <- maintenanceQueryCount page
-                        queryResult <- maintenanceQuery page
-                        let result = P.map (\ m -> toMaintenanceQL m) queryResult
-                        return Page { totalCount = countItems
-                                    , content = result
-                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
-                                                          , hasPreview = pageIndex_ * pageSize_ > 0
-                                                          , pageSize = pageSize_
-                                                          , pageIndex = pageIndex_
-                                    }
-                        }
-                         where
-                            PageArg {..} = page
-                            pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
-                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
-
-equipmentResolver_ maintenanceId _ = lift $ do
-                              itemEquipments <- equipmentQuery maintenanceId
-                              let result = P.map (\(e, i) -> toEquipmentQL e i) itemEquipments
-                              return result
---saveMaintenanceResolver :: MaintenanceArg -> MutRes e Handler (Maintenance MutRes)
-saveMaintenanceResolver arg = lift $ do
-                                  maintenanceId <- createOrUpdateMaintenance arg
-                                  maintenance <- runDB $ getJustEntity maintenanceId
-                                  return $ toMaintenanceQL maintenance
-
-createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
-                         let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
-                         taskIds <- saveTasks entityId tasks
-                         entityTasks <- taskQuery entityId
---                         entityTasks <- runDB $ mapM getJustEntity taskIds
-                         return $ P.map (\t -> toTaskQL t) entityTasks
-
 --createOrUpdateMaintenance :: MaintenanceArg -> Handler (Maintenance MutRes)
 createOrUpdateMaintenance maintenance = do
                 let MaintenanceArg {..} = maintenance
@@ -204,46 +125,3 @@ createOrUpdateMaintenance maintenance = do
                                   maintenanceKey <- runDB $ insert $ fromMaintenanceQL maintenance now Nothing
                                   return maintenanceKey
                 return entityId
-
--- CONVERTERS
---toMaintenanceQL :: Entity Maintenance_ -> Maintenance
-toMaintenanceQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Maintenance_ -> Maintenance o
-toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId = fromIntegral $ fromSqlKey maintenanceId
-                                                                 , name = maintenance_Name
-                                                                 , description = maintenance_Description
-                                                                 , status = T.pack $ show maintenance_Status
-                                                                 , tasks = taskResolver_ maintenanceId
-                                                                 , equipments = equipmentResolver_ maintenanceId
-                                                                 , createdDate = fromString $ show maintenance_CreatedDate
-                                                                 , modifiedDate = m
-                                                                 }
-                                          where
-                                            Maintenance_ {..} = maintenance
-                                            m = case maintenance_ModifiedDate of
-                                                  Just d -> Just $ fromString $ show d
-                                                  Nothing -> Nothing
-
-fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_
-fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name = name
-                                                             , maintenance_Description = description
-                                                             , maintenance_Status = readEntityStatus status
-                                                             , maintenance_CreatedDate = cd
-                                                             , maintenance_ModifiedDate = md
-                                                             }
-
-{-
-query {
-  inventories(queryString: "") {
-    maintenanceId
-    name
-    description
-  }
-}
-
-mutation {
-  saveCategory(maintenanceId: 0, name: "test", description: "sss") {
-    maintenanceId
-    name
-  }
-}
--}

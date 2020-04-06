@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.SubTaskKind (
+module Graphql.Maintenance.SubTask.SubTaskKind (
       SubTaskKind
     , SubTaskKindArg
     , getSubTaskKindByIdResolver_
