@@ -34,6 +34,7 @@ import Enums
 import Graphql.Utils
 import Data.Time
 import Graphql.Task
+import Graphql.Equipment
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -42,6 +43,7 @@ data Maintenance o = Maintenance { maintenanceId :: Int
                                  , createdDate :: Text
                                  , modifiedDate :: Maybe Text
                                  , tasks :: () -> o () Handler [Task o]
+                                 , equipments :: () -> o () Handler [Equipment o]
                                  } deriving (Generic, GQLType)
 
 data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
@@ -119,6 +121,20 @@ maintenanceQuery page =  do
                         pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
+equipmentQuery :: Maintenance_Id -> Handler [(Entity Equipment_, Entity Item_)]
+equipmentQuery maintenanceId =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment `E.InnerJoin` item) -> do
+                                        E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        let subquery =
+                                              E.from $ \maintenanceEquipment -> do
+                                              E.where_ (maintenanceEquipment ^. MaintenanceEquipment_MaintenanceId E.==. E.val maintenanceId)
+                                              return (maintenanceEquipment ^. MaintenanceEquipment_EquipmentId)
+                                        E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+                                        return (equipment, item)
+                      return result
+
 --maintenanceResolver :: () -> Res e Handler Maintenances
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
@@ -154,6 +170,10 @@ maintenancePageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
+equipmentResolver_ maintenanceId _ = lift $ do
+                              itemEquipments <- equipmentQuery maintenanceId
+                              let result = P.map (\(e, i) -> toEquipmentQL e i) itemEquipments
+                              return result
 --saveMaintenanceResolver :: MaintenanceArg -> MutRes e Handler (Maintenance MutRes)
 saveMaintenanceResolver arg = lift $ do
                                   maintenanceId <- createOrUpdateMaintenance arg
@@ -193,6 +213,7 @@ toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId
                                                                  , description = maintenance_Description
                                                                  , status = T.pack $ show maintenance_Status
                                                                  , tasks = taskResolver_ maintenanceId
+                                                                 , equipments = equipmentResolver_ maintenanceId
                                                                  , createdDate = fromString $ show maintenance_CreatedDate
                                                                  , modifiedDate = m
                                                                  }

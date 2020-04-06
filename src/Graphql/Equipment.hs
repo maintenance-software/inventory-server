@@ -19,6 +19,7 @@ module Graphql.Equipment (
 --    , saveInventoryResolver
     , toEquipmentQL
     , Equipments
+    , Equipment
 ) where
 
 import Import
