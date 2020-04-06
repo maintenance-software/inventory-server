@@ -31,7 +31,7 @@ import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
-import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
+import Graphql.Utils
 import Data.Time
 import Graphql.Task
 
@@ -60,14 +60,6 @@ data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Int
                                              , tasks :: [TaskArg]
                                              } deriving (Generic)
 
-
-getOperator "=" = (E.==.)
-getOperator "!=" = (E.!=.)
-getOperator ">" = (E.>.)
-getOperator ">=" = (E.>=.)
-getOperator "<=" = (E.<=.)
-getOperator "<" = (E.<.)
-
 getMaintenancePredicate maintenance Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                                    | T.strip field == "name" = [getOperator operator (maintenance ^. Maintenance_Name) (E.val value)]
                                                    | T.strip field == "status" = [getOperator operator (maintenance ^. Maintenance_Status) (E.val (readEntityStatus $ T.strip value))]
@@ -87,9 +79,6 @@ getMaintenancePredicates maintenance (x:xs) | P.length p == 0 = getMaintenancePr
                                             | otherwise = p : getMaintenancePredicates maintenance xs
                    where
                       p = (getMaintenancePredicate maintenance x) P.++ (getMaintenanceInPredicate maintenance x) P.++ (getMaintenanceNotInPredicate maintenance x)
-
-conjunctionFilters (x:xs) = foldl (E.&&.) x xs
-unionFilters (x:xs) = foldl (E.||.) x xs
 
 maintenanceFilters maintenance PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
