@@ -26,7 +26,6 @@ import qualified Data.Text as T
 import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
-import Graphql.Category
 
 data Session = Session { authId :: Text
                        , username :: Text

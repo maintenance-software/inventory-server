@@ -13,13 +13,13 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Item (
-        itemResolver
-      , getItemByIdResolver_
-      , saveItemResolver
-      , createOrUpdateItem
-      , toItemQL
-      , availableItemsPageResolver_
+module Graphql.Asset.Item.Persistence (
+      itemQueryCount
+    , itemQuery
+    , availableItemsQueryCount
+    , availableItemsQuery
+    , changeStatus
+    , createOrUpdateItem
 ) where
 
 import Import
@@ -35,35 +35,9 @@ import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
-import Graphql.Category
-import Graphql.InventoryDataTypes
 import Enums
-import Graphql.InventoryItem
-import Graphql.Unit
-
--- Query Resolvers
---getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
-getItemByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Item o)
-getItemByIdResolver GetEntityByIdArg {..} = lift $ do
-                                              let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
-                                              item <- runDB $ getJustEntity itemId
-                                              return $ toItemQL item
-
-getItemByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Item_Id -> () -> o () Handler (Item o)
-getItemByIdResolver_ itemId _ = lift $ do
-                                         item <- runDB $ getJustEntity itemId
-                                         return $ toItemQL item
-
-categoryResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Category_Id -> () -> o () Handler Category
-categoryResolver_ categoryId arg = lift $ do
-                                      category <- dbFetchCategoryById categoryId
-                                      return category
-
-getUnitByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Unit_Id -> () -> o () Handler Unit
-getUnitByIdResolver_ unitId _ = lift $ do
-                                      unit <- dbFetchUnitById unitId
-                                      return unit
-
+import Graphql.Asset.Unit
+import Graphql.Asset.DataTypes
 --getFilters Nothing = []
 --getFilters (Just []) = []
 --getFilters (Just (x:xs)) | T.strip field == "" || T.strip operator == "" || T.strip value == ""  = getFilters $ Just xs
@@ -198,98 +172,6 @@ availableItemsQuery inventoryId page =  do
                       return result
 -- END QUERIES
 
---itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
-itemsPageResolver page = lift $ do
-                        countItems <- itemQueryCount page
-                        result <- itemQuery page
-                        let itemsQL = P.map (\r -> toItemQL r) result
-                        return Page { totalCount = countItems
-                                    , content = itemsQL
-                                    , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
-                                                          , hasPreview = pageIndex' * pageSize' > 0
-                                                          , pageSize = pageSize'
-                                                          , pageIndex = pageIndex'
-                                    }
-                        }
-                         where
-                          PageArg {..} = page
-                          pageIndex' = case pageIndex of
-                                        Just  x  -> x
-                                        Nothing -> 0
-                          pageSize' = case pageSize of
-                                          Just y -> y
-                                          Nothing -> 10
-
-availableItemsPageResolver_ inventoryId page = lift $ do
-                        countItems <- availableItemsQueryCount inventoryId page
-                        result <- availableItemsQuery inventoryId page
-                        let itemsQL = P.map (\r -> toItemQL r) result
-                        return Page { totalCount = countItems
-                                    , content = itemsQL
-                                    , pageInfo = PageInfo { hasNext = (pageIndex' * pageSize' + pageSize' < countItems)
-                                                          , hasPreview = pageIndex' * pageSize' > 0
-                                                          , pageSize = pageSize'
-                                                          , pageIndex = pageIndex'
-                                    }
-                        }
-                         where
-                            PageArg {..} = page
-                            pageIndex' = case pageIndex of
-                                          Just  x  -> x
-                                          Nothing -> 0
-                            pageSize' = case pageSize of
-                                            Just y -> y
-                                            Nothing -> 10
-
---itemResolver :: () -> Res e Handler Items
-itemResolver _ = pure Items { item = getItemByIdResolver
-                            , page = itemsPageResolver
-                            , saveItem = saveItemResolver
-                            , changeItemStatus = changeItemStatusResolver
-                            }
-
--- itemResolver :: Items (Res () Handler)
--- itemResolver = Items {  item = getItemByIdResolver, page = itemsPageResolver }
-
--- categoryResolver :: Category_Id -> () -> Res e Handler Category
---categoryResolver categoryId arg = lift $ do
---                                      category <- dbFetchCategoryById categoryId
---                                      return category
-
---getUnitByIdResolver_ unitId _ = lift $ do
---                                      unit <- dbFetchUnitById unitId
---                                      return unit
-
-toItemQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Item_ -> Item o
-toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
-                                     , code = item_Code
-                                     , name = item_Name
-                                     , defaultPrice = realToFrac item_DefaultPrice
-                                     , description = item_Description
-                                     , partNumber = item_PartNumber
-                                     , manufacturer = item_Manufacturer
-                                     , model = item_Model
-                                     , itemType = T.pack $ show item_ItemType
-                                     , notes = item_Notes
-                                     , status = T.pack $ show item_Status
-                                     , images = item_Images
-                                     , category = case item_CategoryId of Nothing -> Nothing; Just c -> Just $ categoryResolver_ c
-                                     , unit = case item_UnitId of Nothing -> Nothing; Just u -> Just $ getUnitByIdResolver_ u
-                                     , inventoryItems = inventoryItemsItemPageResolver_ itemId
-                                     , createdDate = fromString $ show item_CreatedDate
-                                     , modifiedDate = m
-                                     }
-                            where
-                              Item_ {..} = item
-                              m = case item_ModifiedDate of
-                                    Just d -> Just $ fromString $ show d
-                                    Nothing -> Nothing
-
--- Mutation Resolvers
---changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler Bool
-changeItemStatusResolver EntityChangeStatusArg {..} = lift $ do
-                              () <- changeStatus entityIds (readEntityStatus status)
-                              return True
 changeStatus :: [Int] -> EntityStatus -> Handler ()
 changeStatus [] _ = pure ()
 changeStatus (x:xs) status = do
@@ -298,12 +180,6 @@ changeStatus (x:xs) status = do
                         _ <- runDB $ update itemId [ Item_Status =. status, Item_ModifiedDate =. Just now]
                         _ <- changeStatus xs status
                         return ()
-
---saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
-saveItemResolver arg = lift $ do
-                              itemId <- createOrUpdateItem arg
-                              item <- runDB $ getJustEntity itemId
-                              return $ toItemQL item
 
 createOrUpdateItem :: ItemArg -> Handler Item_Id
 createOrUpdateItem item = do
@@ -351,54 +227,3 @@ fromItemQL (ItemArg {..}) cd md = Item_ { item_Code = code
                                         , item_ModifiedDate = md
                                         }
 
-{-
-query {
-  items {
-    page(pageIndex:0, pageSize: 10) {
-      totalCount
-      pageInfo {
-        pageIndex
-        pageSize
-        hasNext
-        hasPreview
-      }
-      content {
-        itemId
-        name
-        unit
-        defaultPrice
-        description
-        code
-        images
-        createdDate
-        modifiedDate
-        category {
-          categoryId
-          name
-        }
-      }
-
-    }
-  }
-}
-
-mutation {
-  saveRole(itemId:10, key: "test12", name: "sloss", description: "option" active: true) {
-    itemId
-    key
-    description
-    active
-    createdDate
-    modifiedDate
-    privileges(entityIds: [16]) {
-      privilegeId
-      key
-      description
-      active
-      createdDate
-      modifiedDate
-    }
-  }
-}
-
--}

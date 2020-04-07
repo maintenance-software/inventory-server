@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Category (
+module Graphql.Asset.Category (
     Category
     , CategoryArg
     , listCategoryResolver

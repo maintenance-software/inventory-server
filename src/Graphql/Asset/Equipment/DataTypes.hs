@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Equipment.DataTypes where
+module Graphql.Asset.Equipment.DataTypes where
 
 import Import
 import GHC.Generics
@@ -23,10 +23,10 @@ import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Enums
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
-import Graphql.InventoryDataTypes
+import Graphql.Asset.DataTypes
 import Data.Time
-import Graphql.Item
-import Graphql.Category
+import Graphql.Asset.DataTypes
+import Graphql.Asset.Category
 
 data Equipment o = Equipment { equipmentId :: Int
                              , name :: Text

@@ -31,19 +31,19 @@ import           Graphql.Session
 import           Graphql.Privilege
 import           Graphql.Role
 import           Graphql.Person
-import           Graphql.Category
-import           Graphql.Unit
+import           Graphql.Asset.Category
+import           Graphql.Asset.Unit
 import           Graphql.Maintenance.SubTask.SubTaskKind
 import           Graphql.Maintenance.Task.TaskCategory
-import           Graphql.Item
-import           Graphql.Inventory
+import           Graphql.Asset.Item.Resolvers
+import           Graphql.Asset.Inventory.Resolvers
 import           Graphql.Maintenance.Resolvers
 import           Graphql.Maintenance.DataTypes
-import           Graphql.Equipment.Resolvers
-import           Graphql.Equipment.DataTypes
-import           Graphql.InventoryItem
+import           Graphql.Asset.Equipment.Resolvers
+import           Graphql.Asset.Equipment.DataTypes
+import           Graphql.Asset.InventoryItem.Resolvers
 import           Graphql.Utils (PageArg)
-import           Graphql.InventoryDataTypes
+import           Graphql.Asset.DataTypes
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity

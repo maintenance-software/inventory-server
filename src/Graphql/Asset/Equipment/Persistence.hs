@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Equipment.Persistence (
+module Graphql.Asset.Equipment.Persistence (
       queryFilters
     , equipmentQuery
     , createOrUpdateEquipment
@@ -34,12 +34,11 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils
-import Graphql.InventoryDataTypes
+import Graphql.Asset.DataTypes
 import Data.Time
-import Graphql.InventoryItem
-import Graphql.Item
-import Graphql.Category
-import Graphql.Equipment.DataTypes
+import Graphql.Asset.Item.Resolvers
+import Graphql.Asset.Category
+import Graphql.Asset.Equipment.DataTypes
 
 getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                  | T.strip field == "name" = [getOperator operator (item ^. Item_Name) (E.val value)]

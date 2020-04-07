@@ -13,13 +13,13 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Item (
+module Graphql.Asset.Item.Resolvers (
     getItemByIdResolver_
     , toItemQL
 ) where
 
 import Import
-import Graphql.InventoryDataTypes
+import Graphql.Asset.DataTypes
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 

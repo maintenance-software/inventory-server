@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.InventoryItem (
+module Graphql.Asset.InventoryItem.Resolvers (
         inventoryItemsResolver
       , getInventoryItemByIdResolver_
       , inventoryItemsPageResolver_
@@ -33,12 +33,13 @@ import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
-import Graphql.Category
-import {-# SOURCE #-} Graphql.Item
-import {-# SOURCE #-} Graphql.Inventory
-import Graphql.Unit
-import Graphql.InventoryDataTypes
+import {-# SOURCE #-} Graphql.Asset.Item.Resolvers
+import {-# SOURCE #-} Graphql.Asset.Inventory.Resolvers
+import Graphql.Asset.Unit
+import Graphql.Asset.DataTypes
 import Enums
+import Graphql.Asset.DataTypes
+import Graphql.Asset.InventoryItem.Persistence
 
 -- Query Resolvers
 --findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
@@ -122,29 +123,6 @@ inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryIt
                                                , saveInventoryItem = saveInventoryItemResolver
                                                }
 
---toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
-toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItem_ItemId
-                                                                         , level = inventoryItem_Level
-                                                                         , maxLevelAllowed = inventoryItem_MaxLevelAllowed
-                                                                         , minLevelAllowed = inventoryItem_MinLevelAllowed
-                                                                         , price = realToFrac inventoryItem_Price
-                                                                         , location = inventoryItem_Location
---                                                                         , status = T.pack $ show inventoryItem_Status
-                                                                         , dateExpiry = de
-                                                                         , inventory = getInventoryByIdResolver_ inventoryItem_InventoryId
-                                                                         , item = getItemByIdResolver_ inventoryItem_ItemId
-                                                                         , createdDate = fromString $ show inventoryItem_CreatedDate
-                                                                         , modifiedDate = m
-                                                                         }
-                            where
-                              InventoryItem_ {..} = inventoryItem
-                              m = case inventoryItem_ModifiedDate of
-                                    Just d -> Just $ fromString $ show d
-                                    Nothing -> Nothing
-                              de = case inventoryItem_DateExpiry of
-                                    Just d -> Just $ fromString $ show d
-                                    Nothing -> Nothing
-
 -- Mutation Resolvers
 --saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler (InventoryItem MutRes)
 saveInventoryItemResolver arg = lift $ do
@@ -168,101 +146,25 @@ saveInventoryItemsResolver arg = lift $ do
                               inventoryItems <- runDB $ mapM getJustEntity inventoryItemIds
                               return $ P.map toInventoryItemQL inventoryItems
 
-createOrUpdateInventoryItems :: [InventoryItemArg] -> Handler [InventoryItem_Id]
-createOrUpdateInventoryItems [] = pure []
-createOrUpdateInventoryItems (x: xs) = do
-                                        inventoryItemId <- createOrUpdateInventoryItem x
-                                        inventoryItemIds <- createOrUpdateInventoryItems xs
-                                        return (inventoryItemId : inventoryItemIds)
-
-createOrUpdateInventoryItem :: InventoryItemArg -> Handler InventoryItem_Id
-createOrUpdateInventoryItem inventoryItem = do
-                            let InventoryItemArg {..} = inventoryItem
-                            now <- liftIO getCurrentTime
-                            itemEntityId <- if inventoryItemId > 0 then
-                                        do
-                                         let itemId = (toSqlKey $ fromIntegral $ inventoryItemId)::Item_Id
-                                         let inventoryItemKey = InventoryItem_Key {unInventoryItem_Key  = itemId}
-                                         _ <- runDB $ update inventoryItemKey [ InventoryItem_Level =. level
-                                                                     , InventoryItem_MaxLevelAllowed =. maxLevelAllowed
-                                                                     , InventoryItem_MinLevelAllowed =. minLevelAllowed
-                                                                     , InventoryItem_Price =. realToFrac price
-                                                                     , InventoryItem_Location =. location
---                                                                     , InventoryItem_Status =. readEntityStatus status
-                                                                     , InventoryItem_DateExpiry =.  Just now
-                                                                     , InventoryItem_InventoryId =. ((toSqlKey $ fromIntegral inventoryId)::Inventory_Id)
---                                                                     , InventoryItem_ItemId =. ((toSqlKey $ fromIntegral itemId)::Item_Id)
-                                                                     , InventoryItem_ModifiedDate =. Just now
-                                                                     ]
-                                         return inventoryItemKey
-                                      else do
-                                            itemKey <- runDB $ insert $ fromInventoryItemQL inventoryItem now Nothing
-                                            return itemKey
-                            return itemEntityId
-
-fromInventoryItemQL :: InventoryItemArg -> UTCTime -> Maybe UTCTime -> InventoryItem_
-fromInventoryItemQL (InventoryItemArg {..}) cd md = InventoryItem_ { inventoryItem_Level = level
-                                                                   , inventoryItem_MaxLevelAllowed = maxLevelAllowed
-                                                                   , inventoryItem_MinLevelAllowed = minLevelAllowed
-                                                                   , inventoryItem_Price = realToFrac price
-                                                                   , inventoryItem_Location = location
---                                                                   , inventoryItem_Status = readEntityStatus status
-                                                                   , inventoryItem_DateExpiry = md
-                                                                   , inventoryItem_ItemId = (toSqlKey $ fromIntegral itemId)::Item_Id
-                                                                   , inventoryItem_InventoryId = ((toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id)
-                                                                   , inventoryItem_CreatedDate = cd
-                                                                   , inventoryItem_ModifiedDate = md
-                                                                   }
-
-{-
-query {
-  items {
-    page(pageIndex:0, pageSize: 10) {
-      totalCount
-      pageInfo {
-        pageIndex
-        pageSize
-        hasNext
-        hasPreview
-      }
-      content {
-        inventoryItemId
-        name
-        unit
-        defaultPrice
-        description
-        code
-        images
-        createdDate
-        modifiedDate
-        category {
-          categoryId
-          name
-        }
-      }
-
-    }
-  }
-}
-
-mutation {
-  saveRole(inventoryItemId:10, key: "test12", name: "sloss", description: "option" active: true) {
-    inventoryItemId
-    key
-    description
-    active
-    createdDate
-    modifiedDate
-    privileges(entityIds: [16]) {
-      privilegeId
-      key
-      description
-      active
-      createdDate
-      modifiedDate
-    }
-  }
-}
-
--}
-
+--toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
+toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItem_ItemId
+                                                                         , level = inventoryItem_Level
+                                                                         , maxLevelAllowed = inventoryItem_MaxLevelAllowed
+                                                                         , minLevelAllowed = inventoryItem_MinLevelAllowed
+                                                                         , price = realToFrac inventoryItem_Price
+                                                                         , location = inventoryItem_Location
+--                                                                         , status = T.pack $ show inventoryItem_Status
+                                                                         , dateExpiry = de
+                                                                         , inventory = getInventoryByIdResolver_ inventoryItem_InventoryId
+                                                                         , item = getItemByIdResolver_ inventoryItem_ItemId
+                                                                         , createdDate = fromString $ show inventoryItem_CreatedDate
+                                                                         , modifiedDate = m
+                                                                         }
+                            where
+                              InventoryItem_ {..} = inventoryItem
+                              m = case inventoryItem_ModifiedDate of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing
+                              de = case inventoryItem_DateExpiry of
+                                    Just d -> Just $ fromString $ show d
+                                    Nothing -> Nothing

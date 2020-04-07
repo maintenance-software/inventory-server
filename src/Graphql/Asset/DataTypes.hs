@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -12,27 +13,24 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.InventoryDataTypes (
-    Inventory(..)
-  , InventoryArg(..)
-  , Inventories(..)
-  , InventoryItems(..)
-  , InventoryItem(..)
-  , InventoryItemArg(..)
-  , InventoryItemsArg(..)
-  , Item(..)
-  , Items(..)
-  , ItemArg(..)
-  ) where
+module Graphql.Asset.DataTypes where
 
-import GHC.Generics
 import Import
+import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import qualified Data.Text as T
+import qualified Database.Esqueleto      as E
+import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
+import Data.Typeable (typeOf)
+import Prelude as P
+import qualified Data.Set as S
 import Graphql.Utils
-import Graphql.Category
-import Graphql.Unit
+import Data.Time
+import Graphql.Asset.Category
 import Enums
+import Graphql.Asset.Unit
 
 data Inventory o = Inventory { inventoryId :: Int
                              , name :: Text
@@ -98,7 +96,6 @@ data InventoryItemsArg = InventoryItemsArg { level :: Int
                                            , itemIds :: [Int]
                                            } deriving (Generic, GQLType)
 
-
 data Item o = Item { itemId :: Int
                    , code :: Text
                    , name :: Text
@@ -139,3 +136,56 @@ data ItemArg = ItemArg { itemId :: Int
                        , categoryId :: Maybe Int
                        , unitId :: Maybe Int
                        } deriving (Generic, GQLType)
+
+
+{-
+query {
+  items {
+    page(pageIndex:0, pageSize: 10) {
+      totalCount
+      pageInfo {
+        pageIndex
+        pageSize
+        hasNext
+        hasPreview
+      }
+      content {
+        itemId
+        name
+        unit
+        defaultPrice
+        description
+        code
+        images
+        createdDate
+        modifiedDate
+        category {
+          categoryId
+          name
+        }
+      }
+
+    }
+  }
+}
+
+mutation {
+  saveRole(itemId:10, key: "test12", name: "sloss", description: "option" active: true) {
+    itemId
+    key
+    description
+    active
+    createdDate
+    modifiedDate
+    privileges(entityIds: [16]) {
+      privilegeId
+      key
+      description
+      active
+      createdDate
+      modifiedDate
+    }
+  }
+}
+
+-}

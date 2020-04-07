@@ -14,12 +14,12 @@
 {-# LANGUAGE RecordWildCards       #-}
 
 
-module Graphql.Inventory (
+module Graphql.Asset.Inventory.Resolvers (
     getInventoryByIdResolver_
 ) where
 
 import Import
-import Graphql.InventoryDataTypes
+import Graphql.Asset.DataTypes
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 

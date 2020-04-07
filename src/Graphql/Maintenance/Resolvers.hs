@@ -34,7 +34,7 @@ import Graphql.Utils
 import Data.Time
 import Graphql.Maintenance.Task.Resolvers
 import Graphql.Maintenance.Task.Persistence
-import Graphql.Equipment.Resolvers
+import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
 

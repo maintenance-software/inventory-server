@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Inventory (
+module Graphql.Asset.Inventory.Resolvers (
       inventoryResolver
     , getInventoryByIdResolver_
     , saveInventoryResolver
@@ -30,11 +30,12 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils
-import Graphql.InventoryDataTypes
 import Data.Time
-import Graphql.InventoryItem
-import Graphql.Item
-
+import Graphql.Asset.DataTypes
+import Graphql.Asset.Inventory.Persistence
+import Graphql.Asset.InventoryItem.Resolvers
+import Graphql.Asset.Item.Resolvers
+import Graphql.Asset.Inventory.Persistence
 --inventoryResolver :: () -> Res e Handler Inventories
 inventoryResolver _ = pure Inventories { inventory = getInventoryByIdResolver
                                        , list = listInventoryResolver
@@ -53,17 +54,6 @@ getInventoryByIdResolver_ inventoryId _ = lift $ do
                                     inventory <- runDB $ getJustEntity inventoryId
                                     return $ toInventoryQL inventory
 
--- DB ACTIONS
---dbFetchInventoryById:: Inventory_Id -> Handler (Inventory Res)
---dbFetchInventoryById inventoryId = do
---                                      inventory <- runDB $ getJustEntity inventoryId
---                                      return $ toInventoryQL inventory
-
---dbFetchInventories:: Handler [Inventory Res]
---dbFetchInventories = do
---                       inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
---                       return $ P.map toInventoryQL inventories
-
 --listInventoryResolver :: () -> Res e Handler [Inventory Res]
 listInventoryResolver _ = lift $ do
                             inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
@@ -74,25 +64,6 @@ saveInventoryResolver arg = lift $ do
                                   inventoryId <- createOrUpdateInventory arg
                                   inventory <- runDB $ getJustEntity inventoryId
                                   return $ toInventoryQL inventory
-
---createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
-createOrUpdateInventory inventory = do
-                let InventoryArg {..} = inventory
-                now <- liftIO getCurrentTime
-                entityId <- if inventoryId > 0 then
-                                do
-                                  let inventoryKey = (toSqlKey $ fromIntegral $ inventoryId)::Inventory_Id
-                                  _ <- runDB $ update inventoryKey [ Inventory_Name =. name
-                                                                   , Inventory_Description =. description
-                                                                   , Inventory_AllowNegativeStocks =. allowNegativeStocks
-                                                                   , Inventory_Status =. readEntityStatus status
-                                                                   , Inventory_ModifiedDate =. Just now
-                                                                   ]
-                                  return inventoryKey
-                               else do
-                                  inventoryKey <- runDB $ insert $ fromInventoryQL inventory now Nothing
-                                  return inventoryKey
-                return entityId
 
 -- CONVERTERS
 --toInventoryQL :: Entity Inventory_ -> Inventory
@@ -112,29 +83,3 @@ toInventoryQL (Entity inventoryId inventory) = Inventory { inventoryId = fromInt
                                             m = case inventory_ModifiedDate of
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
-
-fromInventoryQL :: InventoryArg -> UTCTime -> Maybe UTCTime -> Inventory_
-fromInventoryQL (InventoryArg {..}) cd md = Inventory_ { inventory_Name = name
-                                                      , inventory_Description = description
-                                                      , inventory_Status = readEntityStatus status
-                                                      , inventory_AllowNegativeStocks = allowNegativeStocks
-                                                      , inventory_CreatedDate = cd
-                                                      , inventory_ModifiedDate = md
-                                                      }
-
-{-
-query {
-  inventories(queryString: "") {
-    inventoryId
-    name
-    description
-  }
-}
-
-mutation {
-  saveCategory(inventoryId: 0, name: "test", description: "sss") {
-    inventoryId
-    name
-  }
-}
--}

@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Unit (
+module Graphql.Asset.Unit (
     Unit
   , UnitArg
   , listUnitResolver

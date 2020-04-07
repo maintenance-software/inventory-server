@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Equipment.Resolvers (
+module Graphql.Asset.Equipment.Resolvers (
       equipmentResolver
     , toEquipmentQL
 ) where
@@ -30,13 +30,12 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils
-import Graphql.InventoryDataTypes
 import Data.Time
-import Graphql.InventoryItem
-import Graphql.Item
-import Graphql.Category
-import Graphql.Equipment.DataTypes
-import Graphql.Equipment.Persistence
+import Graphql.Asset.DataTypes
+import Graphql.Asset.Category
+import Graphql.Asset.Item.Persistence
+import Graphql.Asset.Equipment.DataTypes
+import Graphql.Asset.Equipment.Persistence
 
 --inventoryResolver :: () -> Res e Handler Inventories
 equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver

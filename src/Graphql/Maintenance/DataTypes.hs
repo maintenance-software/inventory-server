@@ -24,7 +24,7 @@ import Enums
 import Graphql.Utils
 import Data.Time
 import Graphql.Maintenance.Task.DataTypes
-import Graphql.Equipment.DataTypes
+import Graphql.Asset.Equipment.DataTypes
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
