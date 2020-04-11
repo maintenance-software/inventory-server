@@ -40,4 +40,4 @@ CREATE TABLE authz_approval (
     PRIMARY KEY (uid, client_id)
 );
 
-insert into oauth2_client values ('app', 'appsecret', '{"authorization_code"}', '{"http://localhost:8080/app"}', 3600, 7200, '{"openid","profile","address","email"}', false, 'client_secret_basic', null, null, '[]', null, null, null, 'localhost');
+-- insert into oauth2_client values ('app', 'appsecret', '{"authorization_code"}', '{"http://localhost:8080/app"}', 3600, 7200, '{"openid","profile","address","email"}', false, 'client_secret_basic', null, null, '[]', null, null, null, 'localhost');
