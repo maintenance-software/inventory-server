@@ -4,11 +4,13 @@ pipeline {
     stages {
         stage('CleanOldBinary') {
             steps {
-               sh 'rm -rf webapps/dist'
+               catchError {
+                 sh 'rm -rf webapps/dist'
 //               sh 'rm -rf .stack-work'
-               sh 'docker stop inventory-server'
-               sh 'docker rm inventory-server'
-               sh 'docker images -a | grep "inventory-server" | awk \'{print $3}\' | xargs docker rmi'
+                 sh 'docker stop inventory-server'
+                 sh 'docker rm inventory-server'
+                 sh 'docker images -a | grep "inventory-server" | awk \'{print $3}\' | xargs docker rmi'
+               ]
             }
         }
         stage('Build') {
