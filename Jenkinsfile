@@ -14,6 +14,11 @@ pipeline {
                 sh 'stack build --copy-bins --local-bin-path target'
             }
         }
+        stage('DockerBuildImage') {
+                    steps {
+                        sh 'docker build --rm --tag inventory-server:1.0 ./'
+                    }
+        }
         stage('Test') {
             steps {
                 echo 'Testing..'
