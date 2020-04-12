@@ -16,7 +16,12 @@ pipeline {
             }
         }
         stage('DockerBuildImage') {
-            def customImage = docker.build("inventory-server:1.0")
+            steps {
+                echo 'Starting to build docker image'
+                script {
+                    def customImage = docker.build("inventory-server:1.0")
+                }
+            }
         }
         stage('Test') {
             steps {
