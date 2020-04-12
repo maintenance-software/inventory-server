@@ -35,7 +35,17 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying....'
-                sh 'docker run --name inventory-server --net=host -e YESOD_PORT=3000 -e YESOD_PGUSER=inventory_user -e YESOD_PGPASS=inventory_password -e YESOD_PGHOST=192.168.0.107 -d inventory-server:1.0'
+                script {
+                    docker.image("inventory-server:1.0").withRun(
+                        '--name inventory-server'
+                        , '--net=host'
+                        , '-e YESOD_PORT=3000'
+                        , '-e YESOD_PGUSER=inventory_user'
+                        , '-e YESOD_PGPASS=inventory_password'
+                        , '-e YESOD_PGHOST=192.168.0.107'
+                        . '-d'
+                    )
+                }
             }
         }
     }
