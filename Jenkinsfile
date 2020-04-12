@@ -5,17 +5,17 @@ pipeline {
         stage('CleanOldBinary') {
             steps {
                catchError {
-//                 sh 'rm -rf webapps/dist'
+                 sh 'rm -rf webapps/dist'
 //               sh 'rm -rf .stack-work'
-//                 sh 'docker stop inventory-server'
-//                 sh 'docker rm inventory-server'
-//                 sh 'docker images -a | grep "inventory-server" | awk \'{print $3}\' | xargs docker rmi'
+                 sh 'docker stop inventory-server'
+                 sh 'docker rm inventory-server'
+                 sh 'docker images -a | grep "inventory-server" | awk \'{print $3}\' | xargs docker rmi'
                }
             }
         }
         stage('Build') {
             steps {
-//                sh 'mkdir webapps/dist'
+                sh 'mkdir webapps/dist'
                 sh 'stack build --copy-bins --local-bin-path target'
             }
         }
@@ -42,6 +42,13 @@ pipeline {
                         + '-e YESOD_PGUSER=inventory_user '
                         + '-e YESOD_PGPASS=inventory_password '
                         + '-e YESOD_PGHOST=192.168.0.107'
+                        + '-e OAUTH2_CLIENT_ID=app'
+                        + '-e OAUTH2_SECRET=appsecret'
+                        + '-e OAUTH2_AUTHORIZE=http://192.168.0.107:4200/oauth/authorize'
+                        + '-e OAUTH2_ACCESS_TOKEN=http://192.168.0.107:4200/oauth/token'
+                        + '-e OAUTH2_USER_INFO=http://192.168.0.107:4200/connect/userinfo'
+                        + '-e OAUTH2_LOGOUT=http://192.168.0.107:4200/logout'
+                        + '-e OAUTH2_SCOPES=openid'
                     )
                 }
             }
