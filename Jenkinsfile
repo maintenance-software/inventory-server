@@ -16,9 +16,9 @@ pipeline {
             }
         }
         stage('DockerBuildImage') {
-                    steps {
-                        sh 'docker build --rm --tag inventory-server:1.0 ./'
-                    }
+            script {
+                    docker.build 'docker build --rm --tag inventory-server:1.0 ./'
+            }
         }
         stage('Test') {
             steps {
