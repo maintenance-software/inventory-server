@@ -4,6 +4,7 @@ pipeline {
     stages {
         stage('CleanOldBinary') {
             steps {
+               sh 'rm -rf webapps'
                sh 'rm -rf .stack-work'
             }
         }
