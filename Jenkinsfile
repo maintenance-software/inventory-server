@@ -11,12 +11,14 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mkdir webapps/dist'
-                sh 'stack build'
                 sh 'stack build --copy-bins --local-bin-path target'
             }
         }
         stage('DockerBuildImage') {
             steps {
+                sh 'docker stop inventory-server'
+                sh 'docker rm inventory-server'
+                sh 'docker images -a | grep "inventory-server" | awk '{print $3}' | xargs docker rmi'
                 echo 'Starting to build docker image'
                 script {
                     def customImage = docker.build("inventory-server:1.0")

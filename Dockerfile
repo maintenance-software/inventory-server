@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM ubuntu:18.04
 RUN mkdir -p /opt/inventory-server/
 # ARG BINARY_PATH
 WORKDIR /opt/inventory-server
