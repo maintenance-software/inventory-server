@@ -17,7 +17,7 @@ pipeline {
           steps {
               sh 'mkdir webapps/dist'
               sh 'git submodule update --init'
-              sh 'pwd'
+              sh 'ls'
               sh 'cd ui-home'
               sh 'yarn install'
               sh 'yarn build'
