@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM ubuntu:19.10
 RUN mkdir -p /opt/inventory-server/
 # ARG BINARY_PATH
 WORKDIR /opt/inventory-server
