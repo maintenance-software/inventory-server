@@ -16,9 +16,7 @@ pipeline {
             }
         }
         stage('DockerBuildImage') {
-            script {
-                    docker.build 'docker build --rm --tag inventory-server:1.0 ./'
-            }
+            def customImage = docker.build("inventory-server:1.0")
         }
         stage('Test') {
             steps {
