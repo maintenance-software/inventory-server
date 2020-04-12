@@ -17,7 +17,7 @@ pipeline {
           steps {
               sh 'mkdir webapps/dist'
               sh 'git submodule update --init'
-              dir("folder") {
+              dir("ui-home") {
                   sh 'yarn install && yarn build'
               }
               sh 'cp -a ui-home/build/. webapps/dist'
