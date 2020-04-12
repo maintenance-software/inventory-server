@@ -5,7 +5,10 @@ pipeline {
         stage('CleanOldBinary') {
             steps {
                sh 'rm -rf webapps/dist'
-               sh 'rm -rf .stack-work'
+//               sh 'rm -rf .stack-work'
+               sh 'docker stop inventory-server'
+               sh 'docker rm inventory-server'
+               sh 'docker images -a | grep "inventory-server" | awk '{print $3}' | xargs docker rmi'
             }
         }
         stage('Build') {
@@ -16,9 +19,6 @@ pipeline {
         }
         stage('DockerBuildImage') {
             steps {
-                sh 'docker stop inventory-server'
-                sh 'docker rm inventory-server'
-                sh 'docker images -a | grep "inventory-server" | awk '{print $3}' | xargs docker rmi'
                 echo 'Starting to build docker image'
                 script {
                     def customImage = docker.build("inventory-server:1.0")
