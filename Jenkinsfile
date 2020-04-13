@@ -15,7 +15,7 @@ pipeline {
             }
         }
         stage('BuildUI') {
-          when { not { branch 'release-1.0' } }
+          when { branch 'release-1.0' }
           steps {
               sh 'mkdir webapps/dist'
               sh 'git submodule update --init'
