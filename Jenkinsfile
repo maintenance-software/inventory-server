@@ -3,10 +3,11 @@ pipeline {
 
     stages {
         stage('CleanOldBinary') {
+            when { branch 'release-1.0' }
             steps {
                catchError {
                  sh 'rm -rf webapps/dist'
-//               sh 'rm -rf .stack-work'
+                 sh 'rm -rf .stack-work'
                  sh 'docker stop inventory-server'
                  sh 'docker rm inventory-server'
                  sh 'docker images -a | grep "inventory-server" | awk \'{print $3}\' | xargs docker rmi'
@@ -14,6 +15,7 @@ pipeline {
             }
         }
         stage('BuildUI') {
+          when { branch 'release-1.0' }
           steps {
               sh 'mkdir webapps/dist'
               sh 'git submodule update --init'
@@ -29,6 +31,7 @@ pipeline {
             }
         }
         stage('DockerBuildImage') {
+            when { branch 'release-1.0' }
             steps {
                 echo 'Starting to build docker image'
                 script {
@@ -42,6 +45,7 @@ pipeline {
             }
         }
         stage('Deploy') {
+            when { branch 'release-1.0' }
             steps {
                 echo 'Deploying....'
                 script {
