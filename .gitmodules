@@ -1,4 +1,4 @@
 [submodule "ui-home"]
 	path = ui-home
 	url = https://github.com/solutions-for-inventory/inventory-admin-ui.git
-	branch = master
+	branch = release-1.0
