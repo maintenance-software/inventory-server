@@ -57,7 +57,7 @@ toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , downTimeDuration = task_DownTimeDuration
                                      , attribute1 = task_Attribute1
                                      , attribute2 = task_Attribute2
-                                     , taskCategoryArg = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getTaskCategoryByIdResolver_ c
+                                     , taskCategory = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getTaskCategoryByIdResolver_ c
                                      , subTasks = subTaskResolver_ taskId
                                      , createdDate = fromString $ show task_CreatedDate
                                      , modifiedDate = m

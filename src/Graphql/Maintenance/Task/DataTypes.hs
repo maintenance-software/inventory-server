@@ -35,7 +35,7 @@ data Task o = Task { taskId :: Int
                    , attribute2 :: Maybe Text
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
-                   , taskCategoryArg :: Maybe(() -> o () Handler TaskCategory)
+                   , taskCategory :: Maybe(() -> o () Handler TaskCategory)
                    , subTasks :: () -> o () Handler [SubTask o]
                    } deriving (Generic, GQLType)
 

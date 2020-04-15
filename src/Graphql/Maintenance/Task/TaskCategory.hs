@@ -42,8 +42,8 @@ data TaskCategoryArg = TaskCategoryArg { taskCategoryId :: Int
                                        } deriving (Generic)
 
 getTaskCategoryByIdResolver_ taskCategoryId arg = lift $ do
-                                      taskCategoryArg <- runDB $ getJustEntity taskCategoryId
-                                      return $ toTaskCategoryQL taskCategoryArg
+                                      taskCategory <- runDB $ getJustEntity taskCategoryId
+                                      return $ toTaskCategoryQL taskCategory
 
 listTaskCategoryResolver :: () -> Res e Handler [TaskCategory]
 listTaskCategoryResolver _ = lift $ do
