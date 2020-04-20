@@ -33,6 +33,7 @@ import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Data.Time
 import Graphql.Maintenance.Task.TaskCategory
 import Graphql.Maintenance.SubTask.Resolvers
+import Graphql.Maintenance.TaskTrigger.Resolvers
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Maintenance.Task.Persistence
 
@@ -59,6 +60,7 @@ toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , attribute2 = task_Attribute2
                                      , taskCategory = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getTaskCategoryByIdResolver_ c
                                      , subTasks = subTaskResolver_ taskId
+                                     , taskTriggers = taskTriggerResolver_ taskId
                                      , createdDate = fromString $ show task_CreatedDate
                                      , modifiedDate = m
                                      }

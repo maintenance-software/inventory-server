@@ -19,6 +19,7 @@ module Graphql.Asset.Unit (
   , saveUnitResolver
   , toUnitQL
   , dbFetchUnitById
+  , getUnitByIdResolver_
 ) where
 
 import Import
@@ -47,6 +48,11 @@ dbFetchUnitById:: Unit_Id -> Handler Unit
 dbFetchUnitById unitId = do
                           unit <- runDB $ getJustEntity unitId
                           return $ toUnitQL unit
+
+getUnitByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Unit_Id -> () -> o () Handler Unit
+getUnitByIdResolver_ unitId _ = lift $ do
+                                      unit <- dbFetchUnitById unitId
+                                      return unit
 
 dbFetchUnits :: Handler [Unit]
 dbFetchUnits = do

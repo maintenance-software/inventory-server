@@ -61,11 +61,6 @@ categoryResolver_ categoryId arg = lift $ do
                                       category <- dbFetchCategoryById categoryId
                                       return category
 
-getUnitByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Unit_Id -> () -> o () Handler Unit
-getUnitByIdResolver_ unitId _ = lift $ do
-                                      unit <- dbFetchUnitById unitId
-                                      return unit
-
 --itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver page = lift $ do
                         countItems <- itemQueryCount page

@@ -24,6 +24,7 @@ import Enums
 import Data.Time
 import Graphql.Maintenance.Task.TaskCategory
 import Graphql.Maintenance.SubTask.DataTypes
+import Graphql.Maintenance.TaskTrigger.DataTypes
 
 data Task o = Task { taskId :: Int
                    , name :: Text
@@ -37,6 +38,7 @@ data Task o = Task { taskId :: Int
                    , modifiedDate :: Maybe Text
                    , taskCategory :: Maybe(() -> o () Handler TaskCategory)
                    , subTasks :: () -> o () Handler [SubTask o]
+                   , taskTriggers :: () -> o () Handler [TaskTrigger o]
                    } deriving (Generic, GQLType)
 
 data TaskArg = TaskArg { taskId :: Int
@@ -49,6 +51,7 @@ data TaskArg = TaskArg { taskId :: Int
                        , attribute2 :: Maybe Text
                        , taskCategoryId :: Maybe Int
                        , subTasks :: [SubTaskArg]
+                       , taskTriggers :: [TaskTriggerArg]
                        } deriving (Generic)
 
 instance GQLType TaskArg where

@@ -255,10 +255,26 @@ TaskTrigger_ json sql=t_task_trigger
     Id sql=task_trigger_id
     kind Text
     description Text
-    fixedSchedule Bool
+    fixedSchedule Bool Maybe
+    frequency Int Maybe
+    readType Text Maybe
+    limit Text Maybe
+    repeat Bool Maybe
+    operator Text Maybe
+    value Text Maybe
+    unitId Unit_Id Maybe
+    eventTriggerId EventTrigger_Id Maybe
+    taskId Task_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
-    taskId Task_Id
+    deriving Typeable Show
+
+EventTrigger_ json sql=t_event_trigger
+    Id sql=event_trigger_id
+    name Text
+    description Text Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 TaskCategory_ json sql=t_task_category

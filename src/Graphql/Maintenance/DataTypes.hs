@@ -25,6 +25,7 @@ import Graphql.Utils
 import Data.Time
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
+import Graphql.Maintenance.TaskTrigger.EventTrigger
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -40,6 +41,8 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
+                                   , eventTriggers :: () -> o () Handler [EventTrigger]
+                                   , saveEventTrigger :: EventTriggerArg -> o () Handler EventTrigger
                                    } deriving (Generic, GQLType)
 
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
