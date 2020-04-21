@@ -42,6 +42,7 @@ import Graphql.Maintenance.TaskTrigger.EventTrigger
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , saveMaintenance = saveMaintenanceResolver
+                                          , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
                                           , eventTriggers = listEventTriggerResolver
                                           , saveEventTrigger = saveEventTriggerResolver
