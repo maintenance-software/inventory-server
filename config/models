@@ -68,6 +68,24 @@ Person_ json sql=t_person
     UniquePersonDocumentId documentId
     deriving Typeable Show
 
+Employee_ json sql=t_employee
+    employeeId Person_Id
+    Primary employeeId
+    hireDate UTCTime Maybe
+    salary Double
+    employeeJobId EmployeeJob_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+EmployeeJob_ json sql=t_employee_job
+    Id sql=employee_job_id
+    tittle Text
+    description Text Maybe
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
 Address_ json sql=t_address
     Id sql=address_id
     street1 Text

@@ -44,6 +44,8 @@ import           Graphql.Asset.Equipment.DataTypes
 import           Graphql.Asset.InventoryItem.Resolvers
 import           Graphql.Utils (PageArg)
 import           Graphql.Asset.DataTypes
+import           Graphql.Asset.Human.Resolvers
+import           Graphql.Asset.Human.DataTypes
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
@@ -59,6 +61,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
                          , equipments :: () -> Res () Handler (Equipments Res)
+                         , employees :: () -> Res () Handler (Employees Res)
                          , inventoryItems :: () -> Res () Handler (InventoryItems Res)
                          , maintenances :: () -> Res () Handler (Maintenances Res)
                          } deriving (Generic, GQLType)
@@ -76,6 +79,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , inventoryItems :: () -> MutRes () Handler (InventoryItems MutRes)
                            , items :: () -> MutRes () Handler (Items MutRes)
                            , equipments :: () -> MutRes () Handler (Equipments MutRes)
+                           , employees :: () -> MutRes () Handler (Employees MutRes)
                            , inventories :: () -> MutRes () Handler (Inventories MutRes)
                            , maintenances :: () -> MutRes () Handler (Maintenances MutRes)
                            } deriving (Generic, GQLType)
@@ -96,6 +100,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , subTaskKinds = listSubTaskKindResolver
                        , inventories = inventoryResolver
                        , maintenances = maintenanceResolver
+                       , employees = employeeResolver
                        , items = itemResolver
                        , equipments = equipmentResolver
                        , inventoryItems = inventoryItemsResolver
@@ -114,6 +119,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
 --                           , saveInventoryItem =  saveInventoryItemResolver
                            , inventories = inventoryResolver
                            , maintenances = maintenanceResolver
+                           , employees = employeeResolver
                            , items = itemResolver
                            , equipments = equipmentResolver
                            , inventoryItems = inventoryItemsResolver

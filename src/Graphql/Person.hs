@@ -16,11 +16,20 @@ module Graphql.Person (
                   Persons
                 , Person
                 , resolvePerson
-                , PersonArg
+                , PersonArg(..)
                 , resolveSavePerson
                 , Users
                 , User
                 , resolveUser
+                , Address
+                , ContactInfo
+                , AddressArg
+                , ContactInfoArg
+                , createOrUpdatePerson_
+                , createOrUpdateAddress
+                , createOrUpdateContactInfo
+                , addressResolver_
+                , contactInfoResolver_
                 ) where
 
 import Import
@@ -125,6 +134,14 @@ getPersonUserByIdResolver  personId _ = lift $ do
                                                   Just a -> Just $ toUserQL a
                                       return user
 
+--addressResolver_ :: Person_Id -> () -> Res e Handler (Maybe Address)
+addressResolver_ personId _ = lift $ do
+                    addressMaybe <- runDB $ selectFirst [Address_PersonId ==. personId] []
+                    let address = case addressMaybe of
+                                    Nothing -> Nothing
+                                    Just a -> Just $ toAddressQL a
+                    return address
+
 resolveAddress :: Person_Id -> PersonAddressArg -> Res e Handler (Maybe Address)
 resolveAddress personId _ = lift $ do
                     addressMaybe <- runDB $ selectFirst [Address_PersonId ==. personId] []
@@ -135,6 +152,11 @@ resolveAddress personId _ = lift $ do
 
 resolveContactInfo :: Person_Id -> PersonContactInfoArg -> Res e Handler [ContactInfo]
 resolveContactInfo personId _ = lift $ do
+                                      contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
+                                      return $ P.map toContactQL contacts
+
+--contactInfoResolver_ :: Person_Id -> () -> Res e Handler [ContactInfo]
+contactInfoResolver_ personId _ = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
