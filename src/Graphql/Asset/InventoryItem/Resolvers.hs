@@ -44,8 +44,8 @@ import Graphql.Asset.InventoryItem.Persistence
 -- Query Resolvers
 --findInventoryItemByIdResolver :: GetEntityByIdArg -> Res e Handler (InventoryItem Res)
 findInventoryItemByIdResolver GetEntityByIdArg {..} = lift $ do
-                                              let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
-                                              let inventoryItemId = InventoryItem_Key {unInventoryItem_Key  = itemId}
+                                              let inventoryItemId = (toSqlKey $ fromIntegral $ entityId)::InventoryItem_Id
+--                                              let inventoryItemId = InventoryItem_Key {unInventoryItem_Key  = itemId}
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 

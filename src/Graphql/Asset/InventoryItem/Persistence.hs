@@ -42,8 +42,8 @@ createOrUpdateInventoryItem inventoryItem = do
                             now <- liftIO getCurrentTime
                             itemEntityId <- if inventoryItemId > 0 then
                                         do
-                                         let itemId = (toSqlKey $ fromIntegral $ inventoryItemId)::Item_Id
-                                         let inventoryItemKey = InventoryItem_Key {unInventoryItem_Key  = itemId}
+                                         let inventoryItemKey = (toSqlKey $ fromIntegral $ inventoryItemId)::InventoryItem_Id
+--                                         let inventoryItemKey = InventoryItem_Key {unInventoryItem_Key  = itemId}
                                          _ <- runDB $ update inventoryItemKey [ InventoryItem_Level =. level
                                                                      , InventoryItem_MaxLevelAllowed =. maxLevelAllowed
                                                                      , InventoryItem_MinLevelAllowed =. minLevelAllowed
