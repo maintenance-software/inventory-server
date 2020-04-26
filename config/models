@@ -1,7 +1,6 @@
 -- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
-
 User_ sql=t_user
     Id sql=user_id
     username Text
@@ -49,7 +48,6 @@ RolePrivilege_ json sql=t_role_privilege
     roleId Role_Id
     privilegeId Privilege_Id
     deriving Show
-
 
 UserPrivilege_ json sql=t_user_privilege
     Id sql=user_privilege_id
@@ -264,12 +262,6 @@ SubTask_ sql=t_sub_task
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
--- MaintenanceTask_ sql=t_maintenance_task
---     Id sql=maintenance_task_id
--- 	  maintenanceId Maintenance_Id
--- 	  taskId Task_Id
---     deriving Typeable Show
-
 TaskTrigger_ json sql=t_task_trigger
     Id sql=task_trigger_id
     kind Text
@@ -310,6 +302,22 @@ SubTaskKind_ json sql=t_sub_task_king
     description Text Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+TaskResource_ sql=t_task_resource
+    Id sql=task_resource_id
+	  order Int
+	  amount Int
+	  resourceType Text
+	  unitId Unit_Id
+	  employeeJobId EmployeeJob_Id Maybe
+    humanResourceId Person_Id Maybe
+    inventoryResourceId Item_Id Maybe
+--    inventoryItem InventoryItem_Id Maybe
+    taskId Task_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    Foreign Employee_ fkEmployee humanResourceId
     deriving Typeable Show
 
 -- User

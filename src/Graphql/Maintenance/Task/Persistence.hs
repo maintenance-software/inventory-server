@@ -30,6 +30,7 @@ import Data.Time
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Maintenance.SubTask.Persistence
 import Graphql.Maintenance.TaskTrigger.Persistence
+import Graphql.Maintenance.Task.TaskResource (saveTaskResources)
 
 --taskQuery :: Maintenance_Id -> Handler [Entity Task_]
 --taskQuery maintenanceId =  do
@@ -85,4 +86,5 @@ createOrUpdateTask maintenanceId task = do
                                   return taskKey
                 subTaskIds <- saveSubTasks entityId subTasks
                 taskTriggerIds <- saveTaskTriggers entityId taskTriggers
+                taskResourceIds <- saveTaskResources entityId taskResources
                 return entityId

@@ -46,6 +46,7 @@ import           Graphql.Utils (PageArg)
 import           Graphql.Asset.DataTypes
 import           Graphql.Asset.Human.Resolvers
 import           Graphql.Asset.Human.DataTypes
+import           Graphql.Asset.Human.EmployeeJob
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
@@ -58,6 +59,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , units :: () -> m [Unit]
                          , taskCategories :: () -> m [TaskCategory]
                          , subTaskKinds :: () -> m [SubTaskKind]
+                         , employeeJobs :: () -> m [EmployeeJob]
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
                          , equipments :: () -> Res () Handler (Equipments Res)
@@ -73,6 +75,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveUnit :: UnitArg -> m Unit
                            , saveTaskCategory :: TaskCategoryArg -> m TaskCategory
                            , saveSubTaskKind :: SubTaskKindArg -> m SubTaskKind
+                           , saveEmployeeJob :: EmployeeJobArg -> m EmployeeJob
 --                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
 --                           , saveItem :: ItemArg -> m (Item MutRes)
 --                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
@@ -98,6 +101,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , units = listUnitResolver
                        , taskCategories = listTaskCategoryResolver
                        , subTaskKinds = listSubTaskKindResolver
+                       , employeeJobs = listEmployeeJobResolver
                        , inventories = inventoryResolver
                        , maintenances = maintenanceResolver
                        , employees = employeeResolver
@@ -114,6 +118,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveUnit = saveUnitResolver
                            , saveTaskCategory = saveTaskCategoryResolver
                            , saveSubTaskKind = saveSubTaskKindResolver
+                           , saveEmployeeJob = saveEmployeeJobResolver
 --                           , saveInventory = saveInventoryResolver
 --                           , saveItem =  saveItemResolver
 --                           , saveInventoryItem =  saveInventoryItemResolver

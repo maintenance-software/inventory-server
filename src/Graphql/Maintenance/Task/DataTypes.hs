@@ -23,6 +23,7 @@ import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Enums
 import Data.Time
 import Graphql.Maintenance.Task.TaskCategory
+import Graphql.Maintenance.Task.TaskResource
 import Graphql.Maintenance.SubTask.DataTypes
 import Graphql.Maintenance.TaskTrigger.DataTypes
 
@@ -39,6 +40,7 @@ data Task o = Task { taskId :: Int
                    , taskCategory :: Maybe(() -> o () Handler TaskCategory)
                    , subTasks :: () -> o () Handler [SubTask o]
                    , taskTriggers :: () -> o () Handler [TaskTrigger o]
+                   , taskResources :: () -> o () Handler [TaskResource o]
                    } deriving (Generic, GQLType)
 
 data TaskArg = TaskArg { taskId :: Int
@@ -52,6 +54,7 @@ data TaskArg = TaskArg { taskId :: Int
                        , taskCategoryId :: Maybe Int
                        , subTasks :: [SubTaskArg]
                        , taskTriggers :: [TaskTriggerArg]
+                       , taskResources :: [TaskResourceArg]
                        } deriving (Generic)
 
 instance GQLType TaskArg where
@@ -71,3 +74,45 @@ fromTaskQL maintenanceId (TaskArg {..}) cd md = Task_ { task_Name = name
                                         , task_CreatedDate = cd
                                         , task_ModifiedDate = md
                                         }
+
+{-
+query fetchMaintenancePlans {
+      maintenances {
+         task (entityId: 43) {
+          taskResources {
+          	taskResourceId
+            inventoryResource {
+              name
+            }
+        }
+        }
+      }
+   }
+
+   mutation {
+     maintenances  {
+   		createUpdateTasks (
+         maintenanceId: 1,
+         tasks: [{
+          taskId: 0,
+          name: ": Text",
+          priority: 0,
+          duration: 8,
+          downTimeDuration: 12,
+          subTasks: []
+          taskTriggers: []
+          taskResources: [{
+           taskResourceId: 0,
+           order: 0,
+           amount: 9,
+           resourceType: "INVENTORY",
+           unitId: 2,
+           inventoryResourceId: 5
+         }]
+         }]
+       ){
+         	taskId
+       }
+     }
+   }
+-}

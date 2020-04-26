@@ -36,6 +36,8 @@ import Graphql.Maintenance.SubTask.Resolvers
 import Graphql.Maintenance.TaskTrigger.Resolvers
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Maintenance.Task.Persistence
+import Graphql.Maintenance.Task.TaskResource (fetchTaskResourceResolver_)
+
 
 taskResolver_ maintenanceId _ = lift $ do
                                 tasks <- taskQuery maintenanceId
@@ -61,6 +63,7 @@ toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , taskCategory = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getTaskCategoryByIdResolver_ c
                                      , subTasks = subTaskResolver_ taskId
                                      , taskTriggers = taskTriggerResolver_ taskId
+                                     , taskResources = fetchTaskResourceResolver_ taskId
                                      , createdDate = fromString $ show task_CreatedDate
                                      , modifiedDate = m
                                      }

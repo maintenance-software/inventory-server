@@ -16,6 +16,7 @@
 module Graphql.Asset.Human.Resolvers (
       employeeResolver
     , toEmployeeQL
+    , getEmployeeByIdResolver_
 ) where
 
 import Import
