@@ -18,7 +18,6 @@ pipeline {
           when { branch 'release-1.0' }
           steps {
               sh 'mkdir webapps/dist'
-              sh 'git submodule update --init'
               sh 'git submodule update --remote'
               dir("ui-home") {
                   sh 'yarn install && yarn build'
