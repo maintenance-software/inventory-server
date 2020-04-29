@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        PATH = "/usr/local/bin:$PATH"
+      }
 
     stages {
         stage('CleanOldBinary') {
@@ -18,7 +21,7 @@ pipeline {
           when { branch 'release-1.0' }
           steps {
               sh 'mkdir webapps/dist'
-              sh 'git submodule update --remote'
+//              sh 'git submodule update --remote'
               dir("ui-home") {
                   sh 'yarn install && yarn build'
               }
