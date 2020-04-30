@@ -38,7 +38,7 @@ pipeline {
             steps {
                 echo 'Starting to build docker image'
                 script {
-                    def customImage = docker.build("inventory-server:1.0")
+                    def customImage = docker.build("inventory-server:1.0 --network=host")
                 }
             }
         }
@@ -57,13 +57,13 @@ pipeline {
                         + '-e YESOD_PORT=3000 '
                         + '-e YESOD_PGUSER=inventory_user '
                         + '-e YESOD_PGPASS=inventory_password '
-                        + '-e YESOD_PGHOST=192.168.0.107 '
+                        + '-e YESOD_PGHOST=192.168.0.100 '
                         + '-e OAUTH2_CLIENT_ID=app '
                         + '-e OAUTH2_SECRET=appsecret '
-                        + '-e OAUTH2_AUTHORIZE=http://192.168.0.107:4200/oauth/authorize '
-                        + '-e OAUTH2_ACCESS_TOKEN=http://192.168.0.107:4200/oauth/token '
-                        + '-e OAUTH2_USER_INFO=http://192.168.0.107:4200/connect/userinfo '
-                        + '-e OAUTH2_LOGOUT=http://192.168.0.107:4200/logout '
+                        + '-e OAUTH2_AUTHORIZE=http://192.168.0.100:4200/oauth/authorize '
+                        + '-e OAUTH2_ACCESS_TOKEN=http://192.168.0.100:4200/oauth/token '
+                        + '-e OAUTH2_USER_INFO=http://192.168.0.100:4200/connect/userinfo '
+                        + '-e OAUTH2_LOGOUT=http://192.168.0.100:4200/logout '
                         + '-e OAUTH2_SCOPES=openid'
                     )
                 }

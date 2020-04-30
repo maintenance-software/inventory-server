@@ -1,10 +1,10 @@
-FROM centos:latest
+FROM ubuntu:19.10
 RUN mkdir -p /opt/inventory-server/
 # ARG BINARY_PATH
 WORKDIR /opt/inventory-server
-RUN dnf update -y && dnf install -y \
+RUN apt-get update && apt-get install -y \
   ca-certificates \
-  postgresql-devel
+  libpq-dev
 COPY target /opt/inventory-server
 # COPY static /opt/inventory-server/static
 COPY config /opt/inventory-server/config
