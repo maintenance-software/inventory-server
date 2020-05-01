@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -13,12 +11,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Asset.InventoryItem.Persistence ( createOrUpdateInventoryItems, createOrUpdateInventoryItem) where
+module Graphql.Asset.InventoryItem.Persistence (
+    createOrUpdateInventoryItems
+  , createOrUpdateInventoryItem
+) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Data.Text as T
 import Prelude as P

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -24,20 +23,15 @@ module Graphql.Asset.Item.Resolvers (
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Data.Text as T
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import Data.Typeable (typeOf)
 import Prelude as P
-import qualified Data.Set as S
 import Graphql.Utils
+import Enums
 import Data.Time
 import Graphql.Asset.Category
 import Graphql.Asset.DataTypes
-import Enums
 import Graphql.Asset.InventoryItem.Resolvers
 import Graphql.Asset.Unit
 import Graphql.Asset.Item.Persistence
@@ -83,6 +77,7 @@ itemsPageResolver page = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
+availableItemsPageResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Inventory_Id -> PageArg -> t (HandlerFor App) (Page (Item o))
 availableItemsPageResolver_ inventoryId page = lift $ do
                         countItems <- availableItemsQueryCount inventoryId page
                         result <- availableItemsQuery inventoryId page
@@ -105,6 +100,7 @@ availableItemsPageResolver_ inventoryId page = lift $ do
                                             Nothing -> 10
 
 --itemResolver :: () -> Res e Handler Items
+itemResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => p -> f (Items o)
 itemResolver _ = pure Items { item = getItemByIdResolver
                             , page = itemsPageResolver
                             , saveItem = saveItemResolver
@@ -149,11 +145,14 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                     Nothing -> Nothing
 
 --changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler Bool
+changeItemStatusResolver :: MonadTrans t => EntityChangeStatusArg -> t Handler Bool
 changeItemStatusResolver EntityChangeStatusArg {..} = lift $ do
                               () <- changeStatus entityIds (readEntityStatus status)
                               return True
 
 --saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
+saveItemResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => ItemArg -> t Handler (Item o)
+
 saveItemResolver arg = lift $ do
                               itemId <- createOrUpdateItem arg
                               item <- runDB $ getJustEntity itemId

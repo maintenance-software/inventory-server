@@ -125,3 +125,11 @@ createOrUpdateMaintenance maintenance = do
                                   maintenanceKey <- runDB $ insert $ fromMaintenanceQL maintenance now Nothing
                                   return maintenanceKey
                 return entityId
+
+fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_
+fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name = name
+                                                             , maintenance_Description = description
+                                                             , maintenance_Status = readEntityStatus status
+                                                             , maintenance_CreatedDate = cd
+                                                             , maintenance_ModifiedDate = md
+                                                             }

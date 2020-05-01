@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -24,15 +22,12 @@ module Graphql.Asset.InventoryItem.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Data.Text as T
 import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
-import Data.Time
 import {-# SOURCE #-} Graphql.Asset.Item.Resolvers
 import {-# SOURCE #-} Graphql.Asset.Inventory.Resolvers
 import Graphql.Asset.Unit

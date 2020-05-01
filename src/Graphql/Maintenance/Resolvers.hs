@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,23 +19,20 @@ module Graphql.Maintenance.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Prelude as P
 import qualified Data.Text as T
-import Enums
+import Enums ()
 import Graphql.Utils
-import Data.Time
 import Graphql.Maintenance.Task.Resolvers
 import Graphql.Maintenance.Task.Persistence
 import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
 import Graphql.Maintenance.TaskTrigger.EventTrigger
+import Graphql.Maintenance.Task.DataTypes (Task(..))
+import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 --maintenanceResolver :: () -> Res e Handler Maintenances
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
@@ -49,6 +44,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           }
 
 --getMaintenanceByIdResolver :: GetEntityByIdArg -> Res e Handler (Maintenance Res)
+getMaintenanceByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Maintenance o)
 getMaintenanceByIdResolver GetEntityByIdArg {..} = lift $ do
                                               let maintenanceId = (toSqlKey $ fromIntegral $ entityId)::Maintenance_Id
                                               maintenance <- runDB $ getJustEntity maintenanceId
@@ -59,6 +55,7 @@ getMaintenanceByIdResolver_ maintenanceId _ = lift $ do
                                     maintenance <- runDB $ getJustEntity maintenanceId
                                     return $ toMaintenanceQL maintenance
 
+maintenancePageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Maintenance o))
 maintenancePageResolver page = lift $ do
                         countItems <- maintenanceQueryCount page
                         queryResult <- maintenanceQuery page
@@ -76,20 +73,23 @@ maintenancePageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
+equipmentResolver_ :: (MonadTrans t, MonadTrans (o ())) => Maintenance_Id -> p -> t Handler [Equipment o]
 equipmentResolver_ maintenanceId _ = lift $ do
                               itemEquipments <- equipmentQuery maintenanceId
                               let result = P.map (\(e, i) -> toEquipmentQL e i) itemEquipments
                               return result
 
 --saveMaintenanceResolver :: MaintenanceArg -> MutRes e Handler (Maintenance MutRes)
+saveMaintenanceResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceArg -> t Handler (Maintenance o)
 saveMaintenanceResolver arg = lift $ do
                                   maintenanceId <- createOrUpdateMaintenance arg
                                   maintenance <- runDB $ getJustEntity maintenanceId
                                   return $ toMaintenanceQL maintenance
 
+createUpdateTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceTaskArg -> t Handler [Task o]
 createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
                          let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
-                         taskIds <- saveTasks entityId tasks
+                         _ <- saveTasks entityId tasks
                          entityTasks <- taskQuery entityId
                          return $ P.map (\t -> toTaskQL t) entityTasks
 

@@ -17,12 +17,8 @@ module Graphql.Maintenance.DataTypes where
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Enums
-import Graphql.Utils
-import Data.Time
+import Data.Morpheus.Types (GQLType)
+import Graphql.Utils (GetEntityByIdArg, Page, PageArg)
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
 import Graphql.Maintenance.TaskTrigger.EventTrigger
@@ -55,11 +51,3 @@ data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
 data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Int
                                              , tasks :: [TaskArg]
                                              } deriving (Generic)
-
-fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_
-fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name = name
-                                                             , maintenance_Description = description
-                                                             , maintenance_Status = readEntityStatus status
-                                                             , maintenance_CreatedDate = cd
-                                                             , maintenance_ModifiedDate = md
-                                                             }

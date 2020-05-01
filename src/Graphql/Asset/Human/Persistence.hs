@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,8 +19,6 @@ module Graphql.Asset.Human.Persistence (
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Database.Esqueleto      as E
 import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
@@ -30,7 +26,7 @@ import Data.Maybe (maybeToList, listToMaybe)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
-import Graphql.Utils
+import Graphql.Utils (Page, PageArg(..), unionFilters)
 import Graphql.Asset.Human.DataTypes
 import Data.Time
 

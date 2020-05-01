@@ -14,19 +14,13 @@
 
 module Graphql.Root (api, apiDoc) where
 
-import qualified Data.ByteString.Lazy.Char8 as B
 import           GHC.Generics
-import           Control.Monad.Except       (ExceptT (..))
 import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, GQLType(..), Undefined(..), liftEither, lift, Res, MutRes, GQLRequest, GQLResponse)
-import           Data.Morpheus.Kind     (OBJECT)
+import           Data.Morpheus.Document     ()
+import           Data.Morpheus.Types        (GQLRootResolver (..), GQLType(..), Undefined(..), Res, MutRes, GQLRequest, GQLResponse)
 import           Data.Morpheus.Document (toGraphQLDocument)
-import           Data.Text                  (Text)
-import           Data.ByteString
-import           Graphql.Deity  (Deity (..), dbDeity, fetchDeity, NoDeity(..), TestArg(..))
-import           Database.Persist.Sql (toSqlKey, fromSqlKey)
 import           Import
+import           Data.ByteString.Lazy.Internal (ByteString)
 import           Graphql.Session
 import           Graphql.Privilege
 import           Graphql.Role
@@ -42,7 +36,7 @@ import           Graphql.Maintenance.DataTypes
 import           Graphql.Asset.Equipment.Resolvers
 import           Graphql.Asset.Equipment.DataTypes
 import           Graphql.Asset.InventoryItem.Resolvers
-import           Graphql.Utils (PageArg)
+import           Graphql.Utils ()
 import           Graphql.Asset.DataTypes
 import           Graphql.Asset.Human.Resolvers
 import           Graphql.Asset.Human.DataTypes
@@ -156,4 +150,5 @@ api:: GQLRequest -> Handler GQLResponse
 api r = do
          interpreter rootResolver r
 
+apiDoc :: Data.ByteString.Lazy.Internal.ByteString
 apiDoc = toGraphQLDocument $ Just rootResolver

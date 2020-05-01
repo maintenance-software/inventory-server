@@ -17,19 +17,9 @@ module Graphql.Asset.DataTypes where
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import qualified Data.Text as T
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import Data.Typeable (typeOf)
-import Prelude as P
-import qualified Data.Set as S
-import Graphql.Utils
-import Data.Time
+import Data.Morpheus.Types (GQLType)
+import Graphql.Utils (Page, PageArg, GetEntityByIdArg, EntityChangeStatusArg)
 import Graphql.Asset.Category
-import Enums
 import Graphql.Asset.Unit
 
 data Inventory o = Inventory { inventoryId :: Int

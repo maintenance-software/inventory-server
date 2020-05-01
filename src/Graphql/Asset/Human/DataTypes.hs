@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -17,13 +16,8 @@ module Graphql.Asset.Human.DataTypes where
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Prelude as P
-import Enums
+import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
-import Data.Time
 import Graphql.Person (Address, AddressArg, ContactInfo, ContactInfoArg)
 import Graphql.Asset.Human.EmployeeJob (EmployeeJob)
 

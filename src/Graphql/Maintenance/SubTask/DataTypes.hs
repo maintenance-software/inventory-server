@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -18,8 +17,7 @@ module Graphql.Maintenance.SubTask.DataTypes where
 import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import Data.Morpheus.Types (GQLType(..))
 import Enums
 import Graphql.Utils
 import Graphql.Maintenance.SubTask.SubTaskKind

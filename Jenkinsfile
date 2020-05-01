@@ -10,7 +10,7 @@ pipeline {
             steps {
                catchError {
                  sh 'rm -rf webapps/dist'
-                 sh 'rm -rf .stack-work'
+//                 sh 'rm -rf .stack-work'
                  sh 'docker stop inventory-server'
                  sh 'docker rm inventory-server'
                  sh 'docker images -a | grep "inventory-server" | awk \'{print $3}\' | xargs docker rmi'

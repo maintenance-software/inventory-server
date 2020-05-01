@@ -17,14 +17,9 @@ module Graphql.Asset.Equipment.DataTypes where
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Prelude as P
-import Enums
+import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
 import Graphql.Asset.DataTypes
-import Data.Time
 import Graphql.Asset.DataTypes
 import Graphql.Asset.Category
 
