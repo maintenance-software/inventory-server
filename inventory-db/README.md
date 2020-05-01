@@ -8,7 +8,7 @@ $ docker build -t inventory-db ./
 
 ###Run DB docker container
 ```
-$ docker run -it --net=host -p 5432:5432 inventory-db
+$ docker run -it --net=host -p 5432:5432 -d inventory-db
 ```
 
 ###Run DB flyway migration

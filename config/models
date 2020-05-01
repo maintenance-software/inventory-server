@@ -296,7 +296,7 @@ TaskCategory_ json sql=t_task_category
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-SubTaskKind_ json sql=t_sub_task_king
+SubTaskKind_ json sql=t_sub_task_kind
     Id sql=sub_task_kind_id
     name Text
     description Text Maybe
