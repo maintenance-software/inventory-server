@@ -89,8 +89,8 @@ saveMaintenanceResolver arg = lift $ do
 createUpdateTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceTaskArg -> t Handler [Task o]
 createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
                          let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
-                         _ <- saveTasks entityId tasks
-                         entityTasks <- taskQuery entityId
+                         taskIds <- saveTasks entityId tasks
+                         entityTasks <- getTaskByIds taskIds
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
 -- CONVERTERS

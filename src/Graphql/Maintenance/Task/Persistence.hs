@@ -13,7 +13,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Maintenance.Task.Persistence ( saveTasks, taskQuery ) where
+module Graphql.Maintenance.Task.Persistence ( saveTasks, taskQuery, getTaskByIds ) where
 
 import Import
 import GHC.Generics
@@ -54,6 +54,14 @@ taskQuery maintenanceId =  do
                                         return task
                       return result
 
+getTaskByIds :: [Task_Id] -> Handler [Entity Task_]
+getTaskByIds taskIds =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \task -> do
+                                        E.where_ (task ^. Task_Id `in_` E.valList taskIds)
+                                        return task
+                      return result
 
 --saveTasks :: Maintenance_Id -> [TaskArg] -> Handler [Task_Id]
 saveTasks _ [] = pure []
