@@ -20,6 +20,7 @@ pipeline {
         stage('BuildUI') {
           when { branch 'release-1.0' }
           steps {
+              sh 'git submodule update --recursive --remote'
               sh 'mkdir webapps/dist'
 //              sh 'git submodule update --remote'
               dir("ui-home") {
