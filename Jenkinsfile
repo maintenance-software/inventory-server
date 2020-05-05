@@ -2,6 +2,7 @@ pipeline {
     agent any
     environment {
         PATH = "/usr/local/bin:$PATH"
+        GENERATE_SOURCEMAP = "false"
       }
 
     stages {
@@ -24,7 +25,7 @@ pipeline {
               sh 'mkdir webapps/dist'
 //              sh 'git submodule update --remote'
               dir("ui-home") {
-                  sh 'yarn install && yarn build GENERATE_SOURCEMAP=false'
+                  sh 'yarn install && yarn build'
               }
               sh 'cp -a ui-home/build/. webapps/dist'
           }
@@ -39,7 +40,7 @@ pipeline {
             steps {
                 echo 'Starting to build docker image'
                 script {
-                    def customImage = docker.build("inventory-server:1.0 --network=host")
+                    def customImage = docker.build("inventory-server:1.0")
                 }
             }
         }
