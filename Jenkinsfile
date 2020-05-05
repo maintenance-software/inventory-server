@@ -24,7 +24,7 @@ pipeline {
               sh 'mkdir webapps/dist'
 //              sh 'git submodule update --remote'
               dir("ui-home") {
-                  sh 'yarn install && yarn build'
+                  sh 'yarn install && yarn build GENERATE_SOURCEMAP=false'
               }
               sh 'cp -a ui-home/build/. webapps/dist'
           }
