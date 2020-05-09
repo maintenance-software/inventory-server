@@ -19,6 +19,8 @@ module Graphql.Maintenance.Persistence (
       , maintenanceQuery
       , maintenanceQueryCount
       , maintenanceFilters
+      , availableEquipmentQuery
+      , availableEquipmentQueryCount
 ) where
 
 import Import
@@ -34,6 +36,7 @@ import Enums
 import Graphql.Utils
 import Data.Time
 import Graphql.Maintenance.DataTypes
+import Graphql.Asset.Equipment.Persistence (equipmentQueryFilters)
 
 getMaintenancePredicate maintenance Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                                    | T.strip field == "name" = [getOperator operator (maintenance ^. Maintenance_Name) (E.val value)]
@@ -101,12 +104,48 @@ equipmentQuery maintenanceId =  do
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                         let subquery =
-                                              E.from $ \maintenanceEquipment -> do
-                                              E.where_ (maintenanceEquipment ^. MaintenanceEquipment_MaintenanceId E.==. E.val maintenanceId)
-                                              return (maintenanceEquipment ^. MaintenanceEquipment_EquipmentId)
+                                              E.from $ \taskActivity -> do
+                                              E.where_ (taskActivity ^. TaskActivity_MaintenanceId E.==. E.val maintenanceId)
+                                              return (taskActivity ^. TaskActivity_EquipmentId)
                                         E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
                                         return (equipment, item)
                       return result
+
+availableEquipmentQueryCount :: PageArg -> Handler Int
+availableEquipmentQueryCount page =  do
+                      res  <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment `E.InnerJoin` item) -> do
+                                        E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        let subquery =
+                                              E.from $ \taskActivity -> do
+                                              E.where_ (taskActivity ^. TaskActivity_Status E.!=. E.val DELETED)
+                                              return (taskActivity ^. TaskActivity_EquipmentId)
+                                        filters <- equipmentQueryFilters equipment item page
+                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
+
+availableEquipmentQuery :: PageArg -> Handler [(Entity Equipment_, Entity Item_)]
+availableEquipmentQuery page =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(equipment `E.InnerJoin` item) -> do
+                                        E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
+                                        let subquery =
+                                              E.from $ \taskActivity -> do
+                                              E.where_ (taskActivity ^. TaskActivity_Status E.!=. E.val DELETED)
+                                              return (taskActivity ^. TaskActivity_EquipmentId)
+                                        filters <- equipmentQueryFilters equipment item page
+                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
+                                        E.offset $ pageIndex_ * pageSize_
+                                        E.limit pageSize_
+                                        return (equipment, item)
+                      return result
+                      where
+                        PageArg {..} = page
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
 --createOrUpdateMaintenance :: MaintenanceArg -> Handler (Maintenance MutRes)
 createOrUpdateMaintenance maintenance = do

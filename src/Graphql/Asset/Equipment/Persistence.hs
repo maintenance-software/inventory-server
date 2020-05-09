@@ -12,7 +12,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 
 module Graphql.Asset.Equipment.Persistence (
-      queryFilters
+      equipmentQueryFilters
     , equipmentQuery
     , createOrUpdateEquipment
     , equipmentQueryCount
@@ -71,8 +71,7 @@ getPredicates equipment item (x:xs) | P.length p == 0 = getPredicates equipment 
                    where
                       p = (getEquipmentPredicate equipment x) P.++ (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
 
-
-queryFilters equipment item PageArg {..} = do
+equipmentQueryFilters equipment item PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
                             let predicates = P.concat $ getPredicates equipment item justFilters
                             let predicates_ = if P.length predicates > 0 then
@@ -91,7 +90,7 @@ equipmentQueryCount page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        filters <- queryFilters equipment item page
+                                        filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
@@ -101,7 +100,7 @@ childrenQueryCount parentId page =  do
                       res  <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment, item) -> do
-                                        filters <- queryFilters equipment item page
+                                        filters <- equipmentQueryFilters equipment item page
                                         E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
                                                  E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                                  E.&&. filters
@@ -114,7 +113,7 @@ equipmentChildrenQuery parentId page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment, item) -> do
-                                     filters <- queryFilters equipment item page
+                                     filters <- equipmentQueryFilters equipment item page
                                      E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
                                                 E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                                 E.&&. filters
@@ -134,7 +133,7 @@ equipmentQuery page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        filters <- queryFilters equipment item page
+                                        filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_

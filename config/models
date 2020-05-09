@@ -228,8 +228,13 @@ Maintenance_ sql=t_maintenance
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-MaintenanceEquipment_ sql=t_maintenance_equipment
-    Id sql=maintenance_equipment_id
+TaskActivity_ sql=t_task_activity
+    Id sql=task_activity_id
+    scheduledDate UTCTime Maybe
+    calculatedDate UTCTime
+    rescheduled Bool
+    taskId Task_Id
+    status EntityStatus
     maintenanceId Maintenance_Id
     equipmentId Item_Id
     Foreign Equipment_ fkt_equipment equipmentId

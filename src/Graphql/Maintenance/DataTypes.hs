@@ -35,6 +35,8 @@ data Maintenance o = Maintenance { maintenanceId :: Int
 
 data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
+                                   , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
+                                   , taskActivities :: PageArg -> o () Handler (Page (Equipment o))
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)

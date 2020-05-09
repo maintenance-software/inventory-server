@@ -36,6 +36,7 @@ import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 --maintenanceResolver :: () -> Res e Handler Maintenances
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
+                                          , availableEquipments = availableEquipmentPageResolver
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
@@ -60,6 +61,24 @@ maintenancePageResolver page = lift $ do
                         countItems <- maintenanceQueryCount page
                         queryResult <- maintenanceQuery page
                         let result = P.map (\ m -> toMaintenanceQL m) queryResult
+                        return Page { totalCount = countItems
+                                    , content = result
+                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
+                                                          , hasPreview = pageIndex_ * pageSize_ > 0
+                                                          , pageSize = pageSize_
+                                                          , pageIndex = pageIndex_
+                                    }
+                        }
+                         where
+                            PageArg {..} = page
+                            pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
+                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
+
+availableEquipmentPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Equipment o))
+availableEquipmentPageResolver page = lift $ do
+                        countItems <- availableEquipmentQueryCount page
+                        queryResult <- availableEquipmentQuery page
+                        let result = P.map (\(e, i) -> toEquipmentQL e i) queryResult
                         return Page { totalCount = countItems
                                     , content = result
                                     , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
