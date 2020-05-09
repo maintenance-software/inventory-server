@@ -21,6 +21,8 @@ module Graphql.Maintenance.Persistence (
       , maintenanceFilters
       , availableEquipmentQuery
       , availableEquipmentQueryCount
+      , taskActivityQueryCount
+      , taskActivityQuery
 ) where
 
 import Import
@@ -141,6 +143,40 @@ availableEquipmentQuery page =  do
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
                                         return (equipment, item)
+                      return result
+                      where
+                        PageArg {..} = page
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
+
+taskActivityQueryCount :: PageArg -> Handler Int
+taskActivityQueryCount page =  do
+                      res  <- runDB
+                                   $ E.select
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` maintenance `E.InnerJoin` task) -> do
+                                        E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
+                                        E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
+                                        E.on $ taskActivity ^. TaskActivity_MaintenanceId E.==. maintenance ^. Maintenance_Id
+                                        E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
+                                        filters <- equipmentQueryFilters equipment item page
+                                        E.where_ filters
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
+
+taskActivityQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity TaskActivity_, Entity Maintenance_, Entity Task_  )]
+taskActivityQuery page =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` maintenance `E.InnerJoin` task) -> do
+                                        E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
+                                        E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
+                                        E.on $ taskActivity ^. TaskActivity_MaintenanceId E.==. maintenance ^. Maintenance_Id
+                                        E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
+                                        filters <- equipmentQueryFilters equipment item page
+                                        E.where_ filters
+                                        E.offset $ pageIndex_ * pageSize_
+                                        E.limit pageSize_
+                                        return (item, equipment, taskActivity, maintenance, task)
                       return result
                       where
                         PageArg {..} = page

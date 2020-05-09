@@ -37,6 +37,7 @@ import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
+                                          , taskActivities = taskActivityPageResolver
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
@@ -92,6 +93,24 @@ availableEquipmentPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
+--taskActivityPageResolver :: PageArg -> t () Handler (Page TaskActivity)
+taskActivityPageResolver page = lift $ do
+                        countItems <- taskActivityQueryCount page
+                        queryResult <- taskActivityQuery page
+                        let result = P.map (\ (i, e, ta, m, t) -> toTaskActivityQL i e ta m t) queryResult
+                        return Page { totalCount = countItems
+                                    , content = result
+                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
+                                                          , hasPreview = pageIndex_ * pageSize_ > 0
+                                                          , pageSize = pageSize_
+                                                          , pageIndex = pageIndex_
+                                    }
+                        }
+                         where
+                            PageArg {..} = page
+                            pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
+                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
+
 equipmentResolver_ :: (MonadTrans t, MonadTrans (o ())) => Maintenance_Id -> p -> t Handler [Equipment o]
 equipmentResolver_ maintenanceId _ = lift $ do
                               itemEquipments <- equipmentQuery maintenanceId
@@ -129,6 +148,27 @@ toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId
                                             m = case maintenance_ModifiedDate of
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
+
+toTaskActivityQL :: Entity Item_ -> Entity Equipment_ -> Entity TaskActivity_ -> Entity Maintenance_ -> Entity Task_ -> TaskActivity
+toTaskActivityQL item equipment taskActivity maintenance task = TaskActivity { taskActivityId = fromIntegral $ fromSqlKey taskActivityId
+                                                                             , scheduledDate = case taskActivity_ScheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                                             , calculatedDate = fromString $ show taskActivity_CalculatedDate
+                                                                             , rescheduled = taskActivity_Rescheduled
+                                                                             , status = T.pack $ show taskActivity_Status
+                                                                             , assetId = fromIntegral $ fromSqlKey itemId
+                                                                             , assetName = item_Name
+                                                                             , maintenanceId = fromIntegral $ fromSqlKey maintenanceId
+                                                                             , maintenanceName = maintenance_Name
+                                                                             , taskId = fromIntegral $ fromSqlKey taskId
+                                                                             , taskName = task_Name
+                                                                             , taskPriority = task_Priority
+                                                                             }
+                                          where
+                                            Entity itemId (Item_ {..}) = item
+                                            Entity _ (Equipment_ {..}) = equipment
+                                            Entity taskActivityId (TaskActivity_ {..}) = taskActivity
+                                            Entity maintenanceId (Maintenance_ {..}) = maintenance
+                                            Entity taskId (Task_ {..}) = task
 
 {-
 query {

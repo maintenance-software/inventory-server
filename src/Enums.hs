@@ -15,7 +15,7 @@ import GHC.Generics
 import Data.Morpheus.Types (GQLType(..))
 
 
-data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | UNKNOWN  deriving (Show, Read, Eq, Generic, GQLType)
+data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | PENDING | UNKNOWN  deriving (Show, Read, Eq, Generic, GQLType)
 derivePersistField "EntityStatus"
 
 data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | EQUIPMENT | NONE deriving (Show, Read, Eq, Generic)
@@ -50,6 +50,7 @@ readEntityStatus "ACTIVE" = ACTIVE
 readEntityStatus "INACTIVE" = INACTIVE
 readEntityStatus "EXPIRED" = EXPIRED
 readEntityStatus "DELETED" = DELETED
+readEntityStatus "PENDING" = PENDING
 readEntityStatus    _      = UNKNOWN
 
 readItemType :: Text -> ItemType

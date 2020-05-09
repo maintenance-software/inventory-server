@@ -33,10 +33,24 @@ data Maintenance o = Maintenance { maintenanceId :: Int
                                  , equipments :: () -> o () Handler [Equipment o]
                                  } deriving (Generic, GQLType)
 
+data TaskActivity = TaskActivity { taskActivityId :: Int
+                                 , scheduledDate :: Maybe Text
+                                 , calculatedDate :: Text
+                                 , rescheduled :: Bool
+                                 , status :: Text
+                                 , assetId :: Int
+                                 , assetName :: Text
+                                 , maintenanceId :: Int
+                                 , maintenanceName :: Text
+                                 , taskId :: Int
+                                 , taskName :: Text
+                                 , taskPriority :: Int
+                                 } deriving (Generic, GQLType)
+
 data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
-                                   , taskActivities :: PageArg -> o () Handler (Page (Equipment o))
+                                   , taskActivities :: PageArg -> o () Handler (Page TaskActivity)
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
