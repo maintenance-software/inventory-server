@@ -54,6 +54,7 @@ toTaskTriggerQL (Entity taskTriggerId taskTrigger) = TaskTrigger { taskTriggerId
                                                                  , repeat = taskTrigger_Repeat
                                                                  , operator = taskTrigger_Operator
                                                                  , value = taskTrigger_Value
+                                                                 , timeFrequency = (case taskTrigger_TimeFrequency of Nothing -> Nothing; Just t -> Just $ T.pack $ show t)
                                                                  , unit = case taskTrigger_UnitId of Nothing -> Nothing; Just c -> Just $ getUnitByIdResolver_ c
                                                                  , eventTrigger = case taskTrigger_EventTriggerId of Nothing -> Nothing; Just c -> Just $ getEventTriggerByIdResolver_ c
                                                                  , createdDate = fromString $ show taskTrigger_CreatedDate

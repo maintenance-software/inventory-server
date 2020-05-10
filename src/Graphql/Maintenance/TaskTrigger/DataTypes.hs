@@ -28,12 +28,13 @@ data TaskTrigger o = TaskTrigger { taskTriggerId :: Int
                                  , kind :: Text
                                  , description :: Text
                                  , fixedSchedule :: Maybe Bool
-                                 , frequency :: Maybe Int                                 
+                                 , frequency :: Maybe Int
                                  , readType :: Maybe Text
                                  , limit :: Maybe Text
                                  , repeat :: Maybe Bool
                                  , operator :: Maybe Text
                                  , value :: Maybe Text
+                                 , timeFrequency :: Maybe Text
                                  , unit :: Maybe(() -> o () Handler Unit)
                                  , eventTrigger :: Maybe(() -> o () Handler EventTrigger)
                                  , createdDate :: Text
@@ -50,6 +51,7 @@ data TaskTriggerArg = TaskTriggerArg { taskTriggerId :: Int
                                      , repeat :: Maybe Bool
                                      , operator :: Maybe Text
                                      , value :: Maybe Text
+                                     , timeFrequency :: Maybe Text
                                      , unitId :: Maybe Int
                                      , eventTriggerId :: Maybe Int
                                      } deriving (Generic)

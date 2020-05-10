@@ -23,11 +23,14 @@ module Graphql.Maintenance.Persistence (
       , availableEquipmentQueryCount
       , taskActivityQueryCount
       , taskActivityQuery
+      , addDateTaskActivityPersistent
 ) where
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
+import Data.Time.Calendar.WeekDate (toWeekDate, fromWeekDate)
+import Data.Time.Calendar (toGregorian, fromGregorian)
+--import Data.Text.Time (parseISODateTime)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Database.Esqueleto      as E
@@ -39,6 +42,7 @@ import Graphql.Utils
 import Data.Time
 import Graphql.Maintenance.DataTypes
 import Graphql.Asset.Equipment.Persistence (equipmentQueryFilters)
+import Graphql.Maintenance.Task.Persistence (taskQuery)
 
 getMaintenancePredicate maintenance Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                                    | T.strip field == "name" = [getOperator operator (maintenance ^. Maintenance_Name) (E.val value)]
@@ -200,6 +204,52 @@ createOrUpdateMaintenance maintenance = do
                                   maintenanceKey <- runDB $ insert $ fromMaintenanceQL maintenance now Nothing
                                   return maintenanceKey
                 return entityId
+
+addDateTaskActivityPersistent :: TaskActivityDateArg -> Handler Bool
+addDateTaskActivityPersistent TaskActivityDateArg {..} = do
+                    let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
+                    let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
+                    let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
+                    tasks <- taskQuery maintenanceEntityId
+                    let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
+                    triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds] []
+                    _ <- createTaskActivityForData maintenanceEntityId assetEntityId maintenanceUtcDate triggers
+                    return True
+
+createTaskActivityForData :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [TaskActivity_Id]
+createTaskActivityForData _ _ _ []  = pure []
+createTaskActivityForData maintenanceId assetId maintenanceUtcDate (h:hs) = do
+                    UTCTime today _ <- liftIO getCurrentTime
+                    let (a, b, c) = toWeekDate today
+                    let (x, y, z) = toGregorian today
+                    let firstDayOfCurrentWeek = fromWeekDate a b 1
+                    let firstDayOfCurrentMonth = fromGregorian x y 1
+                    let firstDayOfCurrentYear = fromGregorian x 1 1
+                    let Entity taskTriggerId (TaskTrigger_ {..}) = h
+                    unitKey <- case taskTrigger_UnitId of
+                                Nothing -> pure DAY
+                                Just unitId -> do
+                                                Entity _ Unit_ {..} <- runDB $ getJustEntity unitId
+                                                return $ readTimeFrequency unit_Key
+                    let calculatedDate = case unitKey of
+                                          DAY -> today
+                                          WEEK -> firstDayOfCurrentWeek
+                                          MONTH -> firstDayOfCurrentMonth
+                                          YEAR -> firstDayOfCurrentYear
+                    let newTaskActivity = TaskActivity_ { taskActivity_ScheduledDate = Nothing
+                                                        , taskActivity_CalculatedDate = UTCTime calculatedDate 0
+                                                        , taskActivity_Rescheduled = False
+                                                        , taskActivity_TaskId = taskTrigger_TaskId
+                                                        , taskActivity_TaskTriggerId = taskTriggerId
+                                                        , taskActivity_EventTriggerId = Nothing
+                                                        , taskActivity_Status = PENDING
+                                                        , taskActivity_MaintenanceId = maintenanceId
+                                                        , taskActivity_EquipmentId = assetId
+                                                        , taskActivity_TriggerDescription = taskTrigger_Kind
+                                                        }
+                    taskActivityEntityId <- runDB $ insert $ newTaskActivity
+                    taskActivityEntityIds <- createTaskActivityForData maintenanceId assetId maintenanceUtcDate hs
+                    return (taskActivityEntityId:taskActivityEntityIds)
 
 fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_
 fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name = name

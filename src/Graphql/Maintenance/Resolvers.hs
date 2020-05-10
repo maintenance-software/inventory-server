@@ -38,6 +38,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
                                           , taskActivities = taskActivityPageResolver
+                                          , addTaskActivityDate = addTaskActivityDateResolver
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
@@ -131,6 +132,11 @@ createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
                          entityTasks <- getTaskByIds taskIds
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
+--addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
+addTaskActivityDateResolver arg = lift $ do
+                         taskActivitySuccess <- addDateTaskActivityPersistent arg
+                         return $ taskActivitySuccess
+
 -- CONVERTERS
 --toMaintenanceQL :: Entity Maintenance_ -> Maintenance
 toMaintenanceQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Maintenance_ -> Maintenance o
@@ -162,6 +168,8 @@ toTaskActivityQL item equipment taskActivity maintenance task = TaskActivity { t
                                                                              , taskId = fromIntegral $ fromSqlKey taskId
                                                                              , taskName = task_Name
                                                                              , taskPriority = task_Priority
+                                                                             , taskTriggerId = fromIntegral $ fromSqlKey taskActivity_TaskTriggerId
+                                                                             , triggerDescription = taskActivity_TriggerDescription
                                                                              }
                                           where
                                             Entity itemId (Item_ {..}) = item

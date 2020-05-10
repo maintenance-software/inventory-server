@@ -21,6 +21,9 @@ derivePersistField "EntityStatus"
 data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | EQUIPMENT | NONE deriving (Show, Read, Eq, Generic)
 derivePersistField "ItemType"
 
+data TimeFrequency = DAY|WEEK|MONTH|YEAR deriving (Show, Read, Eq, Generic)
+derivePersistField "TimeFrequency"
+
 -- instance GQLType EntityStatus where
 --   type KIND EntityStatus = ENUM
 
@@ -59,3 +62,9 @@ readItemType "TOOLS" = TOOLS
 readItemType "SUPPLIES" = SUPPLIES
 readItemType "EQUIPMENT" = EQUIPMENT
 readItemType _ = NONE
+
+readTimeFrequency :: Text -> TimeFrequency
+readTimeFrequency "DAY" = DAY
+readTimeFrequency "WEEK" = WEEK
+readTimeFrequency "MONTH" = MONTH
+readTimeFrequency "YEAR" = YEAR

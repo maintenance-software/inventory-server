@@ -45,12 +45,16 @@ data TaskActivity = TaskActivity { taskActivityId :: Int
                                  , taskId :: Int
                                  , taskName :: Text
                                  , taskPriority :: Int
+                                 , taskTriggerId :: Int
+                                 , triggerDescription :: Text
                                  } deriving (Generic, GQLType)
 
 data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
                                    , taskActivities :: PageArg -> o () Handler (Page TaskActivity)
+                                   , addTaskActivityDate :: TaskActivityDateArg -> o () Handler Bool
+--                                   , addIncidentActivity :: IncidentActivityArg -> o () Handler Int
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
@@ -67,3 +71,8 @@ data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
 data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Int
                                              , tasks :: [TaskArg]
                                              } deriving (Generic)
+
+data TaskActivityDateArg = TaskActivityDateArg { lastMaintenanceDate :: Text
+                                               , assetId :: Int
+                                               , maintenanceId :: Int
+                                               } deriving (Generic)
