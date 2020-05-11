@@ -212,7 +212,7 @@ addDateTaskActivityPersistent TaskActivityDateArg {..} = do
                     let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
                     tasks <- taskQuery maintenanceEntityId
                     let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
-                    triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds] []
+                    triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_Kind ==. "DATE"] []
                     _ <- createTaskActivityForData maintenanceEntityId assetEntityId maintenanceUtcDate triggers
                     return True
 
