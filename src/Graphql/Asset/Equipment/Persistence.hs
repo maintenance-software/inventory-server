@@ -118,6 +118,7 @@ equipmentChildrenQuery parentId page =  do
                                                 E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                                 E.&&. filters
                                               )
+                                     E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                      E.offset $ pageIndex_ * pageSize_
                                      E.limit pageSize_
                                      return (equipment, item)
@@ -135,6 +136,7 @@ equipmentQuery page =  do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
+                                        E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
                                         return (equipment, item)

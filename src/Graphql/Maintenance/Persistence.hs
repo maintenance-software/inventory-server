@@ -84,7 +84,6 @@ maintenanceQueryCount page =  do
                                    $ E.from $ \ maintenance -> do
                                         filters <- maintenanceFilters maintenance page
                                         E.where_ filters
-                                        E.orderBy [E.asc (maintenance ^. Maintenance_Id)]
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
@@ -132,7 +131,6 @@ availableEquipmentQueryCount page =  do
                                               return (taskActivity ^. TaskActivity_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
-                                        E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
@@ -169,7 +167,6 @@ taskActivityQueryCount page =  do
                                         E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
-                                        E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
