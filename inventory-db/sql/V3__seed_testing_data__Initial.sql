@@ -373,13 +373,13 @@ INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('Mauris','
 INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('auctor','nisi. Cum sociis','now()');
 INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('amet,','pellentesque eget, dictum','now()');
 
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('Nulla','ut quam','now()');
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('Suspendisse','amet massa.','now()');
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('nisi','euismod enim.','now()');
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('penatibus','risus. Donec','now()');
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('elit','at lacus.','now()');
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('lorem','malesuada id,','now()');
-INSERT INTO "t_unit" (key,label,created_date) VALUES ('ullamcorper.','nec, euismod','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('SECOND','Second','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('MINUTE','Minute','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('HOUR','Hour','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('DAY','Day','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('WEEK','Week','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('MONTH','Month','now()');
+INSERT INTO "t_unit" (key,label,created_date) VALUES ('YEAR','Year','now()');
 INSERT INTO "t_unit" (key,label,created_date) VALUES ('Sed','sit amet,','now()');
 INSERT INTO "t_unit" (key,label,created_date) VALUES ('montes,','amet, faucibus','now()');
 INSERT INTO "t_unit" (key,label,created_date) VALUES ('enim.','nulla ante,','now()');
