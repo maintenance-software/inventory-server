@@ -25,10 +25,10 @@ import           Graphql.Session
 import           Graphql.Privilege
 import           Graphql.Role
 import           Graphql.Person
-import           Graphql.Asset.Category
+import           Graphql.Category
 import           Graphql.Asset.Unit
-import           Graphql.Maintenance.SubTask.SubTaskKind
-import           Graphql.Maintenance.Task.TaskCategory
+--import           Graphql.Maintenance.SubTask.SubTaskKind
+--import           Graphql.Maintenance.Task.TaskCategory
 import           Graphql.Asset.Item.Resolvers
 import           Graphql.Asset.Inventory.Resolvers
 import           Graphql.Maintenance.Resolvers
@@ -40,7 +40,7 @@ import           Graphql.Utils ()
 import           Graphql.Asset.DataTypes
 import           Graphql.Asset.Human.Resolvers
 import           Graphql.Asset.Human.DataTypes
-import           Graphql.Asset.Human.EmployeeJob
+--import           Graphql.Asset.Human.EmployeeJob
 -- importGQLDocumentWithNamespace "schema.gql"
 
 data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
@@ -49,11 +49,11 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , roles :: () -> m Roles
                          , persons :: () -> m Persons
                          , users :: () -> m Users
-                         , categories :: () -> m [Category]
+                         , categories :: CategoryFilter -> m [Category]
                          , units :: () -> m [Unit]
-                         , taskCategories :: () -> m [TaskCategory]
-                         , subTaskKinds :: () -> m [SubTaskKind]
-                         , employeeJobs :: () -> m [EmployeeJob]
+--                         , taskCategories :: () -> m [TaskCategory]
+--                         , subTaskKinds :: () -> m [SubTaskKind]
+--                         , employeeJobs :: () -> m [EmployeeJob]
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
                          , equipments :: () -> Res () Handler (Equipments Res)
@@ -67,9 +67,9 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
                            , saveUnit :: UnitArg -> m Unit
-                           , saveTaskCategory :: TaskCategoryArg -> m TaskCategory
-                           , saveSubTaskKind :: SubTaskKindArg -> m SubTaskKind
-                           , saveEmployeeJob :: EmployeeJobArg -> m EmployeeJob
+--                           , saveTaskCategory :: TaskCategoryArg -> m TaskCategory
+--                           , saveSubTaskKind :: SubTaskKindArg -> m SubTaskKind
+--                           , saveEmployeeJob :: EmployeeJobArg -> m EmployeeJob
 --                           , saveInventory :: InventoryArg -> m (Inventory MutRes)
 --                           , saveItem :: ItemArg -> m (Item MutRes)
 --                           , saveInventoryItem :: InventoryItemArg -> m (InventoryItem MutRes)
@@ -93,9 +93,9 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , users = resolveUser
                        , categories = listCategoryResolver
                        , units = listUnitResolver
-                       , taskCategories = listTaskCategoryResolver
-                       , subTaskKinds = listSubTaskKindResolver
-                       , employeeJobs = listEmployeeJobResolver
+--                       , taskCategories = listTaskCategoryResolver
+--                       , subTaskKinds = listSubTaskKindResolver
+--                       , employeeJobs = listEmployeeJobResolver
                        , inventories = inventoryResolver
                        , maintenances = maintenanceResolver
                        , employees = employeeResolver
@@ -110,9 +110,9 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , savePerson = resolveSavePerson
                            , saveCategory = saveCategoryResolver
                            , saveUnit = saveUnitResolver
-                           , saveTaskCategory = saveTaskCategoryResolver
-                           , saveSubTaskKind = saveSubTaskKindResolver
-                           , saveEmployeeJob = saveEmployeeJobResolver
+--                           , saveTaskCategory = saveTaskCategoryResolver
+--                           , saveSubTaskKind = saveSubTaskKindResolver
+--                           , saveEmployeeJob = saveEmployeeJobResolver
 --                           , saveInventory = saveInventoryResolver
 --                           , saveItem =  saveItemResolver
 --                           , saveInventoryItem =  saveInventoryItemResolver

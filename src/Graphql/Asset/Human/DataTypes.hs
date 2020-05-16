@@ -19,7 +19,7 @@ import GHC.Generics
 import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
 import Graphql.Person (Address, AddressArg, ContactInfo, ContactInfoArg)
-import Graphql.Asset.Human.EmployeeJob (EmployeeJob)
+import Graphql.Category
 
 data Employee o = Employee { employeeId :: Int
                            , firstName :: Text
@@ -28,7 +28,7 @@ data Employee o = Employee { employeeId :: Int
                            , documentId :: Text
                            , hireDate :: Maybe Text
                            , salary :: Float
-                           , employeeJob :: () -> o () Handler EmployeeJob
+                           , employeeCategory :: () -> o () Handler Category
                            , address :: () -> o () Handler (Maybe Address)
                            , contactInfo :: () -> o () Handler [ContactInfo]
                            , createdDate :: Text
@@ -47,7 +47,7 @@ data EmployeeArg = EmployeeArg { employeeId :: Int
                                , documentId :: Text
                                , hireDate :: Maybe Text
                                , salary :: Float
-                               , employeeJobId :: Int
+                               , employeeCategoryId :: Int
                                , address :: Maybe AddressArg
                                , contactInfo :: [ContactInfoArg]
                                } deriving (Generic, GQLType)

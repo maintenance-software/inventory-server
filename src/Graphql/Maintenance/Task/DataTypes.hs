@@ -22,7 +22,7 @@ import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Enums
 import Data.Time
-import Graphql.Maintenance.Task.TaskCategory
+import Graphql.Category
 import Graphql.Maintenance.Task.TaskResource
 import Graphql.Maintenance.SubTask.DataTypes
 import Graphql.Maintenance.TaskTrigger.DataTypes
@@ -37,7 +37,7 @@ data Task o = Task { taskId :: Int
                    , attribute2 :: Maybe Text
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
-                   , taskCategory :: Maybe(() -> o () Handler TaskCategory)
+                   , taskCategory :: Maybe(() -> o () Handler Category)
                    , subTasks :: () -> o () Handler [SubTask o]
                    , taskTriggers :: () -> o () Handler [TaskTrigger o]
                    , taskResources :: () -> o () Handler [TaskResource o]
@@ -61,19 +61,6 @@ instance GQLType TaskArg where
     type  KIND TaskArg = INPUT_OBJECT
     description = const $ Just $ pack "This field holds Task Input information"
 
-fromTaskQL :: Maintenance_Id -> TaskArg -> UTCTime -> Maybe UTCTime -> Task_
-fromTaskQL maintenanceId (TaskArg {..}) cd md = Task_ { task_Name = name
-                                        , task_Description = description
-                                        , task_Priority = priority
-                                        , task_Duration = duration
-                                        , task_DownTimeDuration = downTimeDuration
-                                        , task_Attribute1 = attribute1
-                                        , task_Attribute2 = attribute2
-                                        , task_TaskCategoryId = case taskCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::TaskCategory_Id)
-                                        , task_MaintenanceId = maintenanceId
-                                        , task_CreatedDate = cd
-                                        , task_ModifiedDate = md
-                                        }
 
 {-
 query fetchMaintenancePlans {

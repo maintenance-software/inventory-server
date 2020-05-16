@@ -21,7 +21,7 @@ import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (GetEntityByIdArg, Page, PageArg)
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
-import Graphql.Maintenance.TaskTrigger.EventTrigger
+import Graphql.Category
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -58,8 +58,8 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
-                                   , eventTriggers :: () -> o () Handler [EventTrigger]
-                                   , saveEventTrigger :: EventTriggerArg -> o () Handler EventTrigger
+--                                   , eventTriggers :: () -> o () Handler [EventTrigger]
+--                                   , saveEventTrigger :: EventTriggerArg -> o () Handler EventTrigger
                                    } deriving (Generic, GQLType)
 
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int

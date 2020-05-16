@@ -27,7 +27,7 @@ import qualified Data.Text as T
 import Enums
 import Graphql.Utils
 import Graphql.Asset.DataTypes
-import Graphql.Asset.Category
+import Graphql.Category
 import Graphql.Asset.Item.Persistence
 import Graphql.Asset.Equipment.DataTypes
 import Graphql.Asset.Equipment.Persistence

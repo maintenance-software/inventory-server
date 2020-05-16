@@ -18,6 +18,9 @@ import Data.Morpheus.Types (GQLType(..))
 data EntityStatus = ACTIVE | INACTIVE | EXPIRED | DELETED | PENDING | UNKNOWN  deriving (Show, Read, Eq, Generic, GQLType)
 derivePersistField "EntityStatus"
 
+data CategoryScope = ITEM_CATEGORY | EMPLOYEE_JOB_CATEGORY | TASK_CATEGORY | SUBTASK_CATEGORY | EVENT_CATEGORY | NO_CATEGORY  deriving (Show, Read, Eq, Generic, GQLType)
+derivePersistField "CategoryScope"
+
 data ItemType = SPARE_PARTS | TOOLS | SUPPLIES | EQUIPMENT | NONE deriving (Show, Read, Eq, Generic)
 derivePersistField "ItemType"
 
@@ -68,3 +71,11 @@ readTimeFrequency "DAY" = DAY
 readTimeFrequency "WEEK" = WEEK
 readTimeFrequency "MONTH" = MONTH
 readTimeFrequency "YEAR" = YEAR
+
+readCategoryScope :: Text -> CategoryScope
+readCategoryScope "ITEM_CATEGORY" = ITEM_CATEGORY
+readCategoryScope "EMPLOYEE_JOB_CATEGORY" = EMPLOYEE_JOB_CATEGORY
+readCategoryScope "TASK_CATEGORY" = TASK_CATEGORY
+readCategoryScope "SUBTASK_CATEGORY" = SUBTASK_CATEGORY
+readCategoryScope "EVENT_CATEGORY" = EVENT_CATEGORY
+readCategoryScope _ = NO_CATEGORY

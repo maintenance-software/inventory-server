@@ -250,6 +250,7 @@ createTaskActivityForData maintenanceId assetId maintenanceUtcDate (h:hs) = do
                                                         , taskActivity_MaintenanceId = maintenanceId
                                                         , taskActivity_EquipmentId = assetId
                                                         , taskActivity_TriggerDescription = taskTrigger_Kind
+                                                        , taskActivity_WorkOrderId = Nothing
                                                         }
                     taskActivityEntityId <- runDB $ insert $ newTaskActivity
                     taskActivityEntityIds <- createTaskActivityForData maintenanceId assetId maintenanceUtcDate hs

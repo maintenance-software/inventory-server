@@ -21,7 +21,7 @@ import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
 import Graphql.Asset.DataTypes
 import Graphql.Asset.DataTypes
-import Graphql.Asset.Category
+import Graphql.Category
 
 data Equipment o = Equipment { equipmentId :: Int
                              , name :: Text

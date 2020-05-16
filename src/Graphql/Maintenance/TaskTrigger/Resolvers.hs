@@ -29,7 +29,7 @@ import Graphql.Maintenance.SubTask.Resolvers
 import Graphql.Maintenance.TaskTrigger.DataTypes
 import Graphql.Maintenance.TaskTrigger.Persistence
 import Graphql.Asset.Unit
-import Graphql.Maintenance.TaskTrigger.EventTrigger
+import Graphql.Category
 
 taskTriggerResolver_ taskId _ = lift $ do
                                 tasks <- taskTriggerQuery taskId
@@ -56,7 +56,7 @@ toTaskTriggerQL (Entity taskTriggerId taskTrigger) = TaskTrigger { taskTriggerId
                                                                  , value = taskTrigger_Value
                                                                  , timeFrequency = (case taskTrigger_TimeFrequency of Nothing -> Nothing; Just t -> Just $ T.pack $ show t)
                                                                  , unit = case taskTrigger_UnitId of Nothing -> Nothing; Just c -> Just $ getUnitByIdResolver_ c
-                                                                 , eventTrigger = case taskTrigger_EventTriggerId of Nothing -> Nothing; Just c -> Just $ getEventTriggerByIdResolver_ c
+                                                                 , eventTriggerCategory = case taskTrigger_EventTriggerCategoryId of Nothing -> Nothing; Just c -> Just $ getCategoryByIdResolver_ c
                                                                  , createdDate = fromString $ show taskTrigger_CreatedDate
                                                                  , modifiedDate = m
                                                                  }

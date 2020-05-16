@@ -12,13 +12,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Asset.Category (
+module Graphql.Category (
     Category
     , CategoryArg
+    , CategoryFilter
     , listCategoryResolver
     , saveCategoryResolver
     , toCategoryQL
-    , dbFetchCategoryById
+    , getCategoryByIdResolver_
 ) where
 
 import Import
@@ -27,40 +28,55 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
+import qualified Data.Text as T
 import Graphql.Utils
+import Enums (readCategoryScope)
 import Data.Time
 
 data Category = Category { categoryId :: Int
                          , name :: Text
+                         , scope :: Text
                          , description :: Text
                          , createdDate :: Text
                          , modifiedDate :: Maybe Text
                          } deriving (Generic, GQLType)
 
--- DB ACTIONS
-dbFetchCategoryById:: Category_Id -> Handler Category
-dbFetchCategoryById categoryId = do
-                                      category <- runDB $ getJustEntity categoryId
-                                      return $ toCategoryQL category
-
-dbFetchCategories:: Handler [Category]
-dbFetchCategories = do
-                       categories <- runDB $ selectList [] []
-                       return $ P.map toCategoryQL categories
-
-listCategoryResolver :: () -> Res e Handler [Category]
-listCategoryResolver _ = lift $ dbFetchCategories
-
 -- Mutation
 data CategoryArg = CategoryArg { categoryId :: Int
                                , name :: Text
+                               , scope :: Text
                                , description :: Text
                                } deriving (Generic)
 
-saveCategoryResolver :: CategoryArg -> MutRes e Handler Category
-saveCategoryResolver arg = lift $ createOrUpdateCategory arg
+data CategoryFilter = CategoryFilter { scope :: Text } deriving (Generic)
+-- DB ACTIONS
 
-createOrUpdateCategory :: CategoryArg -> Handler Category
+getCategoryByIdResolver_ categoryId _ = lift $ do
+                                      category <- runDB $ getJustEntity categoryId
+                                      return $ toCategoryQL category
+
+--dbFetchCategoryById:: Category_Id -> Handler Category
+--dbFetchCategoryById categoryId = do
+--                                      category <- runDB $ getJustEntity categoryId
+--                                      return $ toCategoryQL category
+
+--dbFetchCategories:: Handler [Category]
+--dbFetchCategories = do
+--                       categories <- runDB $ selectList [] []
+--                       return $ P.map toCategoryQL categories
+
+listCategoryResolver :: CategoryFilter -> Res e Handler [Category]
+listCategoryResolver (CategoryFilter {..}) = lift $ do
+                      categories <- runDB $ selectList [Category_Scope ==. (readCategoryScope scope)] []
+                      return $ P.map toCategoryQL categories
+
+saveCategoryResolver :: CategoryArg -> MutRes e Handler Category
+saveCategoryResolver arg = lift $ do
+                        categoryId <- createOrUpdateCategory arg
+                        category <- runDB $ getJustEntity categoryId
+                        return $ toCategoryQL category
+
+createOrUpdateCategory :: CategoryArg -> Handler Category_Id
 createOrUpdateCategory category = do
                 let CategoryArg {..} = category
                 now <- liftIO getCurrentTime
@@ -69,20 +85,21 @@ createOrUpdateCategory category = do
                                   let categoryKey = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
                                   _ <- runDB $ update categoryKey [ Category_Name =. name
                                                                   , Category_Description =. description
+                                                                  , Category_Scope =. (readCategoryScope scope)
                                                                   , Category_ModifiedDate =. Just now
                                                                   ]
                                   return categoryKey
                                else do
                                   categoryKey <- runDB $ insert $ fromCategoryQL category now Nothing
                                   return categoryKey
-                response <- dbFetchCategoryById entityId
-                return response
+                return entityId
 
 -- CONVERTERS
 toCategoryQL :: Entity Category_ -> Category
 toCategoryQL (Entity categoryId category) = Category { categoryId = fromIntegral $ fromSqlKey categoryId
                                                      , name = category_Name
                                                      , description = category_Description
+                                                     , scope = T.pack $ show category_Scope
                                                      , createdDate = fromString $ show category_CreatedDate
                                                      , modifiedDate = m
                                                      }
@@ -95,6 +112,7 @@ toCategoryQL (Entity categoryId category) = Category { categoryId = fromIntegral
 fromCategoryQL :: CategoryArg -> UTCTime -> Maybe UTCTime -> Category_
 fromCategoryQL (CategoryArg {..}) cd md = Category_ { category_Name = name
                                                  , category_Description = description
+                                                 , category_Scope = (readCategoryScope scope)
                                                  , category_CreatedDate = cd
                                                  , category_ModifiedDate = md
                                                  }

@@ -71,18 +71,18 @@ Employee_ json sql=t_employee
     Primary employeeId
     hireDate UTCTime Maybe
     salary Double
-    employeeJobId EmployeeJob_Id
+    employeeCategoryId Category_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-EmployeeJob_ json sql=t_employee_job
-    Id sql=employee_job_id
-    tittle Text
-    description Text Maybe
-    createdDate UTCTime
-    modifiedDate UTCTime Maybe
-    deriving Typeable Show
+-- EmployeeJob_ json sql=t_employee_job
+--    Id sql=employee_job_id
+--    tittle Text
+--    description Text Maybe
+--    createdDate UTCTime
+--    modifiedDate UTCTime Maybe
+--    deriving Typeable Show
 
 Address_ json sql=t_address
     Id sql=address_id
@@ -104,6 +104,15 @@ ContactInfo_ json sql=t_contact_info
     contactType Text
     contact Text
     personId Person_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+Category_ sql=t_category
+    Id sql=category_id
+    name Text
+    description Text
+    scope CategoryScope
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -136,14 +145,6 @@ Inventory_ sql=t_inventory
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     UniqueInventoryName name
-    deriving Typeable Show
-
-Category_ json sql=t_category
-    Id sql=category_id
-    name Text
-    description Text
-    createdDate UTCTime
-    modifiedDate UTCTime Maybe
     deriving Typeable Show
 
 Unit_ json sql=t_unit
@@ -235,11 +236,12 @@ TaskActivity_ sql=t_task_activity
     rescheduled Bool
     taskId Task_Id
     taskTriggerId TaskTrigger_Id
-    eventTriggerId EventTrigger_Id Maybe
+    eventTriggerId Category_Id Maybe
     triggerDescription Text
     status EntityStatus
     maintenanceId Maintenance_Id
     equipmentId Item_Id
+    workOrderId WorkOrder_Id Maybe
     Foreign Equipment_ fkt_equipment equipmentId
     deriving Typeable Show
 
@@ -254,7 +256,7 @@ Task_ sql=t_task
 	  attribute2 Text Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
-    taskCategoryId TaskCategory_Id Maybe
+    taskCategoryId Category_Id Maybe
     maintenanceId Maintenance_Id
     deriving Typeable Show
 
@@ -265,7 +267,7 @@ SubTask_ sql=t_sub_task
 	  description Text Maybe
 	  mandatory Bool
 	  taskId Task_Id
-	  subTaskKindId SubTaskKind_Id Maybe
+	  subTaskCategoryId Category_Id Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -283,35 +285,35 @@ TaskTrigger_ sql=t_task_trigger
     value Text Maybe
     timeFrequency TimeFrequency Maybe
     unitId Unit_Id Maybe
-    eventTriggerId EventTrigger_Id Maybe
+    eventTriggerCategoryId Category_Id Maybe
     taskId Task_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-EventTrigger_ json sql=t_event_trigger
-    Id sql=event_trigger_id
-    name Text
-    description Text Maybe
-    createdDate UTCTime
-    modifiedDate UTCTime Maybe
-    deriving Typeable Show
+-- EventTrigger_ json sql=t_event_trigger
+--    Id sql=event_trigger_id
+--    name Text
+--    description Text Maybe
+--    createdDate UTCTime
+--    modifiedDate UTCTime Maybe
+--    deriving Typeable Show
 
-TaskCategory_ json sql=t_task_category
-    Id sql=task_category_id
-    name Text
-    description Text Maybe
-    createdDate UTCTime
-    modifiedDate UTCTime Maybe
-    deriving Typeable Show
+-- TaskCategory_ json sql=t_task_category
+--    Id sql=task_category_id
+--    name Text
+--    description Text Maybe
+--    createdDate UTCTime
+--    modifiedDate UTCTime Maybe
+--    deriving Typeable Show
 
-SubTaskKind_ json sql=t_sub_task_kind
-    Id sql=sub_task_kind_id
-    name Text
-    description Text Maybe
-    createdDate UTCTime
-    modifiedDate UTCTime Maybe
-    deriving Typeable Show
+-- SubTaskKind_ json sql=t_sub_task_kind
+--    Id sql=sub_task_kind_id
+--    name Text
+--    description Text Maybe
+--    createdDate UTCTime
+--    modifiedDate UTCTime Maybe
+--    deriving Typeable Show
 
 TaskResource_ sql=t_task_resource
     Id sql=task_resource_id
@@ -319,7 +321,7 @@ TaskResource_ sql=t_task_resource
 	  amount Int
 	  resourceType Text
 	  unitId Unit_Id
-	  employeeJobId EmployeeJob_Id Maybe
+	  employeeCategoryId Category_Id Maybe
     humanResourceId Person_Id Maybe
     inventoryResourceId Item_Id Maybe
 --    inventoryItem InventoryItem_Id Maybe
@@ -328,6 +330,51 @@ TaskResource_ sql=t_task_resource
     modifiedDate UTCTime Maybe
     Foreign Employee_ fkEmployee humanResourceId
     deriving Typeable Show
+
+-- WorkOrderDetail_ sql=t_work_order_detail
+--    Id sql=work_order_detail_id
+--    taskId Task_Id
+--    equipmentId Item_Id
+--    workOrderId WorkOrder_Id
+--    Foreign Equipment_ fkt_equipment equipmentId
+--    deriving Typeable Show
+
+WorkOrder_ sql=t_work_order
+    Id sql=work_order_id
+    workOrderStatus Text
+    estimateDuration Int
+    executionTime Int
+    workOrderPolicy Text
+    rate Int
+    totalCost Double
+    percentage Double
+    notes Text
+    generatedBy Person_Id
+    responsibleId Person_Id
+    parentId WorkOrder_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
+WorkOrderResource_ sql=t_work_order_resource
+    Id sql=work_order_resource_id
+    humanResourceId Person_Id Maybe
+    inventoryItemId InventoryItem_Id Maybe
+    workOrderId WorkOrder_Id
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    Foreign Employee_ fkEmployee humanResourceId
+    deriving Typeable Show
+
+-- InventoryResource_ sql=t_inventory_resource
+--    Id sql=inventory_resource_id
+--	  order Int
+--    resourceId Item_Id
+--    inventoryId Inventory_Id
+--    workOrderId WorkOrder_Id
+--    createdDate UTCTime
+--    modifiedDate UTCTime Maybe
+--    deriving Typeable Show
 
 -- User
 --     ident Text

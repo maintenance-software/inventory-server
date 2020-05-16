@@ -84,7 +84,7 @@ createOrUpdateTask maintenanceId task = do
                                                               , Task_DownTimeDuration =. downTimeDuration
                                                               , Task_Attribute1 =. attribute1
                                                               , Task_Attribute2 =. attribute2
-                                                              , Task_TaskCategoryId =. case taskCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::TaskCategory_Id)
+                                                              , Task_TaskCategoryId =. case taskCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
                                                               , Task_MaintenanceId =. maintenanceId
                                                               , Task_ModifiedDate =. Just now
                                                               ]
@@ -96,3 +96,17 @@ createOrUpdateTask maintenanceId task = do
                 taskTriggerIds <- saveTaskTriggers entityId taskTriggers
                 taskResourceIds <- saveTaskResources entityId taskResources
                 return entityId
+
+fromTaskQL :: Maintenance_Id -> TaskArg -> UTCTime -> Maybe UTCTime -> Task_
+fromTaskQL maintenanceId (TaskArg {..}) cd md = Task_ { task_Name = name
+                                        , task_Description = description
+                                        , task_Priority = priority
+                                        , task_Duration = duration
+                                        , task_DownTimeDuration = downTimeDuration
+                                        , task_Attribute1 = attribute1
+                                        , task_Attribute2 = attribute2
+                                        , task_TaskCategoryId = case taskCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
+                                        , task_MaintenanceId = maintenanceId
+                                        , task_CreatedDate = cd
+                                        , task_ModifiedDate = md
+                                        }

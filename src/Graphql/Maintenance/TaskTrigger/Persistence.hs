@@ -27,6 +27,7 @@ import qualified Data.Text as T
 import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Data.Time
+import Graphql.Category
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Maintenance.TaskTrigger.DataTypes
 import Graphql.Maintenance.SubTask.Persistence
@@ -79,7 +80,7 @@ createOrUpdateTaskTrigger taskId taskTrigger = do
                                                                      , TaskTrigger_Value =. value
                                                                      , TaskTrigger_TimeFrequency =. (case timeFrequency of Nothing -> Nothing; Just t -> Just $ readTimeFrequency t)
                                                                      , TaskTrigger_UnitId =. case unitId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Unit_Id)
-                                                                     , TaskTrigger_EventTriggerId =. case eventTriggerId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::EventTrigger_Id)
+                                                                     , TaskTrigger_EventTriggerCategoryId =. case eventTriggerCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
                                                                      , TaskTrigger_TaskId =. taskId
                                                                      , TaskTrigger_ModifiedDate =. Just now
                                                                      ]
@@ -101,7 +102,7 @@ fromTaskTriggerQL taskId (TaskTriggerArg {..}) cd md = TaskTrigger_ { taskTrigge
                                                                     , taskTrigger_Value = value
                                                                     , taskTrigger_TimeFrequency = (case timeFrequency of Nothing -> Nothing; Just t -> Just $ readTimeFrequency t)
                                                                     , taskTrigger_UnitId = case unitId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Unit_Id)
-                                                                    , taskTrigger_EventTriggerId = case eventTriggerId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::EventTrigger_Id)
+                                                                    , taskTrigger_EventTriggerCategoryId = case eventTriggerCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
                                                                     , taskTrigger_TaskId = taskId
                                                                     , taskTrigger_CreatedDate = cd
                                                                     , taskTrigger_ModifiedDate = md

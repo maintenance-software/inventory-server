@@ -19,7 +19,7 @@ import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg, EntityChangeStatusArg)
-import Graphql.Asset.Category
+import Graphql.Category
 import Graphql.Asset.Unit
 
 data Inventory o = Inventory { inventoryId :: Int

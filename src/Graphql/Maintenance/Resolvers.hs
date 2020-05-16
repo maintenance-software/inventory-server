@@ -30,7 +30,7 @@ import Graphql.Maintenance.Task.Persistence
 import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
-import Graphql.Maintenance.TaskTrigger.EventTrigger
+import Graphql.Category
 import Graphql.Maintenance.Task.DataTypes (Task(..))
 import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 --maintenanceResolver :: () -> Res e Handler Maintenances
@@ -42,8 +42,8 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
-                                          , eventTriggers = listEventTriggerResolver
-                                          , saveEventTrigger = saveEventTriggerResolver
+--                                          , eventTriggers = listEventTriggerResolver
+--                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
 
 --getMaintenanceByIdResolver :: GetEntityByIdArg -> Res e Handler (Maintenance Res)

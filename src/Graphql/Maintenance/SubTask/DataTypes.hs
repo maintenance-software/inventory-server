@@ -20,7 +20,7 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..))
 import Enums
 import Graphql.Utils
-import Graphql.Maintenance.SubTask.SubTaskKind
+import Graphql.Category
 
 data SubTask o = SubTask { subTaskId :: Int
                          , order :: Int
@@ -29,7 +29,7 @@ data SubTask o = SubTask { subTaskId :: Int
                    	     , mandatory :: Bool
                          , createdDate :: Text
                          , modifiedDate :: Maybe Text
-                   	     , subTaskKind :: Maybe(() -> o () Handler SubTaskKind)                   
+                   	     , subTaskCategory :: Maybe(() -> o () Handler Category)
                          } deriving (Generic, GQLType)
 
 data SubTaskArg = SubTaskArg { subTaskId :: Int
@@ -37,7 +37,7 @@ data SubTaskArg = SubTaskArg { subTaskId :: Int
                              , group :: Text
                              , description :: Maybe Text
                              , mandatory :: Bool
-                             , subTaskKindId :: Maybe Int
+                             , subTaskCategoryId :: Maybe Int
                              } deriving (Generic)
 
 instance GQLType SubTaskArg where

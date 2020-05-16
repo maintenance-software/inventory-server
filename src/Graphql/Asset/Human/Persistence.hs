@@ -111,7 +111,7 @@ createOrUpdateEmployee personId employee = do
                          do
                            _ <- runDB $ update employeeKey [ Employee_HireDate =. case hireDate of Nothing -> Nothing; Just hd -> Just (read $ show hd :: UTCTime)
                                                            , Employee_Salary =. realToFrac salary
-                                                           , Employee_EmployeeJobId =. (toSqlKey $ fromIntegral $ employeeJobId :: EmployeeJob_Id)
+                                                           , Employee_EmployeeCategoryId =. (toSqlKey $ fromIntegral $ employeeCategoryId :: Category_Id)
                                                            , Employee_ModifiedDate =. Just now
                                                            ]
                            return ()
@@ -124,7 +124,7 @@ fromEmployeeQL :: Person_Id -> EmployeeArg -> UTCTime -> Maybe UTCTime -> Employ
 fromEmployeeQL personId (EmployeeArg {..}) cd md = Employee_ { employee_EmployeeId = personId
                                                              , employee_HireDate = case hireDate of Nothing -> Nothing; Just hd -> Just (read $ show hd :: UTCTime)
                                                              , employee_Salary = realToFrac salary
-                                                             , employee_EmployeeJobId = (toSqlKey $ fromIntegral $ employeeJobId :: EmployeeJob_Id)
+                                                             , employee_EmployeeCategoryId = (toSqlKey $ fromIntegral $ employeeCategoryId :: Category_Id)
                                                              , employee_CreatedDate = cd
                                                              , employee_ModifiedDate = md
                                                              }

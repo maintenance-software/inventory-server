@@ -28,7 +28,7 @@ import Enums
 import Graphql.Utils
 import Graphql.Asset.Human.DataTypes
 import Graphql.Asset.Human.Persistence
-import Graphql.Asset.Human.EmployeeJob (getEmployeeJobByIdResolver_)
+import Graphql.Category
 import Graphql.Person (PersonArg(..), createOrUpdatePerson_, createOrUpdateAddress, createOrUpdateContactInfo, addressResolver_, contactInfoResolver_)
 
 --inventoryResolver :: () -> Res e Handler Inventories
@@ -98,7 +98,7 @@ toEmployeeQL personEntity employeeEntity = Employee { employeeId = fromIntegral 
                                                     , documentId = person_DocumentId
                                                     , hireDate = (case employee_HireDate of Nothing -> Nothing; Just hd -> Just $ fromString $ show hd)
                                                     , salary = realToFrac employee_Salary
-                                                    , employeeJob = getEmployeeJobByIdResolver_ employee_EmployeeJobId
+                                                    , employeeCategory = getCategoryByIdResolver_ employee_EmployeeCategoryId
                                                     , address = addressResolver_ personId
                                                     , contactInfo = contactInfoResolver_ personId
                                                     , createdDate = fromString $ show employee_CreatedDate

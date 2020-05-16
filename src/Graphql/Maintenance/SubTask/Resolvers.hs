@@ -25,7 +25,7 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
-import Graphql.Maintenance.SubTask.SubTaskKind
+import Graphql.Category
 import Graphql.Maintenance.SubTask.Persistence
 import Graphql.Maintenance.SubTask.DataTypes
 
@@ -47,7 +47,7 @@ toSubTaskQL (Entity subTaskId subTask) = SubTask { subTaskId = fromIntegral $ fr
                                                  , group = subTask_Group
                                                  , description = subTask_Description
                                                  , mandatory = subTask_Mandatory
-                                                 , subTaskKind = case subTask_SubTaskKindId of Nothing -> Nothing; Just c -> Just $ getSubTaskKindByIdResolver_ c
+                                                 , subTaskCategory = case subTask_SubTaskCategoryId of Nothing -> Nothing; Just c -> Just $ getCategoryByIdResolver_ c
                                                  , createdDate = fromString $ show subTask_CreatedDate
                                                  , modifiedDate = m
                                                  }

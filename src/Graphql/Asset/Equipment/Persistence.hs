@@ -33,7 +33,7 @@ import Graphql.Utils
 import Graphql.Asset.DataTypes
 import Data.Time ()
 import Graphql.Asset.Item.Resolvers
-import Graphql.Asset.Category
+import Graphql.Category
 import Graphql.Asset.Equipment.DataTypes
 
 getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []

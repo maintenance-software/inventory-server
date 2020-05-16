@@ -30,7 +30,7 @@ import Graphql.Asset.DataTypes (Item(..))
 import Graphql.Asset.Item.Resolvers (getItemByIdResolver_)
 import Graphql.Asset.Human.DataTypes (Employee(..))
 import Graphql.Asset.Human.Resolvers (getEmployeeByIdResolver_)
-import Graphql.Asset.Human.EmployeeJob (EmployeeJob(..), getEmployeeJobByIdResolver_)
+import Graphql.Category
 import Graphql.Asset.Unit (Unit(..), getUnitByIdResolver_)
 import Data.Time
 
@@ -39,7 +39,7 @@ data TaskResource o = TaskResource { taskResourceId :: Int
                                    , amount :: Int
                                    , resourceType :: Text
                                    , unit :: () -> o () Handler Unit
-                                   , employeeJob :: Maybe(() -> o () Handler EmployeeJob)
+                                   , employeeCategory :: Maybe(() -> o () Handler Category)
                                    , humanResource :: Maybe(() -> o () Handler (Employee o))
                                    , inventoryResource :: Maybe(() -> o () Handler (Item o))
                                    , createdDate :: Text
@@ -51,7 +51,7 @@ data TaskResourceArg = TaskResourceArg { taskResourceId :: Int
                                        , amount :: Int
                                        , resourceType :: Text
                                        , unitId :: Int
-                                       , employeeJobId :: Maybe Int
+                                       , employeeCategoryId :: Maybe Int
                                        , humanResourceId :: Maybe Int
                                        , inventoryResourceId :: Maybe Int
                                        } deriving (Generic)
@@ -90,7 +90,7 @@ createOrUpdateTaskResource taskId taskResourceArg = do
                                                                                 , TaskResource_Amount =. amount
                                                                                 , TaskResource_ResourceType =. resourceType
                                                                                 , TaskResource_UnitId =. ((toSqlKey $ fromIntegral $ unitId)::Unit_Id)
-                                                                                , TaskResource_EmployeeJobId =. (case employeeJobId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral $ k)::EmployeeJob_Id))
+                                                                                , TaskResource_EmployeeCategoryId =. (case employeeCategoryId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral $ k)::Category_Id))
                                                                                 , TaskResource_HumanResourceId =. (case humanResourceId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral $ k)::Person_Id))
                                                                                 , TaskResource_InventoryResourceId =. (case inventoryResourceId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral k)::Item_Id))
                                                                                 , TaskResource_TaskId =. taskId
@@ -108,7 +108,7 @@ toTaskResourceQL (Entity taskResourceId taskResourceArg) = TaskResource { taskRe
                                                                         , amount = taskResource_Amount
                                                                         , resourceType = taskResource_ResourceType
                                                                         , unit = getUnitByIdResolver_ taskResource_UnitId
-                                                                        , employeeJob = (case taskResource_EmployeeJobId of Nothing ->Nothing; Just k -> Just $ getEmployeeJobByIdResolver_ k)
+                                                                        , employeeCategory = (case taskResource_EmployeeCategoryId of Nothing ->Nothing; Just k -> Just $ getCategoryByIdResolver_ k)
                                                                         , humanResource = (case taskResource_HumanResourceId of Nothing ->Nothing; Just k -> Just $ getEmployeeByIdResolver_ k)
                                                                         , inventoryResource = (case taskResource_InventoryResourceId of Nothing ->Nothing; Just k -> Just $ getItemByIdResolver_ k)
                                                                         , createdDate = fromString $ show taskResource_CreatedDate
@@ -125,7 +125,7 @@ fromTaskResourceQL taskId (TaskResourceArg {..}) cd md = TaskResource_ { taskRes
                                                                 , taskResource_Amount = amount
                                                                 , taskResource_ResourceType = resourceType
                                                                 , taskResource_UnitId = (toSqlKey $ fromIntegral $ unitId)::Unit_Id
-                                                                , taskResource_EmployeeJobId = (case employeeJobId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral $ k)::EmployeeJob_Id))
+                                                                , taskResource_EmployeeCategoryId = (case employeeCategoryId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral $ k)::Category_Id))
                                                                 , taskResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral $ k)::Person_Id))
                                                                 , taskResource_InventoryResourceId = (case inventoryResourceId of Nothing -> Nothing; Just k -> Just ((toSqlKey $ fromIntegral k)::Item_Id))
                                                                 , taskResource_TaskId = taskId

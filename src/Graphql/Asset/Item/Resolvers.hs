@@ -30,7 +30,7 @@ import Prelude as P
 import Graphql.Utils
 import Enums
 import Data.Time
-import Graphql.Asset.Category
+import Graphql.Category
 import Graphql.Asset.DataTypes
 import Graphql.Asset.InventoryItem.Resolvers
 import Graphql.Asset.Unit
@@ -50,10 +50,10 @@ getItemByIdResolver_ itemId _ = lift $ do
                                          item <- runDB $ getJustEntity itemId
                                          return $ toItemQL item
 
-categoryResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Category_Id -> () -> o () Handler Category
-categoryResolver_ categoryId arg = lift $ do
-                                      category <- dbFetchCategoryById categoryId
-                                      return category
+--categoryResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Category_Id -> () -> o () Handler Category
+--categoryResolver_ categoryId arg = lift $ do
+--                                      category <- dbFetchCategoryById categoryId
+--                                      return category
 
 --itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
 itemsPageResolver page = lift $ do
@@ -132,7 +132,7 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                      , notes = item_Notes
                                      , status = T.pack $ show item_Status
                                      , images = item_Images
-                                     , category = case item_CategoryId of Nothing -> Nothing; Just c -> Just $ categoryResolver_ c
+                                     , category = case item_CategoryId of Nothing -> Nothing; Just c -> Just $ getCategoryByIdResolver_ c
                                      , unit = case item_UnitId of Nothing -> Nothing; Just u -> Just $ getUnitByIdResolver_ u
                                      , inventoryItems = inventoryItemsItemPageResolver_ itemId
                                      , createdDate = fromString $ show item_CreatedDate

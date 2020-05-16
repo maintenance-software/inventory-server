@@ -26,7 +26,6 @@ import qualified Data.Text as T
 import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Data.Time
-import Graphql.Maintenance.SubTask.SubTaskKind
 import Graphql.Maintenance.SubTask.DataTypes
 
 subTaskQuery :: Task_Id -> Handler [Entity SubTask_]
@@ -56,7 +55,7 @@ createOrUpdateSubTask taskId subTask = do
                                                                  , SubTask_Group =. group
                                                                  , SubTask_Description =. description
                                                                  , SubTask_Mandatory =. mandatory
-                                                                 , SubTask_SubTaskKindId  =. case subTaskKindId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::SubTaskKind_Id)
+                                                                 , SubTask_SubTaskCategoryId  =. case subTaskCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
                                                                  , SubTask_TaskId =. taskId
                                                                  , SubTask_ModifiedDate =. Just now
                                                                  ]
@@ -71,7 +70,7 @@ fromTaskQL taskId (SubTaskArg {..}) cd md = SubTask_ { subTask_Order = order
                                                      , subTask_Group = group
                                                      , subTask_Description = description
                                                      , subTask_Mandatory = mandatory
-                                                     , subTask_SubTaskKindId  = case subTaskKindId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::SubTaskKind_Id)
+                                                     , subTask_SubTaskCategoryId  = case subTaskCategoryId of Nothing -> Nothing; Just c -> Just ((toSqlKey $ fromIntegral $ c)::Category_Id)
                                                      , subTask_TaskId = taskId
                                                      , subTask_CreatedDate = cd
                                                      , subTask_ModifiedDate = md

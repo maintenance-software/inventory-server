@@ -21,7 +21,7 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Enums
 import Data.Time
-import Graphql.Maintenance.TaskTrigger.EventTrigger
+import Graphql.Category
 import Graphql.Asset.Unit
 
 data TaskTrigger o = TaskTrigger { taskTriggerId :: Int
@@ -36,7 +36,7 @@ data TaskTrigger o = TaskTrigger { taskTriggerId :: Int
                                  , value :: Maybe Text
                                  , timeFrequency :: Maybe Text
                                  , unit :: Maybe(() -> o () Handler Unit)
-                                 , eventTrigger :: Maybe(() -> o () Handler EventTrigger)
+                                 , eventTriggerCategory :: Maybe(() -> o () Handler Category)
                                  , createdDate :: Text
                                  , modifiedDate :: Maybe Text
                                  } deriving (Generic, GQLType)
@@ -53,7 +53,7 @@ data TaskTriggerArg = TaskTriggerArg { taskTriggerId :: Int
                                      , value :: Maybe Text
                                      , timeFrequency :: Maybe Text
                                      , unitId :: Maybe Int
-                                     , eventTriggerId :: Maybe Int
+                                     , eventTriggerCategoryId :: Maybe Int
                                      } deriving (Generic)
 
 instance GQLType TaskTriggerArg where

@@ -31,7 +31,7 @@ import qualified Data.Text as T
 import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Data.Time
-import Graphql.Maintenance.Task.TaskCategory
+import Graphql.Category
 import Graphql.Maintenance.SubTask.Resolvers
 import Graphql.Maintenance.TaskTrigger.Resolvers
 import Graphql.Maintenance.Task.DataTypes
@@ -60,7 +60,7 @@ toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , downTimeDuration = task_DownTimeDuration
                                      , attribute1 = task_Attribute1
                                      , attribute2 = task_Attribute2
-                                     , taskCategory = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getTaskCategoryByIdResolver_ c
+                                     , taskCategory = case task_TaskCategoryId of Nothing -> Nothing; Just c -> Just $ getCategoryByIdResolver_ c
                                      , subTasks = subTaskResolver_ taskId
                                      , taskTriggers = taskTriggerResolver_ taskId
                                      , taskResources = fetchTaskResourceResolver_ taskId
