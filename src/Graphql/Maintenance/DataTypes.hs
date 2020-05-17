@@ -41,6 +41,7 @@ data TaskActivity = TaskActivity { taskActivityId :: Int
                                  , rescheduled :: Bool
                                  , status :: Text
                                  , assetId :: Int
+                                 , assetCode :: Text
                                  , assetName :: Text
                                  , maintenanceId :: Maybe Int
                                  , maintenanceName :: Maybe Text

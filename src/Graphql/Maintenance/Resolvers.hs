@@ -169,6 +169,7 @@ toTaskActivityQL item equipment taskActivity task trigger maintenance = TaskActi
                                                                                      , incidentDate = case taskActivity_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
                                                                                      , status = T.pack $ show taskActivity_Status
                                                                                      , assetId = fromIntegral $ fromSqlKey itemId
+                                                                                     , assetCode = item_Code
                                                                                      , assetName = item_Name
                                                                                      , maintenanceId = maintenanceId
                                                                                      , maintenanceName = maintenanceName
