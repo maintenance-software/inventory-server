@@ -79,6 +79,7 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
+                                   , equipmentTasks :: GetEntityByIdArg -> o () Handler [Task o]
 --                                   , eventTriggers :: () -> o () Handler [EventTrigger]
 --                                   , saveEventTrigger :: EventTriggerArg -> o () Handler EventTrigger
                                    } deriving (Generic, GQLType)

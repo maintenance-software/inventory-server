@@ -174,6 +174,7 @@ fromEquipmentQL itemEntityId (EquipmentArg {..}) cd md = Equipment_ { equipment_
                                                                     , equipment_OutOfService = outOfService
                                                                     , equipment_PurchaseDate = case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ show pd :: UTCTime)
                                                                     , equipment_ParentId = case parentId of Nothing -> Nothing; Just p -> Just (toSqlKey $ fromIntegral $ p :: Item_Id)
+                                                                    , equipment_MaintenanceId = Nothing
                                                                     , equipment_CreatedDate = cd
                                                                     , equipment_ModifiedDate = md
                                                                     }

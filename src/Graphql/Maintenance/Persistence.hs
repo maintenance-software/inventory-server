@@ -111,11 +111,12 @@ equipmentQuery maintenanceId =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        let subquery =
-                                              E.from $ \taskActivity -> do
-                                              E.where_ (taskActivity ^. TaskActivity_MaintenanceId E.==. E.val (Just maintenanceId))
-                                              return (taskActivity ^. TaskActivity_EquipmentId)
-                                        E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+--                                        let subquery =
+--                                              E.from $ \taskActivity -> do
+--                                              E.where_ (taskActivity ^. TaskActivity_MaintenanceId E.==. E.val (Just maintenanceId))
+--                                              return (taskActivity ^. TaskActivity_EquipmentId)
+--                                        E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+                                        E.where_ (equipment ^. Equipment_MaintenanceId E.==. E.val (Just maintenanceId))
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         return (equipment, item)
                       return result
@@ -126,12 +127,13 @@ availableEquipmentQueryCount page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        let subquery =
-                                              E.from $ \taskActivity -> do
-                                              E.where_ (taskActivity ^. TaskActivity_Status E.!=. E.val DELETED)
-                                              return (taskActivity ^. TaskActivity_EquipmentId)
+--                                        let subquery =
+--                                              E.from $ \taskActivity -> do
+--                                              E.where_ (taskActivity ^. TaskActivity_Status E.!=. E.val DELETED)
+--                                              return (taskActivity ^. TaskActivity_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
-                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
+--                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
+                                        E.where_ (filters E.&&. E.isNothing (equipment ^. Equipment_MaintenanceId))
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
@@ -237,10 +239,13 @@ addEventTaskActivityPersistent TaskActivityEventArg {..} = do
                                                         , taskActivity_CreatedDate = now
                                                         }
                     _ <- runDB $ insert $ newTaskActivity
+                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
+                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
 addDateTaskActivityPersistent :: TaskActivityDateArg -> Handler Bool
 addDateTaskActivityPersistent TaskActivityDateArg {..} = do
+                    now <- liftIO getCurrentTime
                     let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
                     let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
                     let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
@@ -248,6 +253,8 @@ addDateTaskActivityPersistent TaskActivityDateArg {..} = do
                     let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
                     triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_TriggerType ==. "DATE"] []
                     _ <- createTaskActivityForDate maintenanceEntityId assetEntityId maintenanceUtcDate triggers
+                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
+                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. Just maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
 createTaskActivityForDate :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [TaskActivity_Id]

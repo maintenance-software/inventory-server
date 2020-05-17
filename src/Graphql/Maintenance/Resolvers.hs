@@ -38,6 +38,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
                                           , taskActivities = taskActivityPageResolver
+                                          , equipmentTasks = equipmentTasksResolver
                                           , addTaskActivityDate = addTaskActivityDateResolver
                                           , addTaskActivityEvent = addTaskActivityEventResolver
                                           , saveMaintenance = saveMaintenanceResolver
@@ -118,6 +119,16 @@ equipmentResolver_ maintenanceId _ = lift $ do
                               itemEquipments <- equipmentQuery maintenanceId
                               let result = P.map (\(e, i) -> toEquipmentQL e i) itemEquipments
                               return result
+
+equipmentTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => GetEntityByIdArg -> t Handler [Task o]
+equipmentTasksResolver GetEntityByIdArg {..} = lift $ do
+                         let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
+                         let equipmentKey = Equipment_Key {unEquipment_Key  = itemId}
+                         Entity _ Equipment_{..} <- runDB $ getJustEntity equipmentKey
+                         entityTasks <- case equipment_MaintenanceId of
+                                    Nothing -> pure []
+                                    Just maintenanceId -> taskQuery maintenanceId
+                         return $ P.map (\t -> toTaskQL t) entityTasks
 
 --saveMaintenanceResolver :: MaintenanceArg -> MutRes e Handler (Maintenance MutRes)
 saveMaintenanceResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceArg -> t Handler (Maintenance o)

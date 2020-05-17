@@ -216,6 +216,7 @@ Equipment_ sql=t_equipment
 	  outOfService Bool
 	  purchaseDate UTCTime Maybe
 	  parentId Item_Id Maybe
+	  maintenanceId Maintenance_Id Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
