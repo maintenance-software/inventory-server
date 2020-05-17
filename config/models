@@ -229,22 +229,6 @@ Maintenance_ sql=t_maintenance
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
-TaskActivity_ sql=t_task_activity
-    Id sql=task_activity_id
-    scheduledDate UTCTime Maybe
-    calculatedDate UTCTime
-    rescheduled Bool
-    taskId Task_Id
-    taskTriggerId TaskTrigger_Id
-    eventTriggerId Category_Id Maybe
-    triggerDescription Text
-    status EntityStatus
-    maintenanceId Maintenance_Id
-    equipmentId Item_Id
-    workOrderId WorkOrder_Id Maybe
-    Foreign Equipment_ fkt_equipment equipmentId
-    deriving Typeable Show
-
 Task_ sql=t_task
     Id sql=task_id
 	  name Text
@@ -257,7 +241,7 @@ Task_ sql=t_task
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     taskCategoryId Category_Id Maybe
-    maintenanceId Maintenance_Id
+    maintenanceId Maintenance_Id Maybe
     deriving Typeable Show
 
 SubTask_ sql=t_sub_task
@@ -274,7 +258,7 @@ SubTask_ sql=t_sub_task
 
 TaskTrigger_ sql=t_task_trigger
     Id sql=task_trigger_id
-    kind Text
+    triggerType Text
     description Text
     fixedSchedule Bool Maybe
     frequency Int Maybe
@@ -322,13 +306,13 @@ TaskResource_ sql=t_task_resource
 	  resourceType Text
 	  unitId Unit_Id
 	  employeeCategoryId Category_Id Maybe
-    humanResourceId Person_Id Maybe
+--    humanResourceId Person_Id Maybe
     inventoryResourceId Item_Id Maybe
 --    inventoryItem InventoryItem_Id Maybe
     taskId Task_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
-    Foreign Employee_ fkEmployee humanResourceId
+--    Foreign Employee_ fkEmployee humanResourceId
     deriving Typeable Show
 
 -- WorkOrderDetail_ sql=t_work_order_detail
@@ -339,19 +323,39 @@ TaskResource_ sql=t_task_resource
 --    Foreign Equipment_ fkt_equipment equipmentId
 --    deriving Typeable Show
 
+TaskActivity_ sql=t_task_activity
+    Id sql=task_activity_id
+    scheduledDate UTCTime Maybe
+    calculatedDate UTCTime
+    rescheduled Bool
+    taskId Task_Id
+    taskTriggerId TaskTrigger_Id
+    reportedById Person_Id Maybe
+    taskType Text
+    status EntityStatus
+    maintenanceId Maintenance_Id Maybe
+    equipmentId Item_Id
+    workOrderId WorkOrder_Id Maybe
+    Foreign Equipment_ fkt_equipment equipmentId
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show
+
 WorkOrder_ sql=t_work_order
     Id sql=work_order_id
     workOrderStatus Text
     estimateDuration Int
-    executionTime Int
+    executionDuration Int
     workOrderPolicy Text
     rate Int
     totalCost Double
     percentage Double
     notes Text
-    generatedBy Person_Id
+    generatedById Person_Id
     responsibleId Person_Id
-    parentId WorkOrder_Id
+    canceledById Person_Id
+    parentId WorkOrder_Id Maybe
+    closeDate UTCTime Maybe
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -363,7 +367,7 @@ WorkOrderResource_ sql=t_work_order_resource
     workOrderId WorkOrder_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
-    Foreign Employee_ fkEmployee humanResourceId
+--    Foreign Employee_ fkEmployee humanResourceId
     deriving Typeable Show
 
 -- InventoryResource_ sql=t_inventory_resource

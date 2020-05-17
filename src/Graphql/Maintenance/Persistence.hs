@@ -112,7 +112,7 @@ equipmentQuery maintenanceId =  do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                         let subquery =
                                               E.from $ \taskActivity -> do
-                                              E.where_ (taskActivity ^. TaskActivity_MaintenanceId E.==. E.val maintenanceId)
+                                              E.where_ (taskActivity ^. TaskActivity_MaintenanceId E.==. E.val (Just maintenanceId))
                                               return (taskActivity ^. TaskActivity_EquipmentId)
                                         E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
@@ -160,31 +160,33 @@ taskActivityQueryCount :: PageArg -> Handler Int
 taskActivityQueryCount page =  do
                       res  <- runDB
                                    $ E.select
-                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` maintenance `E.InnerJoin` task) -> do
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger` E.LeftOuterJoin` maintenance) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
                                         E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
-                                        E.on $ taskActivity ^. TaskActivity_MaintenanceId E.==. maintenance ^. Maintenance_Id
                                         E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
+                                        E.on $ taskActivity ^. TaskActivity_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
+                                        E.on $ (taskActivity ^. TaskActivity_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
-taskActivityQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity TaskActivity_, Entity Maintenance_, Entity Task_  )]
+taskActivityQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity TaskActivity_, Entity Task_, Entity TaskTrigger_, Maybe (Entity Maintenance_))]
 taskActivityQuery page =  do
                       result <- runDB
                                    $ E.select
-                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` maintenance `E.InnerJoin` task) -> do
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger` E.LeftOuterJoin` maintenance) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
                                         E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
-                                        E.on $ taskActivity ^. TaskActivity_MaintenanceId E.==. maintenance ^. Maintenance_Id
                                         E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
+                                        E.on $ taskActivity ^. TaskActivity_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
+                                        E.on $ (taskActivity ^. TaskActivity_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
-                                        return (item, equipment, taskActivity, maintenance, task)
+                                        return (item, equipment, taskActivity, task, trigger, maintenance)
                       return result
                       where
                         PageArg {..} = page
@@ -216,14 +218,15 @@ addDateTaskActivityPersistent TaskActivityDateArg {..} = do
                     let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
                     tasks <- taskQuery maintenanceEntityId
                     let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
-                    triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_Kind ==. "DATE"] []
-                    _ <- createTaskActivityForData maintenanceEntityId assetEntityId maintenanceUtcDate triggers
+                    triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_TriggerType ==. "DATE"] []
+                    _ <- createTaskActivityForDate maintenanceEntityId assetEntityId maintenanceUtcDate triggers
                     return True
 
-createTaskActivityForData :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [TaskActivity_Id]
-createTaskActivityForData _ _ _ []  = pure []
-createTaskActivityForData maintenanceId assetId maintenanceUtcDate (h:hs) = do
-                    UTCTime today _ <- liftIO getCurrentTime
+createTaskActivityForDate :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [TaskActivity_Id]
+createTaskActivityForDate _ _ _ []  = pure []
+createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
+                    now <- liftIO getCurrentTime
+                    let UTCTime today _ = now
                     let (a, b, c) = toWeekDate today
                     let (x, y, z) = toGregorian today
                     let firstDayOfCurrentWeek = fromWeekDate a b 1
@@ -245,15 +248,17 @@ createTaskActivityForData maintenanceId assetId maintenanceUtcDate (h:hs) = do
                                                         , taskActivity_Rescheduled = False
                                                         , taskActivity_TaskId = taskTrigger_TaskId
                                                         , taskActivity_TaskTriggerId = taskTriggerId
-                                                        , taskActivity_EventTriggerId = Nothing
-                                                        , taskActivity_Status = PENDING
-                                                        , taskActivity_MaintenanceId = maintenanceId
+                                                        , taskActivity_Status = ACTIVE
+                                                        , taskActivity_TaskType = "PLAN"
+                                                        , taskActivity_MaintenanceId = (Just maintenanceId)
                                                         , taskActivity_EquipmentId = assetId
-                                                        , taskActivity_TriggerDescription = taskTrigger_Kind
                                                         , taskActivity_WorkOrderId = Nothing
+                                                        , taskActivity_ReportedById = Nothing
+                                                        , taskActivity_ModifiedDate = Nothing
+                                                        , taskActivity_CreatedDate = now
                                                         }
                     taskActivityEntityId <- runDB $ insert $ newTaskActivity
-                    taskActivityEntityIds <- createTaskActivityForData maintenanceId assetId maintenanceUtcDate hs
+                    taskActivityEntityIds <- createTaskActivityForDate maintenanceId assetId maintenanceUtcDate hs
                     return (taskActivityEntityId:taskActivityEntityIds)
 
 fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_

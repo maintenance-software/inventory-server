@@ -19,6 +19,7 @@ import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (GetEntityByIdArg, Page, PageArg)
+import Graphql.Person
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
 import Graphql.Category
@@ -40,21 +41,39 @@ data TaskActivity = TaskActivity { taskActivityId :: Int
                                  , status :: Text
                                  , assetId :: Int
                                  , assetName :: Text
-                                 , maintenanceId :: Int
-                                 , maintenanceName :: Text
+                                 , maintenanceId :: Maybe Int
+                                 , maintenanceName :: Maybe Text
                                  , taskId :: Int
                                  , taskName :: Text
                                  , taskPriority :: Int
                                  , taskTriggerId :: Int
                                  , triggerDescription :: Text
+                                 , taskType :: Text
+                                 , createdDate :: Text
                                  } deriving (Generic, GQLType)
+
+data WorkOrder o = WorkOrder { workOrderId :: Int
+                             , workOrderStatus :: Text
+                             , estimateDuration :: Int
+                             , executionDuration :: Int
+                             , workOrderPolicy :: Text
+                             , rate :: Int
+                             , totalCost :: Double
+                             , percentage :: Double
+                             , notes :: Text
+                             , generatedBy :: () -> o () Handler (Person o)
+                             , responsible :: () -> o () Handler (Person o)
+                             , parent :: () -> o () Handler (WorkOrder o)
+                             , createdDate :: Text
+                             , modifiedDate :: Maybe Text
+                             } deriving (Generic, GQLType)
 
 data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
                                    , taskActivities :: PageArg -> o () Handler (Page TaskActivity)
                                    , addTaskActivityDate :: TaskActivityDateArg -> o () Handler Bool
---                                   , addIncidentActivity :: IncidentActivityArg -> o () Handler Int
+--                                   , addTaskActivityEvent :: IncidentActivityArg -> o () Handler Bool
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
@@ -76,3 +95,9 @@ data TaskActivityDateArg = TaskActivityDateArg { lastMaintenanceDate :: Text
                                                , assetId :: Int
                                                , maintenanceId :: Int
                                                } deriving (Generic)
+
+--data TaskActivityDateArg = TaskActivityDateArg { lastMaintenanceDate :: Text
+--                                               , assetId :: Int
+--                                               , taskId :: Int
+--                                               , reportedById :: Int
+--                                               } deriving (Generic)

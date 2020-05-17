@@ -69,7 +69,7 @@ createOrUpdateTaskTrigger taskId taskTrigger = do
                 entityId <- if taskTriggerId > 0 then
                                 do
                                   let taskTriggerKey = (toSqlKey $ fromIntegral $ taskTriggerId)::TaskTrigger_Id
-                                  _ <- runDB $ update taskTriggerKey [ TaskTrigger_Kind =. kind
+                                  _ <- runDB $ update taskTriggerKey [ TaskTrigger_TriggerType =. triggerType
                                                                      , TaskTrigger_Description =. description
                                                                      , TaskTrigger_FixedSchedule =. fixedSchedule
                                                                      , TaskTrigger_Frequency =. frequency
@@ -91,7 +91,7 @@ createOrUpdateTaskTrigger taskId taskTrigger = do
                 return entityId
 
 fromTaskTriggerQL :: Task_Id -> TaskTriggerArg -> UTCTime -> Maybe UTCTime -> TaskTrigger_
-fromTaskTriggerQL taskId (TaskTriggerArg {..}) cd md = TaskTrigger_ { taskTrigger_Kind = kind
+fromTaskTriggerQL taskId (TaskTriggerArg {..}) cd md = TaskTrigger_ { taskTrigger_TriggerType = triggerType
                                                                     , taskTrigger_Description = description
                                                                     , taskTrigger_FixedSchedule = fixedSchedule
                                                                     , taskTrigger_Frequency = frequency

@@ -25,7 +25,7 @@ import Graphql.Category
 import Graphql.Asset.Unit
 
 data TaskTrigger o = TaskTrigger { taskTriggerId :: Int
-                                 , kind :: Text
+                                 , triggerType :: Text
                                  , description :: Text
                                  , fixedSchedule :: Maybe Bool
                                  , frequency :: Maybe Int
@@ -42,7 +42,7 @@ data TaskTrigger o = TaskTrigger { taskTriggerId :: Int
                                  } deriving (Generic, GQLType)
 
 data TaskTriggerArg = TaskTriggerArg { taskTriggerId :: Int
-                                     , kind :: Text
+                                     , triggerType :: Text
                                      , description :: Text
                                      , fixedSchedule :: Maybe Bool
                                      , frequency :: Maybe Int

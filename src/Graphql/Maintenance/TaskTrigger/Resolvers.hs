@@ -45,7 +45,7 @@ getTaskTriggerByIdResolver GetEntityByIdArg {..} = lift $ do
 --toTaskTriggerQL :: Entity TaskTrigger_ -> TaskTrigger
 toTaskTriggerQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity TaskTrigger_ -> TaskTrigger o
 toTaskTriggerQL (Entity taskTriggerId taskTrigger) = TaskTrigger { taskTriggerId = fromIntegral $ fromSqlKey taskTriggerId
-                                                                 , kind = taskTrigger_Kind
+                                                                 , triggerType = taskTrigger_TriggerType
                                                                  , description = taskTrigger_Description
                                                                  , fixedSchedule = taskTrigger_FixedSchedule
                                                                  , frequency = taskTrigger_Frequency

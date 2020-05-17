@@ -98,7 +98,7 @@ availableEquipmentPageResolver page = lift $ do
 taskActivityPageResolver page = lift $ do
                         countItems <- taskActivityQueryCount page
                         queryResult <- taskActivityQuery page
-                        let result = P.map (\ (i, e, ta, m, t) -> toTaskActivityQL i e ta m t) queryResult
+                        let result = P.map (\ (i, e, ta, t, tt, m) -> toTaskActivityQL i e ta t tt m) queryResult
                         return Page { totalCount = countItems
                                     , content = result
                                     , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
@@ -128,7 +128,7 @@ saveMaintenanceResolver arg = lift $ do
 createUpdateTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceTaskArg -> t Handler [Task o]
 createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
                          let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
-                         taskIds <- saveTasks entityId tasks
+                         taskIds <- saveTasks (Just entityId) tasks
                          entityTasks <- getTaskByIds taskIds
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
@@ -155,28 +155,33 @@ toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
 
-toTaskActivityQL :: Entity Item_ -> Entity Equipment_ -> Entity TaskActivity_ -> Entity Maintenance_ -> Entity Task_ -> TaskActivity
-toTaskActivityQL item equipment taskActivity maintenance task = TaskActivity { taskActivityId = fromIntegral $ fromSqlKey taskActivityId
-                                                                             , scheduledDate = case taskActivity_ScheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
-                                                                             , calculatedDate = fromString $ show taskActivity_CalculatedDate
-                                                                             , rescheduled = taskActivity_Rescheduled
-                                                                             , status = T.pack $ show taskActivity_Status
-                                                                             , assetId = fromIntegral $ fromSqlKey itemId
-                                                                             , assetName = item_Name
-                                                                             , maintenanceId = fromIntegral $ fromSqlKey maintenanceId
-                                                                             , maintenanceName = maintenance_Name
-                                                                             , taskId = fromIntegral $ fromSqlKey taskId
-                                                                             , taskName = task_Name
-                                                                             , taskPriority = task_Priority
-                                                                             , taskTriggerId = fromIntegral $ fromSqlKey taskActivity_TaskTriggerId
-                                                                             , triggerDescription = taskActivity_TriggerDescription
-                                                                             }
+toTaskActivityQL :: Entity Item_ -> Entity Equipment_ -> Entity TaskActivity_ -> Entity Task_ -> Entity TaskTrigger_ -> Maybe (Entity Maintenance_) -> TaskActivity
+toTaskActivityQL item equipment taskActivity task trigger maintenance = TaskActivity { taskActivityId = fromIntegral $ fromSqlKey taskActivityId
+                                                                                     , scheduledDate = case taskActivity_ScheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                                                     , calculatedDate = fromString $ show taskActivity_CalculatedDate
+                                                                                     , rescheduled = taskActivity_Rescheduled
+                                                                                     , status = T.pack $ show taskActivity_Status
+                                                                                     , assetId = fromIntegral $ fromSqlKey itemId
+                                                                                     , assetName = item_Name
+                                                                                     , maintenanceId = maintenanceId
+                                                                                     , maintenanceName = maintenanceName
+                                                                                     , taskId = fromIntegral $ fromSqlKey taskId
+                                                                                     , taskName = task_Name
+                                                                                     , taskPriority = task_Priority
+                                                                                     , taskTriggerId = fromIntegral $ fromSqlKey triggerId
+                                                                                     , triggerDescription = taskTrigger_TriggerType
+                                                                                     , taskType = taskActivity_TaskType
+                                                                                     , createdDate = T.pack $ show taskActivity_CreatedDate
+                                                                                     }
                                           where
                                             Entity itemId (Item_ {..}) = item
                                             Entity _ (Equipment_ {..}) = equipment
                                             Entity taskActivityId (TaskActivity_ {..}) = taskActivity
-                                            Entity maintenanceId (Maintenance_ {..}) = maintenance
+--                                            Entity maintenanceId (Maintenance_ {..}) = maintenance
                                             Entity taskId (Task_ {..}) = task
+                                            Entity triggerId (TaskTrigger_ {..}) = trigger
+                                            maintenanceName = (case maintenance of Nothing -> Nothing; Just (Entity _ (Maintenance_ {..})) -> Just maintenance_Name)
+                                            maintenanceId = (case maintenance of Nothing -> Nothing; Just (Entity maintenanceId _) -> Just $ fromIntegral $ fromSqlKey maintenanceId)
 
 {-
 query {

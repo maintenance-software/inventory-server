@@ -50,7 +50,7 @@ taskQuery maintenanceId =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \task -> do
-                                        E.where_ (task ^. Task_MaintenanceId E.==. E.val maintenanceId)
+                                        E.where_ (task ^. Task_MaintenanceId E.==. E.val (Just maintenanceId))
                                         return task
                       return result
 
@@ -97,7 +97,7 @@ createOrUpdateTask maintenanceId task = do
                 taskResourceIds <- saveTaskResources entityId taskResources
                 return entityId
 
-fromTaskQL :: Maintenance_Id -> TaskArg -> UTCTime -> Maybe UTCTime -> Task_
+fromTaskQL :: Maybe Maintenance_Id -> TaskArg -> UTCTime -> Maybe UTCTime -> Task_
 fromTaskQL maintenanceId (TaskArg {..}) cd md = Task_ { task_Name = name
                                         , task_Description = description
                                         , task_Priority = priority
