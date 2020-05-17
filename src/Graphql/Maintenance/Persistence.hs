@@ -24,6 +24,7 @@ module Graphql.Maintenance.Persistence (
       , taskActivityQueryCount
       , taskActivityQuery
       , addDateTaskActivityPersistent
+      , addEventTaskActivityPersistent
 ) where
 
 import Import
@@ -211,6 +212,33 @@ createOrUpdateMaintenance maintenance = do
                                   return maintenanceKey
                 return entityId
 
+addEventTaskActivityPersistent :: TaskActivityEventArg -> Handler Bool
+addEventTaskActivityPersistent TaskActivityEventArg {..} = do
+                    now <- liftIO getCurrentTime
+                    let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
+                    let taskEntityId = ((toSqlKey $ fromIntegral $ taskTriggerId)::Task_Id)
+                    let maintenanceEntityId = case maintenanceId of Nothing -> Nothing; Just mid -> Just ((toSqlKey $ fromIntegral $ mid)::Maintenance_Id)
+                    let reportedByEntityId = ((toSqlKey $ fromIntegral $ reportedById)::Person_Id)
+                    let taskTriggerEntityId = ((toSqlKey $ fromIntegral $ taskTriggerId)::TaskTrigger_Id)
+                    let incidentUtcDate = case incidentDate of Nothing -> Nothing; Just d -> Just ((read $ T.unpack d)::UTCTime)
+                    let newTaskActivity = TaskActivity_ { taskActivity_ScheduledDate = Nothing
+                                                        , taskActivity_CalculatedDate = now
+                                                        , taskActivity_Rescheduled = False
+                                                        , taskActivity_IncidentDate = incidentUtcDate
+                                                        , taskActivity_TaskId = taskEntityId
+                                                        , taskActivity_TaskTriggerId = taskTriggerEntityId
+                                                        , taskActivity_Status = ACTIVE
+                                                        , taskActivity_TaskType = if hasAssetFailure then "EVENT_FAILURE" else "EVENT"
+                                                        , taskActivity_MaintenanceId = maintenanceEntityId
+                                                        , taskActivity_EquipmentId = assetEntityId
+                                                        , taskActivity_WorkOrderId = Nothing
+                                                        , taskActivity_ReportedById = Just reportedByEntityId
+                                                        , taskActivity_ModifiedDate = Nothing
+                                                        , taskActivity_CreatedDate = now
+                                                        }
+                    _ <- runDB $ insert $ newTaskActivity
+                    return True
+
 addDateTaskActivityPersistent :: TaskActivityDateArg -> Handler Bool
 addDateTaskActivityPersistent TaskActivityDateArg {..} = do
                     let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
@@ -227,8 +255,8 @@ createTaskActivityForDate _ _ _ []  = pure []
 createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                     now <- liftIO getCurrentTime
                     let UTCTime today _ = now
-                    let (a, b, c) = toWeekDate today
-                    let (x, y, z) = toGregorian today
+                    let (a, b, _) = toWeekDate today
+                    let (x, y, _) = toGregorian today
                     let firstDayOfCurrentWeek = fromWeekDate a b 1
                     let firstDayOfCurrentMonth = fromGregorian x y 1
                     let firstDayOfCurrentYear = fromGregorian x 1 1
@@ -246,6 +274,7 @@ createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                     let newTaskActivity = TaskActivity_ { taskActivity_ScheduledDate = Nothing
                                                         , taskActivity_CalculatedDate = UTCTime calculatedDate 0
                                                         , taskActivity_Rescheduled = False
+                                                        , taskActivity_IncidentDate = Nothing
                                                         , taskActivity_TaskId = taskTrigger_TaskId
                                                         , taskActivity_TaskTriggerId = taskTriggerId
                                                         , taskActivity_Status = ACTIVE

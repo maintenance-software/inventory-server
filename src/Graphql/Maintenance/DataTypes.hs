@@ -37,6 +37,7 @@ data Maintenance o = Maintenance { maintenanceId :: Int
 data TaskActivity = TaskActivity { taskActivityId :: Int
                                  , scheduledDate :: Maybe Text
                                  , calculatedDate :: Text
+                                 , incidentDate :: Maybe Text
                                  , rescheduled :: Bool
                                  , status :: Text
                                  , assetId :: Int
@@ -73,7 +74,7 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
                                    , taskActivities :: PageArg -> o () Handler (Page TaskActivity)
                                    , addTaskActivityDate :: TaskActivityDateArg -> o () Handler Bool
---                                   , addTaskActivityEvent :: IncidentActivityArg -> o () Handler Bool
+                                   , addTaskActivityEvent :: TaskActivityEventArg -> o () Handler Bool
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
@@ -87,7 +88,7 @@ data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
                                      , status :: Text
                                      } deriving (Generic)
 
-data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Int
+data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Maybe Int
                                              , tasks :: [TaskArg]
                                              } deriving (Generic)
 
@@ -96,8 +97,11 @@ data TaskActivityDateArg = TaskActivityDateArg { lastMaintenanceDate :: Text
                                                , maintenanceId :: Int
                                                } deriving (Generic)
 
---data TaskActivityDateArg = TaskActivityDateArg { lastMaintenanceDate :: Text
---                                               , assetId :: Int
---                                               , taskId :: Int
---                                               , reportedById :: Int
---                                               } deriving (Generic)
+data TaskActivityEventArg = TaskActivityEventArg { assetId :: Int
+                                                 , taskId :: Int
+                                                 , taskTriggerId :: Int
+                                                 , maintenanceId :: Maybe Int
+                                                 , reportedById :: Int
+                                                 , hasAssetFailure :: Bool
+                                                 , incidentDate :: Maybe Text
+                                                 } deriving (Generic)

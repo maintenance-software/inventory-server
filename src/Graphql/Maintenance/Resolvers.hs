@@ -39,6 +39,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , availableEquipments = availableEquipmentPageResolver
                                           , taskActivities = taskActivityPageResolver
                                           , addTaskActivityDate = addTaskActivityDateResolver
+                                          , addTaskActivityEvent = addTaskActivityEventResolver
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
@@ -127,14 +128,19 @@ saveMaintenanceResolver arg = lift $ do
 
 createUpdateTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceTaskArg -> t Handler [Task o]
 createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
-                         let entityId = (toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id
-                         taskIds <- saveTasks (Just entityId) tasks
+                         let entityId = case maintenanceId of Nothing -> Nothing; Just x -> Just ((toSqlKey $ fromIntegral $ x)::Maintenance_Id)
+                         taskIds <- saveTasks entityId tasks
                          entityTasks <- getTaskByIds taskIds
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
 --addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
 addTaskActivityDateResolver arg = lift $ do
                          taskActivitySuccess <- addDateTaskActivityPersistent arg
+                         return $ taskActivitySuccess
+
+--addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
+addTaskActivityEventResolver arg = lift $ do
+                         taskActivitySuccess <- addEventTaskActivityPersistent arg
                          return $ taskActivitySuccess
 
 -- CONVERTERS
@@ -160,6 +166,7 @@ toTaskActivityQL item equipment taskActivity task trigger maintenance = TaskActi
                                                                                      , scheduledDate = case taskActivity_ScheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
                                                                                      , calculatedDate = fromString $ show taskActivity_CalculatedDate
                                                                                      , rescheduled = taskActivity_Rescheduled
+                                                                                     , incidentDate = case taskActivity_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
                                                                                      , status = T.pack $ show taskActivity_Status
                                                                                      , assetId = fromIntegral $ fromSqlKey itemId
                                                                                      , assetName = item_Name

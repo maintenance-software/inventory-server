@@ -327,6 +327,7 @@ TaskActivity_ sql=t_task_activity
     Id sql=task_activity_id
     scheduledDate UTCTime Maybe
     calculatedDate UTCTime
+    incidentDate UTCTime Maybe
     rescheduled Bool
     taskId Task_Id
     taskTriggerId TaskTrigger_Id
