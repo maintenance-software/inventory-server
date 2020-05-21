@@ -35,6 +35,7 @@ data Task o = Task { taskId :: Int
                    , downTimeDuration :: Int
                    , attribute1 :: Maybe Text
                    , attribute2 :: Maybe Text
+                   , maintenanceId :: Maybe Int
                    , createdDate :: Text
                    , modifiedDate :: Maybe Text
                    , taskCategory :: Maybe(() -> o () Handler Category)

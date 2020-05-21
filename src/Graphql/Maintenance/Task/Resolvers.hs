@@ -64,6 +64,7 @@ toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , subTasks = subTaskResolver_ taskId
                                      , taskTriggers = taskTriggerResolver_ taskId
                                      , taskResources = fetchTaskResourceResolver_ taskId
+                                     , maintenanceId = case task_MaintenanceId of Nothing -> Nothing; Just c -> Just $ fromIntegral $ fromSqlKey c
                                      , createdDate = fromString $ show task_CreatedDate
                                      , modifiedDate = m
                                      }
