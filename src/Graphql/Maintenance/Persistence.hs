@@ -239,8 +239,8 @@ addEventTaskActivityPersistent TaskActivityEventArg {..} = do
                                                         , taskActivity_CreatedDate = now
                                                         }
                     _ <- runDB $ insert $ newTaskActivity
-                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
-                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
+--                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
+--                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
 addDateTaskActivityPersistent :: TaskActivityDateArg -> Handler Bool
