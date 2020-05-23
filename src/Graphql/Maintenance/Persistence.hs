@@ -253,8 +253,8 @@ addDateTaskActivityPersistent TaskActivityDateArg {..} = do
                     let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
                     triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_TriggerType ==. "DATE"] []
                     _ <- createTaskActivityForDate maintenanceEntityId assetEntityId maintenanceUtcDate triggers
-                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
-                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. Just maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
+--                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
+--                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. Just maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
 createTaskActivityForDate :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [TaskActivity_Id]

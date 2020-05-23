@@ -36,6 +36,7 @@ import Graphql.Asset.Equipment.Persistence
 equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
                                       , page = equipmentsPageResolver
                                       , saveEquipment = saveEquipmentResolver
+                                      , setMaintenance = setMaintenanceResolver
                                       }
 
 --getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
@@ -110,6 +111,10 @@ saveEquipmentResolver arg = lift $ do
                                           , categoryId = Nothing
                                           , unitId = Nothing
                         }
+
+setMaintenanceResolver arg = lift $ do
+                      success <- setMaintenancePersistence arg
+                      return success
 
 --toEquipmentQL (Entity equipmentId equipment)  = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
 toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegral $ fromSqlKey itemId

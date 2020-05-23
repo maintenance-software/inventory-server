@@ -18,6 +18,7 @@ module Graphql.Asset.Equipment.Persistence (
     , equipmentQueryCount
     , childrenQueryCount
     , equipmentChildrenQuery
+    , setMaintenancePersistence
 ) where
 
 import Import
@@ -166,6 +167,15 @@ createOrUpdateEquipment itemEntityId equipment = do
                                   equipmentKey <- runDB $ insert $ fromEquipmentQL itemEntityId equipment now Nothing
                                   return equipmentKey
                 return entityId
+
+setMaintenancePersistence (SetMaintenanceArg {..}) = do
+                now <- liftIO getCurrentTime
+                let itemId = (toSqlKey $ fromIntegral $ equipmentId) :: Item_Id
+                let equipmentKey = Equipment_Key {unEquipment_Key  = itemId}
+                _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. Just (toSqlKey $ fromIntegral $ maintenanceId :: Maintenance_Id)
+                                                 , Equipment_ModifiedDate =. Just now
+                                                 ]
+                return True
 
 fromEquipmentQL :: Item_Id -> EquipmentArg -> UTCTime -> Maybe UTCTime -> Equipment_
 fromEquipmentQL itemEntityId (EquipmentArg {..}) cd md = Equipment_ { equipment_ItemId = itemEntityId

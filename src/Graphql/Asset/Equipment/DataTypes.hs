@@ -47,6 +47,7 @@ data Equipment o = Equipment { equipmentId :: Int
 data Equipments o = Equipments { equipment :: GetEntityByIdArg -> o () Handler (Equipment o)
                                , page :: PageArg -> o () Handler (Page (Equipment o))
                                , saveEquipment :: EquipmentArg -> o () Handler (Equipment o)
+                               , setMaintenance :: SetMaintenanceArg -> o () Handler Bool
                                } deriving (Generic, GQLType)
 
 data EquipmentArg = EquipmentArg { equipmentId :: Int
@@ -65,6 +66,10 @@ data EquipmentArg = EquipmentArg { equipmentId :: Int
                                  , purchaseDate :: Maybe Text
                                  , parentId :: Maybe Int
                                  } deriving (Generic, GQLType)
+
+data SetMaintenanceArg = SetMaintenanceArg { equipmentId :: Int
+                                           , maintenanceId :: Int
+                                           } deriving (Generic, GQLType)
 
 {-
 query {
