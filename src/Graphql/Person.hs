@@ -30,6 +30,7 @@ module Graphql.Person (
                 , createOrUpdateContactInfo
                 , addressResolver_
                 , contactInfoResolver_
+                , getPersonByIdResolver_
                 ) where
 
 import Import
@@ -126,7 +127,12 @@ getPersonByIdResolver GetEntityByIdArg {..} = lift $ do
                                       person <- runDB $ getJustEntity personEntityId
                                       return $ toPersonQL person
 
-getPersonUserByIdResolver :: Person_Id -> PersonUserArg -> Res e Handler (Maybe (User Res))
+--getPersonByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Person_Id -> () -> o () Handler (Person o)
+getPersonByIdResolver_ personId = lift $ do
+                                      person <- runDB $ getJustEntity personId
+                                      return $ toPersonQL person
+
+--getPersonUserByIdResolver :: Person_Id -> PersonUserArg -> Res e Handler (Maybe (User Res))
 getPersonUserByIdResolver  personId _ = lift $ do
                                       userMaybe <- runDB $ selectFirst [User_PersonId ==. personId] []
                                       let user = case userMaybe of
@@ -142,7 +148,7 @@ addressResolver_ personId _ = lift $ do
                                     Just a -> Just $ toAddressQL a
                     return address
 
-resolveAddress :: Person_Id -> PersonAddressArg -> Res e Handler (Maybe Address)
+--resolveAddress :: Person_Id -> PersonAddressArg -> Res e Handler (Maybe Address)
 resolveAddress personId _ = lift $ do
                     addressMaybe <- runDB $ selectFirst [Address_PersonId ==. personId] []
                     let address = case addressMaybe of
@@ -150,7 +156,7 @@ resolveAddress personId _ = lift $ do
                                     Just a -> Just $ toAddressQL a
                     return address
 
-resolveContactInfo :: Person_Id -> PersonContactInfoArg -> Res e Handler [ContactInfo]
+--resolveContactInfo :: Person_Id -> PersonContactInfoArg -> Res e Handler [ContactInfo]
 resolveContactInfo personId _ = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
@@ -160,7 +166,7 @@ contactInfoResolver_ personId _ = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
-listPagedPersonResolver :: PageArg -> Res e Handler (Page (Person Res))
+--listPagedPersonResolver :: PageArg -> Res e Handler (Page (Person Res))
 listPagedPersonResolver PageArg{..} = lift $ do
                                 countItems <- runDB $ count ([] :: [Filter Person_])
                                 persons <- runDB $ selectList [] [Asc Person_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
@@ -181,7 +187,8 @@ listPagedPersonResolver PageArg{..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-toPersonQL :: Entity Person_ -> (Person Res)
+--toPersonQL :: Entity Person_ -> (Person Res)
+toPersonQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Person_ -> Person o
 toPersonQL (Entity personId person) = Person { personId = fromIntegral $ fromSqlKey personId
                                              , firstName = person_FirstName
                                              , lastName = person_LastName
@@ -231,7 +238,7 @@ toAddressQL (Entity addressId address) = Address { addressId = fromIntegral $ fr
                                                       Nothing -> Nothing
 
 -- Person Mutation Resolvers
-resolveSavePerson :: PersonArg -> MutRes e Handler (Person MutRes)
+--resolveSavePerson :: PersonArg -> MutRes e Handler (Person MutRes)
 resolveSavePerson arg = lift $ do
                                 personId <- createOrUpdatePerson_ arg
                                 person <- runDB $ getJustEntity personId
@@ -251,7 +258,7 @@ resolveSavePerson arg = lift $ do
                                                  , account = resolveSaveUser personId
                                                  }
 
-resolveSaveAddress :: Person_Id -> PersonAddressArg -> MutRes e Handler (Maybe Address)
+--resolveSaveAddress :: Person_Id -> PersonAddressArg -> MutRes e Handler (Maybe Address)
 resolveSaveAddress personId PersonAddressArg {address} = lift $ do
                                           addressReponse <- case address of
                                                               Just c -> do
@@ -261,7 +268,7 @@ resolveSaveAddress personId PersonAddressArg {address} = lift $ do
                                                               Nothing -> return Nothing
                                           return addressReponse
 
-resolveSaveContactInfo :: Person_Id -> PersonContactInfoArg -> MutRes e Handler [ContactInfo]
+--resolveSaveContactInfo :: Person_Id -> PersonContactInfoArg -> MutRes e Handler [ContactInfo]
 resolveSaveContactInfo personId PersonContactInfoArg {..} = lift $ do
                                           () <- case contactInfo of
                                                   Just c -> createOrUpdateContactInfo personId c
@@ -433,7 +440,7 @@ data UserRoleArg = UserRoleArg {roleIds :: Maybe [Int]} deriving (Generic, GQLTy
 data UserPrivilegeArg = UserPrivilegeArg { privilegeIds :: Maybe [Int]} deriving (Generic, GQLType)
 
 -- Query Resolvers
-resolveUser :: () -> Res e Handler Users
+--resolveUser :: () -> Res e Handler Users
 resolveUser _ = pure Users { user = getUserByIdResolver
                            , list = listUserResolver
                            , resetPassword = resetPasswordResolver
@@ -441,13 +448,13 @@ resolveUser _ = pure Users { user = getUserByIdResolver
                            , updatePassword = updatePasswordResolver
                            }
 
-getUserByIdResolver :: GetEntityByIdArg -> Res e Handler (User Res)
+--getUserByIdResolver :: GetEntityByIdArg -> Res e Handler (User Res)
 getUserByIdResolver GetEntityByIdArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
                                       user <- runDB $ getJustEntity userEntityId
                                       return $ toUserQL user
 
-resetPasswordResolver :: GetEntityByIdArg -> Res e Handler Text
+--resetPasswordResolver :: GetEntityByIdArg -> Res e Handler Text
 resetPasswordResolver GetEntityByIdArg {..} = lift $ do
                                       password <- liftIO $ genRandomAlphaNumString 8
                                       hashedPassword <- liftIO $ hashPassword 6 (encodeUtf8 $ T.pack password)
@@ -456,7 +463,7 @@ resetPasswordResolver GetEntityByIdArg {..} = lift $ do
                                       _ <- runDB $ update userEntityId [ User_Password =. passwordEncrypted, User_NewPasswordRequired =. True ]
                                       return $ T.pack password
 
-changePasswordResolver :: ChangePasswordArg -> Res e Handler Bool
+--changePasswordResolver :: ChangePasswordArg -> Res e Handler Bool
 changePasswordResolver ChangePasswordArg {..} = lift $ do
                                       p <- liftIO $ hashPassword 6 (encodeUtf8 password)
                                       let hashedPassword = T.pack $ B.unpack p
@@ -473,7 +480,7 @@ changePasswordResolver ChangePasswordArg {..} = lift $ do
                                                 False ->  return False
                                       return result
 
-updatePasswordResolver :: UpdatePasswordArg -> Res e Handler Bool
+--updatePasswordResolver :: UpdatePasswordArg -> Res e Handler Bool
 updatePasswordResolver UpdatePasswordArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ userId)::User_Id
                                       userEntity <- runDB $ getJustEntity userEntityId
@@ -488,12 +495,12 @@ updatePasswordResolver UpdatePasswordArg {..} = lift $ do
                                                 False ->  return False
                                       return result
 
-getUserPersonByIdResolver :: Person_Id -> () -> Res e Handler (Person Res)
+--getUserPersonByIdResolver :: Person_Id -> () -> Res e Handler (Person Res)
 getUserPersonByIdResolver personId _ = lift $ do
                                       person <- runDB $ getJustEntity personId
                                       return $ toPersonQL person
 
-listUserResolver :: PageArg -> Res e Handler [User Res]
+--listUserResolver :: PageArg -> Res e Handler [User Res]
 listUserResolver PageArg{..} = lift $ do
                                 users <- runDB $ selectList [] [Asc User_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                 return $ P.map (\p -> toUserQL p) users
@@ -505,14 +512,14 @@ listUserResolver PageArg{..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
-userPrivilegeResolver :: User_Id -> UserPrivilegeArg -> Res e Handler [Privilege]
+--userPrivilegeResolver :: User_Id -> UserPrivilegeArg -> Res e Handler [Privilege]
 userPrivilegeResolver userId _ = lift $ do
                                       userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
                                       let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) userPrivileges
                                       privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                       return $ P.map toPrivilegeQL privileges
 
-userRoleResolver :: User_Id -> UserRoleArg -> Res e Handler [Role Res]
+--userRoleResolver :: User_Id -> UserRoleArg -> Res e Handler [Role Res]
 userRoleResolver userId _ = lift $ do
                                       userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                       let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
@@ -539,7 +546,7 @@ toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                         Nothing -> Nothing
 
 -- Mutation Resolvers
-resolveSaveUser :: Person_Id -> PersonUserArg -> MutRes e Handler (Maybe (User MutRes))
+--resolveSaveUser :: Person_Id -> PersonUserArg -> MutRes e Handler (Maybe (User MutRes))
 resolveSaveUser personId (PersonUserArg (Just arg) ) = lift $ do
                                 userId <- createOrUpdateUser personId arg
                                 user <- runDB $ getJustEntity userId
@@ -559,7 +566,7 @@ resolveSaveUser personId (PersonUserArg (Just arg) ) = lift $ do
                                                , roles = resolveSaveUserRole userId
                                                }
 
-resolveSaveUserRole :: User_Id -> UserRoleArg -> MutRes e Handler [Role MutRes]
+--resolveSaveUserRole :: User_Id -> UserRoleArg -> MutRes e Handler [Role MutRes]
 resolveSaveUserRole userId (UserRoleArg (Just entityIds)) = lift $ do
                                           let entityRoleIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Role_Id) entityIds
                                           () <- addUserRole userId entityRoleIds
@@ -568,7 +575,7 @@ resolveSaveUserRole userId (UserRoleArg (Just entityIds)) = lift $ do
                                           roles <- runDB $ selectList ([Role_Id <-. roleIds] :: [Filter Role_]) []
                                           return $ P.map toRoleQL roles
 
-resolveSaveUserPrivilege :: User_Id -> UserPrivilegeArg -> MutRes e Handler [Privilege]
+--resolveSaveUserPrivilege :: User_Id -> UserPrivilegeArg -> MutRes e Handler [Privilege]
 resolveSaveUserPrivilege userId (UserPrivilegeArg (Just entityIds)) = lift $ do
                                           let entityPrivilegeIds = P.map (\ x -> (toSqlKey $ fromIntegral $ x)::Privilege_Id) entityIds
                                           () <- createOrUpdateUserPrivilege userId entityPrivilegeIds
@@ -577,7 +584,7 @@ resolveSaveUserPrivilege userId (UserPrivilegeArg (Just entityIds)) = lift $ do
                                           privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                           return $ P.map toPrivilegeQL privileges
 
-createOrUpdateUser :: Person_Id -> UserArg -> Handler User_Id
+--createOrUpdateUser :: Person_Id -> UserArg -> Handler User_Id
 createOrUpdateUser personId userArg = do
                                let UserArg{..} = userArg
                                now <- liftIO getCurrentTime
@@ -598,7 +605,7 @@ createOrUpdateUser personId userArg = do
                                                 return userKey
                                return userEntityId
 
-addUserRole :: User_Id -> [Role_Id] -> Handler ()
+--addUserRole :: User_Id -> [Role_Id] -> Handler ()
 addUserRole userId requestRoleIds = do
                                      entityUserRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                      let existingRoleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) entityUserRoles
@@ -608,7 +615,7 @@ addUserRole userId requestRoleIds = do
                                      _ <- runDB $ insertMany $ P.map (\roleId -> (UserRole_ userId roleId)) newIds
                                      return ()
 
-createOrUpdateUserPrivilege :: User_Id -> [Privilege_Id] -> Handler ()
+--createOrUpdateUserPrivilege :: User_Id -> [Privilege_Id] -> Handler ()
 createOrUpdateUserPrivilege userId entityPrivilegeIds = do
                             entityUserPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
                             let existingPrivilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) entityUserPrivileges

@@ -348,14 +348,14 @@ WorkOrder_ sql=t_work_order
     workOrderStatus Text
     estimateDuration Int
     executionDuration Int
-    workOrderPolicy Text
+--    workOrderPolicy Text
     rate Int
     totalCost Double
     percentage Double
     notes Text
     generatedById Person_Id
     responsibleId Person_Id
-    canceledById Person_Id
+    canceledById Person_Id Maybe
     parentId WorkOrder_Id Maybe
     closeDate UTCTime Maybe
     createdDate UTCTime

@@ -58,14 +58,13 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
                              , workOrderStatus :: Text
                              , estimateDuration :: Int
                              , executionDuration :: Int
-                             , workOrderPolicy :: Text
                              , rate :: Int
-                             , totalCost :: Double
-                             , percentage :: Double
+                             , totalCost :: Float
+                             , percentage :: Float
                              , notes :: Text
                              , generatedBy :: () -> o () Handler (Person o)
                              , responsible :: () -> o () Handler (Person o)
-                             , parent :: () -> o () Handler (WorkOrder o)
+                             , parent :: Maybe (() -> o () Handler (WorkOrder o))
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
@@ -80,8 +79,9 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: GetEntityByIdArg -> o () Handler (Task o)
                                    , equipmentTasks :: GetEntityByIdArg -> o () Handler [Task o]
---                                   , eventTriggers :: () -> o () Handler [EventTrigger]
---                                   , saveEventTrigger :: EventTriggerArg -> o () Handler EventTrigger
+                                   , workOrder :: GetEntityByIdArg -> o () Handler (WorkOrder o)
+                                   , workOrders :: PageArg -> o () Handler (Page (WorkOrder o))
+                                   , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
                                    } deriving (Generic, GQLType)
 
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
@@ -107,3 +107,15 @@ data TaskActivityEventArg = TaskActivityEventArg { assetId :: Int
                                                  , hasAssetFailure :: Bool
                                                  , incidentDate :: Maybe Text
                                                  } deriving (Generic)
+
+data WorkOrderArg = WorkOrderArg { workOrderId :: Int
+                                 , workOrderStatus :: Text
+                                 , estimateDuration :: Int
+                                 , executionDuration :: Int
+                                 , rate :: Int
+                                 , notes :: Text
+                                 , generatedById :: Int
+                                 , responsibleId :: Int
+                                 , parentId :: Maybe Int
+                                 , activityIds :: [Int]
+                                 } deriving (Generic, GQLType)

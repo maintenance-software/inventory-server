@@ -25,6 +25,7 @@ module Graphql.Maintenance.Persistence (
       , taskActivityQuery
       , addDateTaskActivityPersistent
       , addEventTaskActivityPersistent
+      , createUpdateWorkOrderPersistent
 ) where
 
 import Import
@@ -297,6 +298,29 @@ createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                     taskActivityEntityIds <- createTaskActivityForDate maintenanceId assetId maintenanceUtcDate hs
                     return (taskActivityEntityId:taskActivityEntityIds)
 
+createUpdateWorkOrderPersistent :: WorkOrderArg -> Handler WorkOrder_Id
+createUpdateWorkOrderPersistent arg = do
+                let WorkOrderArg {..} = arg
+                now <- liftIO getCurrentTime
+                entityId <- if workOrderId > 0 then
+                                do
+                                  let workOrderKey = (toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id
+                                  _ <- runDB $ update workOrderKey [ WorkOrder_WorkOrderStatus =. workOrderStatus
+                                                                   , WorkOrder_EstimateDuration =. estimateDuration
+                                                                   , WorkOrder_ExecutionDuration =. executionDuration
+                                                                   , WorkOrder_Rate =. rate
+                                                                   , WorkOrder_Notes =. notes
+                                                                   , WorkOrder_GeneratedById =. ((toSqlKey $ fromIntegral $ generatedById)::Person_Id)
+                                                                   , WorkOrder_ResponsibleId =. ((toSqlKey $ fromIntegral $ responsibleId)::Person_Id)
+                                                                   , WorkOrder_ParentId =. (case parentId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::WorkOrder_Id))
+                                                                   , WorkOrder_ModifiedDate =. Just now
+                                                                   ]
+                                  return workOrderKey
+                               else do
+                                  workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing
+                                  return workOrderKey
+                return entityId
+
 fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_
 fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name = name
                                                              , maintenance_Description = description
@@ -304,3 +328,20 @@ fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name 
                                                              , maintenance_CreatedDate = cd
                                                              , maintenance_ModifiedDate = md
                                                              }
+
+fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> WorkOrder_
+fromWorkOrderQL (WorkOrderArg {..}) cd md = WorkOrder_ { workOrder_WorkOrderStatus = workOrderStatus
+                                                       , workOrder_EstimateDuration = estimateDuration
+                                                       , workOrder_ExecutionDuration = executionDuration
+                                                       , workOrder_Rate = rate
+                                                       , workOrder_TotalCost = 0
+                                                       , workOrder_Percentage = 0
+                                                       , workOrder_Notes = notes
+                                                       , workOrder_GeneratedById = ((toSqlKey $ fromIntegral $ generatedById)::Person_Id)
+                                                       , workOrder_ResponsibleId = ((toSqlKey $ fromIntegral $ responsibleId)::Person_Id)
+                                                       , workOrder_CanceledById = Nothing
+                                                       , workOrder_ParentId = (case parentId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::WorkOrder_Id))
+                                                       , workOrder_CloseDate = Nothing
+                                                       , workOrder_CreatedDate = cd
+                                                       , workOrder_ModifiedDate = md
+                                                       }

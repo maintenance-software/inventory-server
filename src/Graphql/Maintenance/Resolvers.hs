@@ -31,6 +31,7 @@ import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
 import Graphql.Category
+import Graphql.Person (getPersonByIdResolver_)
 import Graphql.Maintenance.Task.DataTypes (Task(..))
 import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 --maintenanceResolver :: () -> Res e Handler Maintenances
@@ -44,6 +45,8 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
+                                          , workOrder = getWorkOrderByIdResolver
+                                          , createUpdateWorkOrder = createUpdateWorkOrderResolver
 --                                          , eventTriggers = listEventTriggerResolver
 --                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
@@ -59,6 +62,17 @@ getMaintenanceByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o
 getMaintenanceByIdResolver_ maintenanceId _ = lift $ do
                                     maintenance <- runDB $ getJustEntity maintenanceId
                                     return $ toMaintenanceQL maintenance
+
+getWorkOrderByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (WorkOrder o)
+getWorkOrderByIdResolver GetEntityByIdArg {..} = lift $ do
+                                              let workOrderId = (toSqlKey $ fromIntegral $ entityId)::WorkOrder_Id
+                                              workOrder <- runDB $ getJustEntity workOrderId
+                                              return $ toWorkOrderQL workOrder
+
+getWorkOrderByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler (WorkOrder o)
+getWorkOrderByIdResolver_ workOrderId _ = lift $ do
+                                              workOrder <- runDB $ getJustEntity workOrderId
+                                              return $ toWorkOrderQL workOrder
 
 maintenancePageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Maintenance o))
 maintenancePageResolver page = lift $ do
@@ -154,6 +168,12 @@ addTaskActivityEventResolver arg = lift $ do
                          taskActivitySuccess <- addEventTaskActivityPersistent arg
                          return $ taskActivitySuccess
 
+--addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
+createUpdateWorkOrderResolver arg = lift $ do
+                         workOrderId <- createUpdateWorkOrderPersistent arg
+                         workOrder <-  runDB $ getJustEntity workOrderId
+                         return $ toWorkOrderQL workOrder
+
 -- CONVERTERS
 --toMaintenanceQL :: Entity Maintenance_ -> Maintenance
 toMaintenanceQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Maintenance_ -> Maintenance o
@@ -201,6 +221,28 @@ toTaskActivityQL item equipment taskActivity task trigger maintenance = TaskActi
                                             Entity triggerId (TaskTrigger_ {..}) = trigger
                                             maintenanceName = (case maintenance of Nothing -> Nothing; Just (Entity _ (Maintenance_ {..})) -> Just maintenance_Name)
                                             maintenanceId = (case maintenance of Nothing -> Nothing; Just (Entity maintenanceId _) -> Just $ fromIntegral $ fromSqlKey maintenanceId)
+
+
+--toWorkOrderQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrder_ -> WorkOrder o
+toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromIntegral $ fromSqlKey workOrderId
+                                                         , workOrderStatus = workOrder_WorkOrderStatus
+                                                         , estimateDuration = workOrder_EstimateDuration
+                                                         , executionDuration = workOrder_ExecutionDuration
+                                                         , rate = workOrder_Rate
+                                                         , totalCost = realToFrac workOrder_TotalCost
+                                                         , percentage = realToFrac workOrder_Percentage
+                                                         , notes = workOrder_Notes
+--                                                         , generatedBy = getPersonByIdResolver_ workOrder_GeneratedById
+--                                                         , responsible = getPersonByIdResolver_ workOrder_ResponsibleId
+                                                         , parent = (case workOrder_ParentId of Nothing -> Nothing; Just a -> Just $ getWorkOrderByIdResolver_ a)
+                                                         , createdDate = fromString $ show workOrder_CreatedDate
+                                                         , modifiedDate = m
+                                                         }
+                                          where
+                                            WorkOrder_ {..} = workOrder
+                                            m = case workOrder_ModifiedDate of
+                                                  Just d -> Just $ fromString $ show d
+                                                  Nothing -> Nothing
 
 {-
 query {
