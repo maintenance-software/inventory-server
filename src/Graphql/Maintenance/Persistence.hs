@@ -222,7 +222,7 @@ addEventTaskActivityPersistent TaskActivityEventArg {..} = do
                     let maintenanceEntityId = case maintenanceId of Nothing -> Nothing; Just mid -> Just ((toSqlKey $ fromIntegral $ mid)::Maintenance_Id)
                     let reportedByEntityId = ((toSqlKey $ fromIntegral $ reportedById)::Person_Id)
                     let taskTriggerEntityId = ((toSqlKey $ fromIntegral $ taskTriggerId)::TaskTrigger_Id)
-                    let incidentUtcDate = case incidentDate of Nothing -> Nothing; Just d -> Just ((read $ show d)::UTCTime)
+                    let incidentUtcDate = case incidentDate of Nothing -> Nothing; Just d -> Just ((read $ T.unpack d)::UTCTime)
                     let newTaskActivity = TaskActivity_ { taskActivity_ScheduledDate = Nothing
                                                         , taskActivity_CalculatedDate = now
                                                         , taskActivity_Rescheduled = False
