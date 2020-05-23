@@ -157,7 +157,7 @@ createOrUpdateEquipment itemEntityId equipment = do
                                   _ <- runDB $ update equipmentKey [ Equipment_Priority =. priority
                                                                    , Equipment_HoursAverageDailyUse =. hoursAverageDailyUse
                                                                    , Equipment_OutOfService =. outOfService
-                                                                   , Equipment_PurchaseDate =. case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ show pd :: UTCTime)
+                                                                   , Equipment_PurchaseDate =. case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ T.unpack pd :: UTCTime)
                                                                    , Equipment_ParentId =. case parentId of Nothing -> Nothing; Just p -> Just (toSqlKey $ fromIntegral $ p :: Item_Id)
                                                                    , Equipment_ModifiedDate =. Just now
                                                                    ]
@@ -172,7 +172,7 @@ fromEquipmentQL itemEntityId (EquipmentArg {..}) cd md = Equipment_ { equipment_
                                                                     , equipment_Priority = priority
                                                                     , equipment_HoursAverageDailyUse = hoursAverageDailyUse
                                                                     , equipment_OutOfService = outOfService
-                                                                    , equipment_PurchaseDate = case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ show pd :: UTCTime)
+                                                                    , equipment_PurchaseDate = case purchaseDate of Nothing -> Nothing; Just pd -> Just (read $ T.unpack pd :: UTCTime)
                                                                     , equipment_ParentId = case parentId of Nothing -> Nothing; Just p -> Just (toSqlKey $ fromIntegral $ p :: Item_Id)
                                                                     , equipment_MaintenanceId = Nothing
                                                                     , equipment_CreatedDate = cd

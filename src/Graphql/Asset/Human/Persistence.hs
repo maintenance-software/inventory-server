@@ -109,7 +109,7 @@ createOrUpdateEmployee personId employee = do
                 maybeEmployee <- runDB $ get employeeKey
                 _ <- if not $ isNothing maybeEmployee then
                          do
-                           _ <- runDB $ update employeeKey [ Employee_HireDate =. case hireDate of Nothing -> Nothing; Just hd -> Just (read $ show hd :: UTCTime)
+                           _ <- runDB $ update employeeKey [ Employee_HireDate =. case hireDate of Nothing -> Nothing; Just hd -> Just (read $ T.unpack hd :: UTCTime)
                                                            , Employee_Salary =. realToFrac salary
                                                            , Employee_EmployeeCategoryId =. (toSqlKey $ fromIntegral $ employeeCategoryId :: Category_Id)
                                                            , Employee_ModifiedDate =. Just now
@@ -122,7 +122,7 @@ createOrUpdateEmployee personId employee = do
 
 fromEmployeeQL :: Person_Id -> EmployeeArg -> UTCTime -> Maybe UTCTime -> Employee_
 fromEmployeeQL personId (EmployeeArg {..}) cd md = Employee_ { employee_EmployeeId = personId
-                                                             , employee_HireDate = case hireDate of Nothing -> Nothing; Just hd -> Just (read $ show hd :: UTCTime)
+                                                             , employee_HireDate = case hireDate of Nothing -> Nothing; Just hd -> Just (read $ T.unpack hd :: UTCTime)
                                                              , employee_Salary = realToFrac salary
                                                              , employee_EmployeeCategoryId = (toSqlKey $ fromIntegral $ employeeCategoryId :: Category_Id)
                                                              , employee_CreatedDate = cd
