@@ -29,7 +29,8 @@ import Graphql.Utils
 import Graphql.Asset.Human.DataTypes
 import Graphql.Asset.Human.Persistence
 import Graphql.Category
-import Graphql.Person (PersonArg(..), createOrUpdatePerson_, createOrUpdateAddress, createOrUpdateContactInfo, addressResolver_, contactInfoResolver_)
+import Graphql.Admin.DataTypes (PersonArg(..))
+import Graphql.Admin.Person (createOrUpdatePerson, addressResolver, contactInfoResolver)
 
 --inventoryResolver :: () -> Res e Handler Inventories
 employeeResolver _ = pure Employees { employee = getEmployeeByIdResolver
@@ -76,13 +77,10 @@ saveEmployeeResolver arg = lift $ do
                                                             , lastName = lastName
                                                             , documentType = documentType
                                                             , documentId = documentId
+                                                            , address = address
+                                                            , contactInfo = contactInfo
                                                             }
-                                  personId <- createOrUpdatePerson_ personArg
-                                  _ <- case address of
-                                        Nothing ->  return ()
-                                        Just a ->  do _ <- createOrUpdateAddress personId a
-                                                      return ()
-                                  _ <- createOrUpdateContactInfo personId contactInfo
+                                  personId <- createOrUpdatePerson personArg
                                   employeeId <- createOrUpdateEmployee personId arg
                                   let employeeKey = Employee_Key {unEmployee_Key  = employeeId}
                                   personEntity <- runDB $ getJustEntity personId
@@ -99,8 +97,8 @@ toEmployeeQL personEntity employeeEntity = Employee { employeeId = fromIntegral 
                                                     , hireDate = (case employee_HireDate of Nothing -> Nothing; Just hd -> Just $ fromString $ show hd)
                                                     , salary = realToFrac employee_Salary
                                                     , employeeCategory = getCategoryByIdResolver_ employee_EmployeeCategoryId
-                                                    , address = addressResolver_ personId
-                                                    , contactInfo = contactInfoResolver_ personId
+                                                    , address = addressResolver personId
+                                                    , contactInfo = contactInfoResolver personId
                                                     , createdDate = fromString $ show employee_CreatedDate
                                                     , modifiedDate = m
                                                     }

@@ -19,7 +19,7 @@ import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (GetEntityByIdArg, Page, PageArg)
-import Graphql.Person
+import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
 import Graphql.Category

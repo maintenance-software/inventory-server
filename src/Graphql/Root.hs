@@ -22,9 +22,10 @@ import           Data.Morpheus.Document (toGraphQLDocument)
 import           Import
 import           Data.ByteString.Lazy.Internal (ByteString)
 import           Graphql.Session
-import           Graphql.Privilege
-import           Graphql.Role
-import           Graphql.Person
+import           Graphql.Admin.Privilege
+import           Graphql.Admin.Role
+import           Graphql.Admin.DataTypes
+import           Graphql.Admin.Person
 import           Graphql.Category
 import           Graphql.Asset.Unit
 --import           Graphql.Maintenance.SubTask.SubTaskKind
@@ -47,8 +48,10 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                            session :: () -> Res () Handler Session
                          , privileges :: () -> m Privileges
                          , roles :: () -> m Roles
-                         , persons :: () -> m Persons
-                         , users :: () -> m Users
+--                         , persons :: () -> m Persons
+--                         , users :: () -> m Users
+                         , persons :: () -> Res () Handler (Persons Res)
+                         , users :: () -> Res () Handler (Users Res)
                          , categories :: CategoryFilter -> m [Category]
                          , units :: () -> m [Unit]
 --                         , taskCategories :: () -> m [TaskCategory]
@@ -64,7 +67,9 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
 
 data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , saveRole :: RoleArg -> m (Role MutRes)
-                           , savePerson :: PersonArg -> m (Person MutRes)
+                           , persons :: () -> MutRes () Handler (Persons MutRes)
+                           , users :: () -> MutRes () Handler (Users MutRes)
+--                           , savePerson :: PersonArg -> m (Person MutRes)
                            , saveCategory :: CategoryArg -> m Category
                            , saveUnit :: UnitArg -> m Unit
 --                           , saveTaskCategory :: TaskCategoryArg -> m TaskCategory
@@ -89,8 +94,8 @@ resolveQuery = QueryQL { --deity = resolveDeity
                          session = getUserSessionResolver
                        , privileges = resolvePrivilege
                        , roles = resolveRole
-                       , persons = resolvePerson
-                       , users = resolveUser
+                       , persons = personResolver
+--                       , users = resolveUser
                        , categories = listCategoryResolver
                        , units = listUnitResolver
 --                       , taskCategories = listTaskCategoryResolver
@@ -107,7 +112,8 @@ resolveQuery = QueryQL { --deity = resolveDeity
 resolveMutation::Mutation (MutRes () Handler)
 resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
-                           , savePerson = resolveSavePerson
+--                           , savePerson = resolveSavePerson
+                           , persons = personResolver
                            , saveCategory = saveCategoryResolver
                            , saveUnit = saveUnitResolver
 --                           , saveTaskCategory = saveTaskCategoryResolver

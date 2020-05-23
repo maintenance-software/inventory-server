@@ -18,7 +18,7 @@ import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
-import Graphql.Person (Address, AddressArg, ContactInfo, ContactInfoArg)
+import Graphql.Admin.DataTypes (Address, AddressArg, ContactInfo, ContactInfoArg)
 import Graphql.Category
 
 data Employee o = Employee { employeeId :: Int

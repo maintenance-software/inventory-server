@@ -7,7 +7,7 @@ User_ sql=t_user
     email Text
     password Text
     status EntityStatus
-    language Locale
+    locale Locale
     expiration Bool
     newPasswordRequired Bool
     personId Person_Id

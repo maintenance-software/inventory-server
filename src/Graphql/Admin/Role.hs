@@ -12,7 +12,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Role (Roles, Role, RoleArg, resolveRole, resolveSaveRole, toRoleQL) where
+module Graphql.Admin.Role (Roles, Role, RoleArg, resolveRole, resolveSaveRole, toRoleQL) where
 
 import Import
 import GHC.Generics
@@ -23,7 +23,7 @@ import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
 import Data.Time
-import Graphql.Privilege
+import Graphql.Admin.Privilege
 
 data Role o = Role { roleId :: Int
                  , key :: Text

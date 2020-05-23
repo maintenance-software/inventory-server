@@ -82,7 +82,7 @@ toSessionQL authId User_ {..} Person_ {..} p = Session { authId = T.pack $ show 
                                                        , email = user_Email
                                                        , firstName = person_FirstName
                                                        , lastName = person_LastName
-                                                       , language = T.pack $ show user_Language
+                                                       , language = T.pack $ show user_Locale
                                                        , permissions = p
                                                        }
 --                                where

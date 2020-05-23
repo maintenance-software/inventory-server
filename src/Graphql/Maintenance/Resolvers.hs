@@ -31,7 +31,7 @@ import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
 import Graphql.Category
-import Graphql.Person (getPersonByIdResolver_)
+import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Maintenance.Task.DataTypes (Task(..))
 import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 --maintenanceResolver :: () -> Res e Handler Maintenances
