@@ -218,7 +218,7 @@ addEventTaskActivityPersistent :: TaskActivityEventArg -> Handler Bool
 addEventTaskActivityPersistent TaskActivityEventArg {..} = do
                     now <- liftIO getCurrentTime
                     let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
-                    let taskEntityId = ((toSqlKey $ fromIntegral $ taskTriggerId)::Task_Id)
+                    let taskEntityId = ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
                     let maintenanceEntityId = case maintenanceId of Nothing -> Nothing; Just mid -> Just ((toSqlKey $ fromIntegral $ mid)::Maintenance_Id)
                     let reportedByEntityId = ((toSqlKey $ fromIntegral $ reportedById)::Person_Id)
                     let taskTriggerEntityId = ((toSqlKey $ fromIntegral $ taskTriggerId)::TaskTrigger_Id)
