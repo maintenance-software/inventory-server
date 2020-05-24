@@ -118,4 +118,12 @@ data WorkOrderArg = WorkOrderArg { workOrderId :: Int
                                  , responsibleId :: Int
                                  , parentId :: Maybe Int
                                  , activityIds :: [Int]
+                                 , resources :: [WorkOrderResourceArg]
                                  } deriving (Generic, GQLType)
+
+data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
+                                                 , humanResourceId :: Maybe Int
+                                                 , inventoryItemId :: Maybe Int
+                                                 , equipmentId :: Int
+                                                 , taskId :: Int
+                                                 } deriving (Generic, GQLType)

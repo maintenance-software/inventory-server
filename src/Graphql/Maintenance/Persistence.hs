@@ -381,6 +381,34 @@ createUpdateWorkOrderPersistent arg = do
                                else do
                                   workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
+                _ <- saveWorkOrderResource ((toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id) resources
+                return entityId
+
+saveWorkOrderResource :: WorkOrder_Id -> [WorkOrderResourceArg] -> Handler [WorkOrderResource_Id]
+saveWorkOrderResource _ [] = pure []
+saveWorkOrderResource workOrderId (x:xs) = do
+                                  resourceId <-  createUpdateWorkOrderResource workOrderId x
+                                  resourceIds <- saveWorkOrderResource workOrderId xs
+                                  return (resourceId:resourceIds)
+
+createUpdateWorkOrderResource :: WorkOrder_Id -> WorkOrderResourceArg -> Handler WorkOrderResource_Id
+createUpdateWorkOrderResource workOrderId resource = do
+                let WorkOrderResourceArg {..} = resource
+                now <- liftIO getCurrentTime
+                entityId <- if workOrderResourceId > 0 then
+                                do
+                                  let workOrderResourceKey = (toSqlKey $ fromIntegral $ workOrderResourceId)::WorkOrderResource_Id
+                                  _ <- runDB $ update workOrderResourceKey [ WorkOrderResource_HumanResourceId =. (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
+                                                                           , WorkOrderResource_InventoryItemId =. (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
+                                                                           , WorkOrderResource_WorkOrderId =. workOrderId
+                                                                           , WorkOrderResource_EquipmentId =. ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)
+                                                                           , WorkOrderResource_TaskId =. ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
+                                                                           , WorkOrderResource_ModifiedDate =. Just now
+                                                                          ]
+                                  return workOrderResourceKey
+                               else do
+                                  workOrderResourceKey <- runDB $ insert $ fromWorkOrderResourceQL workOrderId resource now Nothing
+                                  return workOrderResourceKey
                 return entityId
 
 fromMaintenanceQL :: MaintenanceArg -> UTCTime -> Maybe UTCTime -> Maintenance_
@@ -408,3 +436,13 @@ fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrde
                                                             , workOrder_CreatedDate = cd
                                                             , workOrder_ModifiedDate = md
                                                             }
+
+fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Maybe UTCTime -> WorkOrderResource_
+fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
+                                                                                           , workOrderResource_InventoryItemId = (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
+                                                                                           , workOrderResource_WorkOrderId = workOrderId
+                                                                                           , workOrderResource_EquipmentId = ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)
+                                                                                           , workOrderResource_TaskId = ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
+                                                                                           , workOrderResource_CreatedDate = cd
+                                                                                           , workOrderResource_ModifiedDate = md
+                                                                                           }

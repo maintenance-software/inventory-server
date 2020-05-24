@@ -74,11 +74,11 @@ data PersonArg = PersonArg { personId :: Int
                            , address :: Maybe AddressArg
                            , contactInfo :: [ContactInfoArg]
 --                           , user :: Maybe UserArg
-                           } deriving (Generic)
+                           } deriving (Generic, GQLType)
 
-instance GQLType PersonArg where
-    type  KIND PersonArg = INPUT_OBJECT
-    description = const $ Just $ pack "The item that holds the person information"
+--instance GQLType PersonArg where
+--    type  KIND PersonArg = INPUT_OBJECT
+--    description = const $ Just $ pack "The item that holds the person information"
 
 data AddressArg = AddressArg { addressId :: Int
                              , street1 :: Text
@@ -88,20 +88,20 @@ data AddressArg = AddressArg { addressId :: Int
                              , city :: Text
                              , state :: Text
                              , country :: Text
-                             } deriving (Generic)
+                             } deriving (Generic, GQLType)
 
-instance GQLType AddressArg where
-    type  KIND AddressArg = INPUT_OBJECT
-    description = const $ Just $ pack "The item that holds the address information"
+--instance GQLType AddressArg where
+--    type  KIND AddressArg = INPUT_OBJECT
+--    description = const $ Just $ pack "The item that holds the address information"
 
 data ContactInfoArg = ContactInfoArg { contactId :: Int
                                      , contact :: Text
                                      , contactType :: Text
-                                     } deriving (Generic)
+                                     } deriving (Generic, GQLType)
 
-instance GQLType ContactInfoArg where
-    type  KIND ContactInfoArg = INPUT_OBJECT
-    description = const $ Just $ pack "The item that holds the contact Info information"
+--instance GQLType ContactInfoArg where
+--    type  KIND ContactInfoArg = INPUT_OBJECT
+--    description = const $ Just $ pack "The item that holds the contact Info information"
 
 
 -- USER DATA TYPES
