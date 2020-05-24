@@ -232,8 +232,8 @@ toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromInt
                                                          , totalCost = realToFrac workOrder_TotalCost
                                                          , percentage = realToFrac workOrder_Percentage
                                                          , notes = workOrder_Notes
---                                                         , generatedBy = getPersonByIdResolver_ workOrder_GeneratedById
---                                                         , responsible = getPersonByIdResolver_ workOrder_ResponsibleId
+                                                         , generatedBy = getPersonByIdResolver_ workOrder_GeneratedById
+                                                         , responsible = getPersonByIdResolver_ workOrder_ResponsibleId
                                                          , parent = (case workOrder_ParentId of Nothing -> Nothing; Just a -> Just $ getWorkOrderByIdResolver_ a)
                                                          , createdDate = fromString $ show workOrder_CreatedDate
                                                          , modifiedDate = m

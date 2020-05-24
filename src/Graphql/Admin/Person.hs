@@ -13,17 +13,8 @@
 {-# LANGUAGE RecordWildCards       #-}
 
 module Graphql.Admin.Person (
-                  Persons
-                , Person
-                , personResolver
-                , PersonArg(..)
+                  personResolver
                 , createUpdatePersonResolver
-                , Users
-                , User
-                , Address
-                , ContactInfo
-                , AddressArg
-                , ContactInfoArg
                 , createOrUpdatePerson
                 , createOrUpdateAddress
                 , createOrUpdateContactInfo
@@ -43,8 +34,6 @@ import qualified Data.ByteString.Char8 as B
 import Prelude as P
 import qualified Data.Set as S
 import Graphql.Utils
-import Graphql.Admin.Role
-import Graphql.Admin.Privilege
 import Data.Time
 import Enums
 import Graphql.Admin.DataTypes
@@ -52,22 +41,22 @@ import Graphql.Admin.DataTypes
 -- Query Resolvers
 --personResolver :: () -> Res e Handler Persons
 personResolver _ = pure Persons { person = getPersonByIdResolver
-                                , page = listPagedPersonResolver
+                                , page = pagePersonResolver
                                 , createUpdatePerson = createUpdatePersonResolver
                                 }
 
---getPersonByIdResolver :: GetEntityByIdArg -> Res e Handler (Person Res)
+getPersonByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Person o)
 getPersonByIdResolver GetEntityByIdArg {..} = lift $ do
                                       let personEntityId = (toSqlKey $ fromIntegral $ entityId)::Person_Id
                                       person <- runDB $ getJustEntity personEntityId
                                       return $ toPersonQL person
 
---getPersonByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Person_Id -> () -> o () Handler (Person o)
-getPersonByIdResolver_ personId = lift $ do
+getPersonByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Person_Id -> () -> o () Handler (Person o)
+getPersonByIdResolver_ personId _ = lift $ do
                                       person <- runDB $ getJustEntity personId
                                       return $ toPersonQL person
 
---addressResolver :: Person_Id -> PersonAddressArg -> Res e Handler (Maybe Address)
+--addressResolver :: Person_Id -> () -> () e Handler (Maybe Address)
 addressResolver personId _ = lift $ do
                     addressMaybe <- runDB $ selectFirst [Address_PersonId ==. personId] []
                     let address = case addressMaybe of
@@ -80,8 +69,8 @@ contactInfoResolver personId _ = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
---listPagedPersonResolver :: PageArg -> Res e Handler (Page (Person Res))
-listPagedPersonResolver PageArg{..} = lift $ do
+--pagePersonResolver :: PageArg -> Res e Handler (Page (Person Res))
+pagePersonResolver PageArg{..} = lift $ do
                                 countItems <- runDB $ count ([] :: [Filter Person_])
                                 persons <- runDB $ selectList [] [Asc Person_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
                                 let personsQL = P.map (\p -> toPersonQL p) persons

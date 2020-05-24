@@ -26,6 +26,7 @@ import           Graphql.Admin.Privilege
 import           Graphql.Admin.Role
 import           Graphql.Admin.DataTypes
 import           Graphql.Admin.Person
+import           Graphql.Admin.User
 import           Graphql.Category
 import           Graphql.Asset.Unit
 --import           Graphql.Maintenance.SubTask.SubTaskKind
@@ -95,7 +96,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , privileges = resolvePrivilege
                        , roles = resolveRole
                        , persons = personResolver
---                       , users = resolveUser
+                       , users = userResolver
                        , categories = listCategoryResolver
                        , units = listUnitResolver
 --                       , taskCategories = listTaskCategoryResolver
@@ -114,6 +115,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , saveRole =  resolveSaveRole
 --                           , savePerson = resolveSavePerson
                            , persons = personResolver
+                           , users = userResolver
                            , saveCategory = saveCategoryResolver
                            , saveUnit = saveUnitResolver
 --                           , saveTaskCategory = saveTaskCategoryResolver
