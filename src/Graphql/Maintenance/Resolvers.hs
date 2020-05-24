@@ -47,6 +47,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , createUpdateTasks = createUpdateTasksResolver
                                           , workOrder = getWorkOrderByIdResolver
                                           , createUpdateWorkOrder = createUpdateWorkOrderResolver
+                                          , workOrders = workOrderPageResolver
 --                                          , eventTriggers = listEventTriggerResolver
 --                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
@@ -127,6 +128,25 @@ taskActivityPageResolver page = lift $ do
                             PageArg {..} = page
                             pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
+
+--taskActivityPageResolver :: PageArg -> t () Handler (Page TaskActivity)
+workOrderPageResolver page = lift $ do
+                        countItems <- workOrderQueryCount page
+                        queryResult <- workOrderQuery page
+                        let result = P.map (\ wo -> toWorkOrderQL wo) queryResult
+                        return Page { totalCount = countItems
+                                    , content = result
+                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
+                                                          , hasPreview = pageIndex_ * pageSize_ > 0
+                                                          , pageSize = pageSize_
+                                                          , pageIndex = pageIndex_
+                                    }
+                        }
+                         where
+                            PageArg {..} = page
+                            pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
+                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
+
 
 equipmentResolver_ :: (MonadTrans t, MonadTrans (o ())) => Maintenance_Id -> p -> t Handler [Equipment o]
 equipmentResolver_ maintenanceId _ = lift $ do
@@ -225,6 +245,7 @@ toTaskActivityQL item equipment taskActivity task trigger maintenance = TaskActi
 
 --toWorkOrderQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrder_ -> WorkOrder o
 toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromIntegral $ fromSqlKey workOrderId
+                                                         , workOrderCode = workOrder_WorkOrderCode
                                                          , workOrderStatus = workOrder_WorkOrderStatus
                                                          , estimateDuration = workOrder_EstimateDuration
                                                          , executionDuration = workOrder_ExecutionDuration

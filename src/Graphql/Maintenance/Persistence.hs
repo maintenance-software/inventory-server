@@ -26,6 +26,8 @@ module Graphql.Maintenance.Persistence (
       , addDateTaskActivityPersistent
       , addEventTaskActivityPersistent
       , createUpdateWorkOrderPersistent
+      , workOrderQueryCount
+      , workOrderQuery
 ) where
 
 import Import
@@ -78,6 +80,35 @@ maintenanceFilters maintenance PageArg {..} = do
                                                   Nothing -> [maintenance ^. Maintenance_Id E.==. maintenance ^. Maintenance_Id]
                             let searchFilters_ = unionFilters searchFilters
                             return (searchFilters_ E.&&. predicates_)
+
+workOrderPredicate workOrder Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
+                                            | T.strip field == "workOrderCode" = [getOperator operator (workOrder ^. WorkOrder_WorkOrderCode) (E.val $ T.strip value)]
+                                            | T.strip field == "workOrderStatus" = [getOperator operator (workOrder ^. WorkOrder_WorkOrderStatus) (E.val $ T.strip value)]
+                                            | otherwise = []
+
+workOrderInPredicate workOrder Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
+                                              | T.strip field == "workOrderCode" = [(workOrder ^. WorkOrder_WorkOrderCode) `in_` (E.valList $ fromText P.id value)]
+                                              | T.strip field == "workOrderStatus" = [(workOrder ^. WorkOrder_WorkOrderStatus) `in_` (E.valList $ fromText P.id value)]
+                                              | otherwise = []
+
+workOrderNotInPredicate workOrder Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+                                                 | T.strip field == "workOrderCode" = [(workOrder ^. WorkOrder_WorkOrderCode) `notIn` (E.valList $ fromText P.id value)]
+                                                 | T.strip field == "workOrderStatus" = [(workOrder ^. WorkOrder_WorkOrderStatus) `notIn` (E.valList $ fromText P.id value)]
+                                                 | otherwise = []
+workOrderPredicates _ [] = []
+workOrderPredicates workOrder (x:xs) | P.length p == 0 = workOrderPredicates workOrder xs
+                                     | otherwise = p : workOrderPredicates workOrder xs
+                   where
+                      p = (workOrderPredicate workOrder x) P.++ (workOrderInPredicate workOrder x) P.++ (workOrderNotInPredicate workOrder x)
+
+workOrderFilters workOrder PageArg {..} = do
+                            let justFilters = case filters of Just a -> a; Nothing -> []
+                            let predicates = P.concat $ workOrderPredicates workOrder justFilters
+                            let predicates_ = if P.length predicates > 0 then
+                                                  conjunctionFilters predicates
+                                              else
+                                                  (workOrder ^. WorkOrder_Id E.==. workOrder ^. WorkOrder_Id)
+                            return predicates_
 
 maintenanceQueryCount :: PageArg -> Handler Int
 maintenanceQueryCount page =  do
@@ -298,10 +329,42 @@ createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                     taskActivityEntityIds <- createTaskActivityForDate maintenanceId assetId maintenanceUtcDate hs
                     return (taskActivityEntityId:taskActivityEntityIds)
 
+
+
+
+
+workOrderQueryCount :: PageArg -> Handler Int
+workOrderQueryCount page =  do
+                      res  <- runDB
+                                   $ E.select
+                                   $ E.from $ \ workOrder -> do
+                                        filters <- workOrderFilters workOrder page
+                                        E.where_ filters
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
+
+workOrderQuery :: PageArg -> Handler [Entity WorkOrder_]
+workOrderQuery page =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \ workOrder -> do
+                                        filters <- workOrderFilters workOrder page
+                                        E.where_ filters
+                                        E.orderBy [E.asc (workOrder ^. WorkOrder_Id)]
+                                        E.offset $ pageIndex_ * pageSize_
+                                        E.limit pageSize_
+                                        return workOrder
+                      return result
+                      where
+                        PageArg {..} = page
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
+
 createUpdateWorkOrderPersistent :: WorkOrderArg -> Handler WorkOrder_Id
 createUpdateWorkOrderPersistent arg = do
                 let WorkOrderArg {..} = arg
                 now <- liftIO getCurrentTime
+                randomCode <- liftIO $ randomAlphaNumText 6
                 entityId <- if workOrderId > 0 then
                                 do
                                   let workOrderKey = (toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id
@@ -317,7 +380,7 @@ createUpdateWorkOrderPersistent arg = do
                                                                    ]
                                   return workOrderKey
                                else do
-                                  workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing
+                                  workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
                 return entityId
 
@@ -329,19 +392,20 @@ fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name 
                                                              , maintenance_ModifiedDate = md
                                                              }
 
-fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> WorkOrder_
-fromWorkOrderQL (WorkOrderArg {..}) cd md = WorkOrder_ { workOrder_WorkOrderStatus = workOrderStatus
-                                                       , workOrder_EstimateDuration = estimateDuration
-                                                       , workOrder_ExecutionDuration = executionDuration
-                                                       , workOrder_Rate = rate
-                                                       , workOrder_TotalCost = 0
-                                                       , workOrder_Percentage = 0
-                                                       , workOrder_Notes = notes
-                                                       , workOrder_GeneratedById = ((toSqlKey $ fromIntegral $ generatedById)::Person_Id)
-                                                       , workOrder_ResponsibleId = ((toSqlKey $ fromIntegral $ responsibleId)::Person_Id)
-                                                       , workOrder_CanceledById = Nothing
-                                                       , workOrder_ParentId = (case parentId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::WorkOrder_Id))
-                                                       , workOrder_CloseDate = Nothing
-                                                       , workOrder_CreatedDate = cd
-                                                       , workOrder_ModifiedDate = md
-                                                       }
+fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> Text -> WorkOrder_
+fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrderCode = code
+                                                            , workOrder_WorkOrderStatus = workOrderStatus
+                                                            , workOrder_EstimateDuration = estimateDuration
+                                                            , workOrder_ExecutionDuration = executionDuration
+                                                            , workOrder_Rate = rate
+                                                            , workOrder_TotalCost = 0
+                                                            , workOrder_Percentage = 0
+                                                            , workOrder_Notes = notes
+                                                            , workOrder_GeneratedById = ((toSqlKey $ fromIntegral $ generatedById)::Person_Id)
+                                                            , workOrder_ResponsibleId = ((toSqlKey $ fromIntegral $ responsibleId)::Person_Id)
+                                                            , workOrder_CanceledById = Nothing
+                                                            , workOrder_ParentId = (case parentId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::WorkOrder_Id))
+                                                            , workOrder_CloseDate = Nothing
+                                                            , workOrder_CreatedDate = cd
+                                                            , workOrder_ModifiedDate = md
+                                                            }

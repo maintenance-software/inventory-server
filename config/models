@@ -345,10 +345,10 @@ TaskActivity_ sql=t_task_activity
 
 WorkOrder_ sql=t_work_order
     Id sql=work_order_id
+    workOrderCode Text
     workOrderStatus Text
     estimateDuration Int
     executionDuration Int
---    workOrderPolicy Text
     rate Int
     totalCost Double
     percentage Double

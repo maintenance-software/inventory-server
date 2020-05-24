@@ -80,6 +80,11 @@ localDay :: IO Day
 localDay = fmap utctDay getCurrentTime
 
 
+randomAlphaNumText :: Int -> IO Text
+randomAlphaNumText n = do
+                        randomString <- genRandomAlphaNumString n
+                        return $ fromString randomString
+
 genRandomAlphaNumString :: Int -> IO String
 genRandomAlphaNumString 0 = return []
 genRandomAlphaNumString n = do

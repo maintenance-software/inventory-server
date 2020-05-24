@@ -55,6 +55,7 @@ data TaskActivity = TaskActivity { taskActivityId :: Int
                                  } deriving (Generic, GQLType)
 
 data WorkOrder o = WorkOrder { workOrderId :: Int
+                             , workOrderCode :: Text
                              , workOrderStatus :: Text
                              , estimateDuration :: Int
                              , executionDuration :: Int
