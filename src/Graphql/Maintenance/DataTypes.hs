@@ -112,7 +112,6 @@ data TaskActivityEventArg = TaskActivityEventArg { assetId :: Int
 data WorkOrderArg = WorkOrderArg { workOrderId :: Int
                                  , workOrderStatus :: Text
                                  , estimateDuration :: Int
-                                 , executionDuration :: Int
                                  , rate :: Int
                                  , notes :: Text
                                  , generatedById :: Int

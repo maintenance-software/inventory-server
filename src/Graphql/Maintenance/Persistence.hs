@@ -370,7 +370,6 @@ createUpdateWorkOrderPersistent arg = do
                                   let workOrderKey = (toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id
                                   _ <- runDB $ update workOrderKey [ WorkOrder_WorkOrderStatus =. workOrderStatus
                                                                    , WorkOrder_EstimateDuration =. estimateDuration
-                                                                   , WorkOrder_ExecutionDuration =. executionDuration
                                                                    , WorkOrder_Rate =. rate
                                                                    , WorkOrder_Notes =. notes
                                                                    , WorkOrder_GeneratedById =. ((toSqlKey $ fromIntegral $ generatedById)::Person_Id)
@@ -396,7 +395,7 @@ fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> Text -> WorkOrder
 fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrderCode = code
                                                             , workOrder_WorkOrderStatus = workOrderStatus
                                                             , workOrder_EstimateDuration = estimateDuration
-                                                            , workOrder_ExecutionDuration = executionDuration
+                                                            , workOrder_ExecutionDuration = 0
                                                             , workOrder_Rate = rate
                                                             , workOrder_TotalCost = 0
                                                             , workOrder_Percentage = 0
