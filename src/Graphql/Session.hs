@@ -32,7 +32,7 @@ data Session = Session { authId :: Text
                        , email :: Text
                        , firstName :: Text
                        , lastName :: Text
-                       , language :: Text
+                       , locale :: Text
                        , permissions :: [Text]
                        } deriving (Generic, GQLType)
 
@@ -82,7 +82,7 @@ toSessionQL authId User_ {..} Person_ {..} p = Session { authId = T.pack $ show 
                                                        , email = user_Email
                                                        , firstName = person_FirstName
                                                        , lastName = person_LastName
-                                                       , language = T.pack $ show user_Locale
+                                                       , locale = T.pack $ show user_Locale
                                                        , permissions = p
                                                        }
 --                                where
