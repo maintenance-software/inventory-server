@@ -367,9 +367,11 @@ WorkOrderResource_ sql=t_work_order_resource
     humanResourceId Person_Id Maybe
     inventoryItemId InventoryItem_Id Maybe
     workOrderId WorkOrder_Id
+    equipmentId Item_Id
+    taskId Task_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
---    Foreign Employee_ fkEmployee humanResourceId
+    Foreign Equipment_ fkt_equipment equipmentId
     deriving Typeable Show
 
 -- InventoryResource_ sql=t_inventory_resource
