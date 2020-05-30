@@ -29,6 +29,8 @@ import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Crypto.KDF.BCrypt (hashPassword, validatePassword)
+import qualified Database.Esqueleto      as E
+import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as B
 import Prelude as P
@@ -70,9 +72,9 @@ contactInfoResolver personId _ = lift $ do
                                       return $ P.map toContactQL contacts
 
 --pagePersonResolver :: PageArg -> Res e Handler (Page (Person Res))
-pagePersonResolver PageArg{..} = lift $ do
-                                countItems <- runDB $ count ([] :: [Filter Person_])
-                                persons <- runDB $ selectList [] [Asc Person_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+pagePersonResolver page = lift $ do
+                                countItems <- personQueryCount page
+                                persons <- personQuery page
                                 let personsQL = P.map (\p -> toPersonQL p) persons
                                 return Page { totalCount = countItems
                                             , content = personsQL
@@ -83,14 +85,46 @@ pagePersonResolver PageArg{..} = lift $ do
                                             }
                                 }
                          where
-                          pageIndex' = case pageIndex of
-                                        Just  x  -> x
-                                        Nothing -> 0
-                          pageSize' = case pageSize of
-                                          Just y -> y
-                                          Nothing -> 10
+                          PageArg {..} = page
+                          pageIndex' = case pageIndex of Just  x  -> x; Nothing -> 0
+                          pageSize' = case pageSize of Just y -> y; Nothing -> 10
 
--- Person Mutation Resolvers
+personFilters person PageArg {..} = do
+                            let searchFilters = case searchString of
+                                                  Just s -> [ person ^. Person_DocumentId E.==. E.val s
+                                                            , person ^. Person_FirstName `E.ilike` (%) ++. E.val s ++. (%)
+                                                            , person ^. Person_LastName `E.ilike` (%) ++. E.val s ++. (%)
+                                                            ]
+                                                  Nothing -> [person ^. Person_Id E.==. person ^. Person_Id]
+                            let searchFilters' = unionFilters searchFilters
+                            return searchFilters'
+
+personQueryCount :: PageArg -> Handler Int
+personQueryCount page =  do
+                      result  <- runDB
+                                   $ E.select
+                                   $ E.from $ \ person -> do
+                                        filters <- personFilters person page
+                                        E.where_ filters
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ result
+
+personQuery :: PageArg -> Handler [Entity Person_]
+personQuery page =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \ person -> do
+                                        filters <- personFilters person page
+                                        E.where_ filters
+                                        E.offset $ pageIndex_ * pageSize_
+                                        E.limit pageSize_
+                                        return person
+                      return result
+                      where
+                        PageArg {..} = page
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
+
 --createUpdatePersonResolver :: PersonArg -> MutRes e Handler (Person MutRes)
 createUpdatePersonResolver arg = lift $ do
                                 personId <- createOrUpdatePerson arg
