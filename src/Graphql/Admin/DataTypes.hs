@@ -88,20 +88,20 @@ data AddressArg = AddressArg { addressId :: Int
                              , city :: Text
                              , state :: Text
                              , country :: Text
-                             } deriving (Generic, GQLType)
+                             } deriving (Generic)
 
---instance GQLType AddressArg where
---    type  KIND AddressArg = INPUT_OBJECT
---    description = const $ Just $ pack "The item that holds the address information"
+instance GQLType AddressArg where
+    type  KIND AddressArg = INPUT_OBJECT
+    description = const $ Just $ pack "The item that holds the address information"
 
 data ContactInfoArg = ContactInfoArg { contactId :: Int
                                      , contact :: Text
                                      , contactType :: Text
-                                     } deriving (Generic, GQLType)
+                                     } deriving (Generic)
 
---instance GQLType ContactInfoArg where
---    type  KIND ContactInfoArg = INPUT_OBJECT
---    description = const $ Just $ pack "The item that holds the contact Info information"
+instance GQLType ContactInfoArg where
+    type  KIND ContactInfoArg = INPUT_OBJECT
+    description = const $ Just $ pack "The item that holds the contact Info information"
 
 
 -- USER DATA TYPES
