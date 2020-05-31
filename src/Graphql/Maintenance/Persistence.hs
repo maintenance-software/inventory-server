@@ -28,6 +28,7 @@ module Graphql.Maintenance.Persistence (
       , createUpdateWorkOrderPersistent
       , workOrderQueryCount
       , workOrderQuery
+      , taskActivityCountTasksQuery
 ) where
 
 import Import
@@ -38,7 +39,8 @@ import Data.Time.Calendar (toGregorian, fromGregorian)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
+import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_, countRows)
+import Database.Esqueleto.PostgreSQL (arrayAggDistinct)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
@@ -330,7 +332,27 @@ createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                     return (taskActivityEntityId:taskActivityEntityIds)
 
 
+--taskActivityCountTasksQuery :: WoResourceRequirement -> Handler [(Item_Id, Task_Id, Int)]
+--taskActivityCountTasksQuery WoResourceRequirement{..} =  do
+--                      result <- runDB
+--                                   $ E.select
+--                                   $ E.from $ \ taskActivity -> do
+--                                        E.where_ (taskActivity ^. TaskActivity_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) taskActivityIds))
+--                                        E.groupBy (taskActivity ^. TaskActivity_EquipmentId, taskActivity ^. TaskActivity_TaskId)
+--                                        let count' = E.count (taskActivity ^. TaskActivity_TaskId)
+--                                        return (taskActivity ^. TaskActivity_EquipmentId, taskActivity ^. TaskActivity_TaskId, count')
+--                      return $ fmap (\(E.Value a, E.Value b, E.Value c) -> (a, b, c)) $ result
 
+taskActivityCountTasksQuery :: EntityIdsArg -> Handler [(Item_Id, [Task_Id])]
+taskActivityCountTasksQuery EntityIdsArg{..} =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \ taskActivity -> do
+                                        E.where_ (taskActivity ^. TaskActivity_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) entityIds))
+                                        E.groupBy (taskActivity ^. TaskActivity_EquipmentId)
+                                        let toList = arrayAggDistinct (taskActivity ^. TaskActivity_TaskId)
+                                        return (taskActivity ^. TaskActivity_EquipmentId, toList)
+                      return $ fmap (\(E.Value a, E.Value (Just b)) -> (a, b)) $ result
 
 
 workOrderQueryCount :: PageArg -> Handler Int
@@ -439,6 +461,8 @@ fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrde
 
 fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Maybe UTCTime -> WorkOrderResource_
 fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
+                                                                                           , workOrderResource_EmployeeCategoryId = Nothing
+                                                                                           , workOrderResource_ItemId =  Nothing
                                                                                            , workOrderResource_InventoryItemId = (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
                                                                                            , workOrderResource_WorkOrderId = workOrderId
                                                                                            , workOrderResource_EquipmentId = ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)

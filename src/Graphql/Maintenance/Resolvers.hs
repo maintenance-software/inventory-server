@@ -48,6 +48,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , workOrder = getWorkOrderByIdResolver
                                           , createUpdateWorkOrder = createUpdateWorkOrderResolver
                                           , workOrders = workOrderPageResolver
+                                          , woPreResources = woPreResourcesResolver
 --                                          , eventTriggers = listEventTriggerResolver
 --                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
@@ -163,6 +164,32 @@ equipmentTasksResolver GetEntityByIdArg {..} = lift $ do
                                     Nothing -> pure []
                                     Just maintenanceId -> taskQuery maintenanceId
                          return $ P.map (\t -> toTaskQL t) entityTasks
+
+
+
+--resourceRequirementResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => WoResourceRequirement -> t Handler [WoAssets]
+woPreResourcesResolver requestArg = lift $ do
+                       equipmentIds <- taskActivityCountTasksQuery requestArg
+                       equipments <- runDB $ selectList [Item_Id <-. (P.map (\(a, _) -> a) equipmentIds)] []
+                       tasks <- runDB $ selectList [Task_Id <-. (P.concat $ P.map (\(_, b) -> b) equipmentIds)] []
+                       let findAssetById = \assetId -> (P.filter (\(Entity i _) -> i == assetId) equipments)
+                       let findTasksByIds = \taskIds -> (P.filter (\ (Entity i _) -> i `P.elem` taskIds) tasks)
+                       let response = P.map (\(itemId, taskIds) -> (toWOAsset (P.head $ findAssetById itemId) (findTasksByIds taskIds))) equipmentIds
+                       return response
+
+toWOAsset :: Entity Item_ -> [Entity Task_] -> WoAssets
+toWOAsset (Entity itemId Item_{..}) tasks = WoAssets { assetId = fromIntegral $ fromSqlKey itemId
+                                                     , name = item_Name
+                                                     , tasks = P.map toWOTask tasks
+                                                     }
+
+toWOTask :: Entity Task_ -> WoAssetTask
+toWOTask (Entity taskId Task_{..}) = WoAssetTask { taskId = fromIntegral $ fromSqlKey taskId
+                                                 , name = task_Name
+                                                 , requiredResource = True
+                                                 }
+
+
 
 --saveMaintenanceResolver :: MaintenanceArg -> MutRes e Handler (Maintenance MutRes)
 saveMaintenanceResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceArg -> t Handler (Maintenance o)

@@ -23,6 +23,7 @@ import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
 import Graphql.Category
+import Graphql.Utils (EntityIdsArg)
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -83,6 +84,7 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , workOrder :: GetEntityByIdArg -> o () Handler (WorkOrder o)
                                    , workOrders :: PageArg -> o () Handler (Page (WorkOrder o))
                                    , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
+                                   , woPreResources :: EntityIdsArg -> o () Handler [WoAssets]
                                    } deriving (Generic, GQLType)
 
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
@@ -127,3 +129,22 @@ data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
                                                  , equipmentId :: Int
                                                  , taskId :: Int
                                                  } deriving (Generic, GQLType)
+
+data WoAssets = WoAssets { assetId :: Int
+                         , name :: Text
+                         , tasks :: [WoAssetTask]
+                         } deriving (Generic, GQLType)
+
+data WoAssetTask = WoAssetTask { taskId :: Int
+                               , name :: Text
+                               , requiredResource :: Bool
+                               } deriving (Generic, GQLType)
+
+data WoTaskResource = WoTaskResource { resourceId :: Int
+                                     , name :: Text
+                                     , itemId :: Maybe Int
+                                     , inventoryItemId :: Int
+                                     , employeeCategoryId :: Int
+                                     , personId :: Maybe Int
+                                     , resourceType :: Text
+                                     } deriving (Generic, GQLType)
