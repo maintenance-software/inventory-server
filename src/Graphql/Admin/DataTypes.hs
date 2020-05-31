@@ -74,11 +74,11 @@ data PersonArg = PersonArg { personId :: Int
                            , address :: Maybe AddressArg
                            , contactInfo :: [ContactInfoArg]
 --                           , user :: Maybe UserArg
-                           } deriving (Generic, GQLType)
+                           } deriving (Generic)
 
---instance GQLType PersonArg where
---    type  KIND PersonArg = INPUT_OBJECT
---    description = const $ Just $ pack "The item that holds the person information"
+instance GQLType PersonArg where
+    type  KIND PersonArg = INPUT_OBJECT
+    description = const $ Just $ pack "The item that holds the person information"
 
 data AddressArg = AddressArg { addressId :: Int
                              , street1 :: Text
