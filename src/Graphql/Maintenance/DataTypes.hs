@@ -17,7 +17,8 @@ module Graphql.Maintenance.DataTypes where
 
 import Import
 import GHC.Generics
-import Data.Morpheus.Types (GQLType)
+import Data.Morpheus.Kind (INPUT_OBJECT)
+import Data.Morpheus.Types (GQLType(..))
 import Graphql.Utils (GetEntityByIdArg, Page, PageArg)
 import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
@@ -128,7 +129,11 @@ data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
                                                  , inventoryItemId :: Maybe Int
                                                  , equipmentId :: Int
                                                  , taskId :: Int
-                                                 } deriving (Generic, GQLType)
+                                                 } deriving (Generic)
+
+instance GQLType WorkOrderResourceArg where
+    type  KIND WorkOrderResourceArg = INPUT_OBJECT
+    description = const $ Just $ pack "The item that holds the WorkOrderResourceArg information"
 
 data WoAssets = WoAssets { assetId :: Int
                          , name :: Text
