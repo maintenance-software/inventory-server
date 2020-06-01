@@ -197,33 +197,35 @@ taskActivityQueryCount :: PageArg -> Handler Int
 taskActivityQueryCount page =  do
                       res  <- runDB
                                    $ E.select
-                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger` E.LeftOuterJoin` maintenance) -> do
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger `E.LeftOuterJoin` maintenance `E.LeftOuterJoin` category) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
                                         E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
                                         E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
                                         E.on $ taskActivity ^. TaskActivity_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
                                         E.on $ (taskActivity ^. TaskActivity_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
+                                        E.on $ (task ^. Task_TaskCategoryId) E.==. (category ?. Category_Id)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
-taskActivityQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity TaskActivity_, Entity Task_, Entity TaskTrigger_, Maybe (Entity Maintenance_))]
+taskActivityQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity TaskActivity_, Entity Task_, Entity TaskTrigger_, Maybe (Entity Maintenance_), Maybe (Entity Category_))]
 taskActivityQuery page =  do
                       result <- runDB
                                    $ E.select
-                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger` E.LeftOuterJoin` maintenance) -> do
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger `E.LeftOuterJoin` maintenance `E.LeftOuterJoin` category) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
                                         E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
                                         E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
                                         E.on $ taskActivity ^. TaskActivity_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
                                         E.on $ (taskActivity ^. TaskActivity_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
+                                        E.on $ (task ^. Task_TaskCategoryId) E.==. (category ?. Category_Id)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
-                                        return (item, equipment, taskActivity, task, trigger, maintenance)
+                                        return (item, equipment, taskActivity, task, trigger, maintenance, category)
                       return result
                       where
                         PageArg {..} = page

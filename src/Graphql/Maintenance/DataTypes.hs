@@ -51,6 +51,8 @@ data TaskActivity = TaskActivity { taskActivityId :: Int
                                  , taskName :: Text
                                  , taskPriority :: Int
                                  , taskTriggerId :: Int
+                                 , taskCategoryId :: Maybe Int
+                                 , taskCategoryName :: Maybe Text
                                  , triggerDescription :: Text
                                  , taskType :: Text
                                  , createdDate :: Text
