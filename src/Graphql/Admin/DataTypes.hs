@@ -19,7 +19,7 @@ import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..))
-import Graphql.Utils (Page, PageArg, GetEntityByIdArg, EntityChangeStatusArg)
+import Graphql.Utils (Page, PageArg, EntityIdArg, EntityChangeStatusArg)
 import Graphql.Category
 import Graphql.Admin.Privilege
 import Graphql.Admin.Role
@@ -38,7 +38,7 @@ data Person o = Person { personId :: Int
 --                       , user :: Maybe (() -> o () Handler (User o))
                        } deriving (Generic, GQLType)
 
-data Persons o = Persons { person :: GetEntityByIdArg -> o () Handler (Person o)
+data Persons o = Persons { person :: EntityIdArg -> o () Handler (Person o)
                          , page :: PageArg -> o () Handler (Page (Person o))
                          , createUpdatePerson :: PersonArg -> o () Handler (Person o)
                          } deriving (Generic, GQLType)
@@ -119,10 +119,10 @@ data User o = User { userId :: Int
                    , modifiedDate :: Maybe Text
                    } deriving (Generic, GQLType)
 
-data Users o = Users { user :: GetEntityByIdArg -> o () Handler (User o)
+data Users o = Users { user :: EntityIdArg -> o () Handler (User o)
                      , page :: PageArg -> o () Handler (Page (User o))
                      , createUpdateUser :: UserArg -> o () Handler (User o)
-                     , resetPassword :: GetEntityByIdArg -> o () Handler Text
+                     , resetPassword :: EntityIdArg -> o () Handler Text
                      , changePassword :: ChangePasswordArg -> o () Handler Bool
                      , updatePassword :: UpdatePasswordArg -> o () Handler Bool
                      } deriving (Generic, GQLType)

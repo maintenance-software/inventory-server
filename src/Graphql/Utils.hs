@@ -59,7 +59,7 @@ data PageArg = PageArg { searchString :: Maybe Text
                        , filters :: Maybe [Predicate]
                        } deriving (Generic)
 
-data GetEntityByIdArg = GetEntityByIdArg { entityId :: Int } deriving (Generic)
+data EntityIdArg = EntityIdArg { entityId :: Int } deriving (Generic)
 
 data EntityIdsArg = EntityIdsArg { entityIds :: [Int] } deriving (Generic)
 

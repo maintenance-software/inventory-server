@@ -19,7 +19,7 @@ import Import
 import GHC.Generics
 import Data.Morpheus.Kind (INPUT_OBJECT)
 import Data.Morpheus.Types (GQLType(..))
-import Graphql.Utils (GetEntityByIdArg, Page, PageArg)
+import Graphql.Utils (EntityIdArg, Page, PageArg)
 import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes
@@ -74,7 +74,7 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
 
-data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Handler (Maintenance o)
+data Maintenances o = Maintenances { maintenance :: EntityIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
                                    , taskActivities :: PageArg -> o () Handler (Page TaskActivity)
@@ -82,9 +82,9 @@ data Maintenances o = Maintenances { maintenance :: GetEntityByIdArg ->  o () Ha
                                    , addTaskActivityEvent :: TaskActivityEventArg -> o () Handler Bool
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
-                                   , task :: GetEntityByIdArg -> o () Handler (Task o)
-                                   , equipmentTasks :: GetEntityByIdArg -> o () Handler [Task o]
-                                   , workOrder :: GetEntityByIdArg -> o () Handler (WorkOrder o)
+                                   , task :: EntityIdArg -> o () Handler (Task o)
+                                   , equipmentTasks :: EntityIdArg -> o () Handler [Task o]
+                                   , workOrder :: EntityIdArg -> o () Handler (WorkOrder o)
                                    , workOrders :: PageArg -> o () Handler (Page (WorkOrder o))
                                    , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
                                    , woPreResources :: EntityIdsArg -> o () Handler [WoAssets]

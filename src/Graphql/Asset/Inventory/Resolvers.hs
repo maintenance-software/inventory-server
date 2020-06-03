@@ -38,11 +38,12 @@ inventoryResolver _ = pure Inventories { inventory = getInventoryByIdResolver
                                        , list = listInventoryResolver
                                        , saveInventory = saveInventoryResolver
                                        , saveInventoryItems = saveInventoryItemsResolver
+                                       , fetchInventoriesForItem= fetchInventoriesForItemResolver
                                        }
 
---getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
-getInventoryByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Inventory o)
-getInventoryByIdResolver GetEntityByIdArg {..} = lift $ do
+--getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
+getInventoryByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Inventory o)
+getInventoryByIdResolver EntityIdArg {..} = lift $ do
                                               let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id
                                               inventory <- runDB $ getJustEntity inventoryId
                                               return $ toInventoryQL inventory
@@ -56,6 +57,12 @@ getInventoryByIdResolver_ inventoryId _ = lift $ do
 listInventoryResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => () -> o () Handler [Inventory o]
 listInventoryResolver _ = lift $ do
                             inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
+                            return $ P.map toInventoryQL inventories
+
+fetchInventoriesForItemResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler [Inventory o]
+fetchInventoriesForItemResolver EntityIdArg{..} = lift $ do
+                            let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
+                            inventories <- fetchInventoriesForItemQuery inventoryId
                             return $ P.map toInventoryQL inventories
 
 --saveInventoryResolver :: InventoryArg -> MutRes e Handler (Inventory MutRes)

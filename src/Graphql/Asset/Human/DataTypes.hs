@@ -17,7 +17,7 @@ module Graphql.Asset.Human.DataTypes where
 import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
-import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
+import Graphql.Utils (Page, PageArg, EntityIdArg)
 import Graphql.Admin.DataTypes (Address, AddressArg, ContactInfo, ContactInfoArg)
 import Graphql.Category
 
@@ -35,7 +35,7 @@ data Employee o = Employee { employeeId :: Int
                            , modifiedDate :: Maybe Text
                            } deriving (Generic, GQLType)
 
-data Employees o = Employees { employee :: GetEntityByIdArg -> o () Handler (Employee o)
+data Employees o = Employees { employee :: EntityIdArg -> o () Handler (Employee o)
                              , page :: PageArg -> o () Handler (Page (Employee o))
                              , saveEmployee :: EmployeeArg -> o () Handler (Employee o)
                              } deriving (Generic, GQLType)

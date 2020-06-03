@@ -35,8 +35,8 @@ taskTriggerResolver_ taskId _ = lift $ do
                                 tasks <- taskTriggerQuery taskId
                                 return $ P.map (\t -> toTaskTriggerQL t) tasks
 
---getTaskTriggerByIdResolver :: GetEntityByIdArg -> Res e Handler (TaskTrigger Res)
-getTaskTriggerByIdResolver GetEntityByIdArg {..} = lift $ do
+--getTaskTriggerByIdResolver :: EntityIdArg -> Res e Handler (TaskTrigger Res)
+getTaskTriggerByIdResolver EntityIdArg {..} = lift $ do
                                               let taskTriggerId = (toSqlKey $ fromIntegral $ entityId)::TaskTrigger_Id
                                               taskTrigger <- runDB $ getJustEntity taskTriggerId
                                               return $ toTaskTriggerQL taskTrigger

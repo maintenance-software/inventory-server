@@ -35,7 +35,7 @@ data Role o = Role { roleId :: Int
                  , privileges :: () -> o () Handler [Privilege]
                  } deriving (Generic, GQLType)
 
-data Roles = Roles { role :: GetEntityByIdArg -> Res () Handler (Role Res)
+data Roles = Roles { role :: EntityIdArg -> Res () Handler (Role Res)
                    , list :: PageArg -> Res () Handler [Role Res]
                    } deriving (Generic, GQLType)
 
@@ -47,8 +47,8 @@ data RoleArg = RoleArg { roleId :: Int
                        } deriving (Generic, GQLType)
 
 -- Query Resolvers
-findByIdResolver :: GetEntityByIdArg -> Res e Handler (Role Res)
-findByIdResolver GetEntityByIdArg {..} = lift $ do
+findByIdResolver :: EntityIdArg -> Res e Handler (Role Res)
+findByIdResolver EntityIdArg {..} = lift $ do
                                               let roleId = (toSqlKey $ fromIntegral $ entityId)::Role_Id
                                               role <- runDB $ getJustEntity roleId
                                               return $ toRoleQL role

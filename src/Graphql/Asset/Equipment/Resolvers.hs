@@ -39,8 +39,8 @@ equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
                                       , setMaintenance = setMaintenanceResolver
                                       }
 
---getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
-getEquipmentByIdResolver GetEntityByIdArg {..} = lift $ do
+--getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
+getEquipmentByIdResolver EntityIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId) :: Item_Id
                                               let equipmentId = Equipment_Key {unEquipment_Key  = itemId}
                                               equipmentEntity <- runDB $ getJustEntity equipmentId

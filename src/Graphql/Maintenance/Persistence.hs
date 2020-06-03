@@ -465,6 +465,7 @@ fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Ma
 fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
                                                                                            , workOrderResource_EmployeeCategoryId = Nothing
                                                                                            , workOrderResource_ItemId =  Nothing
+                                                                                           , workOrderResource_InventoryId =  Nothing
                                                                                            , workOrderResource_InventoryItemId = (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
                                                                                            , workOrderResource_WorkOrderId = workOrderId
                                                                                            , workOrderResource_EquipmentId = ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)

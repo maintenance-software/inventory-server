@@ -38,8 +38,8 @@ employeeResolver _ = pure Employees { employee = getEmployeeByIdResolver
                                     , saveEmployee = saveEmployeeResolver
                                     }
 
---getInventoryByIdResolver :: GetEntityByIdArg -> Res e Handler (Inventory Res)
-getEmployeeByIdResolver GetEntityByIdArg {..} = lift $ do
+--getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
+getEmployeeByIdResolver EntityIdArg {..} = lift $ do
                                               let personId = (toSqlKey $ fromIntegral $ entityId) :: Person_Id
                                               let employeeId = Employee_Key {unEmployee_Key  = personId}
                                               employeeEntity <- runDB $ getJustEntity employeeId

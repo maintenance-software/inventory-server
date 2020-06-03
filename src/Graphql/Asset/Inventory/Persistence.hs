@@ -11,10 +11,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Asset.Inventory.Persistence ( createOrUpdateInventory ) where
+module Graphql.Asset.Inventory.Persistence (createOrUpdateInventory, fetchInventoriesForItemQuery) where
 
 import Import
 import GHC.Generics
+import qualified Database.Esqueleto      as E
+import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
@@ -34,6 +36,20 @@ import Graphql.Asset.DataTypes
 --dbFetchInventories = do
 --                       inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
 --                       return $ P.map toInventoryQL inventories
+
+fetchInventoriesForItemQuery :: Item_Id -> Handler [Entity Inventory_]
+fetchInventoriesForItemQuery itemId = do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \ inventory -> do
+                                        let subquery =
+                                              E.from $ \inventoryItem -> do
+                                              E.where_ (inventoryItem ^. InventoryItem_ItemId E.==. E.val itemId)
+                                              return (inventoryItem ^. InventoryItem_InventoryId)
+                                        E.where_ (inventory ^. Inventory_Id `E.in_` E.subList_select subquery)
+                                        E.orderBy [E.asc (inventory ^. Inventory_Id)]
+                                        return inventory
+                      return result
 
 --createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
 createOrUpdateInventory inventory = do

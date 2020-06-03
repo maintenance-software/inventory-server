@@ -47,8 +47,8 @@ userResolver _ = pure Users { user = getUserByIdResolver
                              , updatePassword = updatePasswordResolver
                              }
 
---getUserByIdResolver :: GetEntityByIdArg -> Res e Handler (User Res)
-getUserByIdResolver GetEntityByIdArg {..} = lift $ do
+--getUserByIdResolver :: EntityIdArg -> Res e Handler (User Res)
+getUserByIdResolver EntityIdArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
                                       user <- runDB $ getJustEntity userEntityId
                                       return $ toUserQL user
@@ -57,8 +57,8 @@ getUserByIdResolver_ userId _ = lift $ do
                                       user <- runDB $ getJustEntity userId
                                       return $ toUserQL user
 
---resetPasswordResolver :: GetEntityByIdArg -> Res e Handler Text
-resetPasswordResolver GetEntityByIdArg {..} = lift $ do
+--resetPasswordResolver :: EntityIdArg -> Res e Handler Text
+resetPasswordResolver EntityIdArg {..} = lift $ do
                                       password <- liftIO $ genRandomAlphaNumString 8
                                       hashedPassword <- liftIO $ hashPassword 6 (encodeUtf8 $ T.pack password)
                                       let passwordEncrypted = T.pack $ B.unpack hashedPassword

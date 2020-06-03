@@ -33,8 +33,8 @@ subTaskResolver_ taskId _ = lift $ do
                                 subTasks <- subTaskQuery taskId
                                 return $ P.map (\t -> toSubTaskQL t) subTasks
 
---getSubTaskByIdResolver :: GetEntityByIdArg -> Res e Handler (SubTask Res)
-getSubTaskByIdResolver GetEntityByIdArg {..} = lift $ do
+--getSubTaskByIdResolver :: EntityIdArg -> Res e Handler (SubTask Res)
+getSubTaskByIdResolver EntityIdArg {..} = lift $ do
                                               let subTaskId = (toSqlKey $ fromIntegral $ entityId)::SubTask_Id
                                               subTask <- runDB $ getJustEntity subTaskId
                                               return $ toSubTaskQL subTask

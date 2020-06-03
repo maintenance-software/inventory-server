@@ -38,9 +38,9 @@ import Graphql.Asset.Item.Persistence
 import Graphql.Asset.DataTypes
 
 -- Query Resolvers
---getItemByIdResolver :: GetEntityByIdArg -> Res e Handler (Item Res)
-getItemByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Item o)
-getItemByIdResolver GetEntityByIdArg {..} = lift $ do
+--getItemByIdResolver :: EntityIdArg -> Res e Handler (Item Res)
+getItemByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Item o)
+getItemByIdResolver EntityIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
                                               item <- runDB $ getJustEntity itemId
                                               return $ toItemQL item

@@ -39,7 +39,7 @@ data PrivilegeArg = PrivilegeArg { privilegeId :: Int
                                  , active :: Bool
                                  } deriving (Generic, GQLType)
 
-data Privileges = Privileges { privilege :: GetEntityByIdArg -> Res () Handler Privilege
+data Privileges = Privileges { privilege :: EntityIdArg -> Res () Handler Privilege
                              , list :: PageArg -> Res () Handler [Privilege]
                              } deriving (Generic, GQLType)
 
@@ -62,8 +62,8 @@ dbFetchPrivileges PageArg {..} = do
                                                 Nothing -> 10
 
 -- Query Resolvers
-findByIdResolver :: GetEntityByIdArg -> Res e Handler Privilege
-findByIdResolver GetEntityByIdArg {..} = lift $ dbFetchPrivilegeById privilegeId
+findByIdResolver :: EntityIdArg -> Res e Handler Privilege
+findByIdResolver EntityIdArg {..} = lift $ dbFetchPrivilegeById privilegeId
                                               where
                                                 privilegeId = (toSqlKey $ fromIntegral $ entityId)::Privilege_Id
 

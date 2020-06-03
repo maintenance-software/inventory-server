@@ -18,7 +18,7 @@ module Graphql.Asset.Equipment.DataTypes where
 import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
-import Graphql.Utils (Page, PageArg, GetEntityByIdArg)
+import Graphql.Utils (Page, PageArg, EntityIdArg)
 import Graphql.Asset.DataTypes
 import Graphql.Asset.DataTypes
 import Graphql.Category
@@ -44,7 +44,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
 
-data Equipments o = Equipments { equipment :: GetEntityByIdArg -> o () Handler (Equipment o)
+data Equipments o = Equipments { equipment :: EntityIdArg -> o () Handler (Equipment o)
                                , page :: PageArg -> o () Handler (Page (Equipment o))
                                , saveEquipment :: EquipmentArg -> o () Handler (Equipment o)
                                , setMaintenance :: SetMaintenanceArg -> o () Handler Bool

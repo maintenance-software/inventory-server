@@ -53,9 +53,9 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
 --                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
 
---getMaintenanceByIdResolver :: GetEntityByIdArg -> Res e Handler (Maintenance Res)
-getMaintenanceByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Maintenance o)
-getMaintenanceByIdResolver GetEntityByIdArg {..} = lift $ do
+--getMaintenanceByIdResolver :: EntityIdArg -> Res e Handler (Maintenance Res)
+getMaintenanceByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Maintenance o)
+getMaintenanceByIdResolver EntityIdArg {..} = lift $ do
                                               let maintenanceId = (toSqlKey $ fromIntegral $ entityId)::Maintenance_Id
                                               maintenance <- runDB $ getJustEntity maintenanceId
                                               return $ toMaintenanceQL maintenance
@@ -65,8 +65,8 @@ getMaintenanceByIdResolver_ maintenanceId _ = lift $ do
                                     maintenance <- runDB $ getJustEntity maintenanceId
                                     return $ toMaintenanceQL maintenance
 
-getWorkOrderByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (WorkOrder o)
-getWorkOrderByIdResolver GetEntityByIdArg {..} = lift $ do
+getWorkOrderByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (WorkOrder o)
+getWorkOrderByIdResolver EntityIdArg {..} = lift $ do
                                               let workOrderId = (toSqlKey $ fromIntegral $ entityId)::WorkOrder_Id
                                               workOrder <- runDB $ getJustEntity workOrderId
                                               return $ toWorkOrderQL workOrder
@@ -155,8 +155,8 @@ equipmentResolver_ maintenanceId _ = lift $ do
                               let result = P.map (\(e, i) -> toEquipmentQL e i) itemEquipments
                               return result
 
-equipmentTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => GetEntityByIdArg -> t Handler [Task o]
-equipmentTasksResolver GetEntityByIdArg {..} = lift $ do
+equipmentTasksResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EntityIdArg -> t Handler [Task o]
+equipmentTasksResolver EntityIdArg {..} = lift $ do
                          let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
                          let equipmentKey = Equipment_Key {unEquipment_Key  = itemId}
                          Entity _ Equipment_{..} <- runDB $ getJustEntity equipmentKey

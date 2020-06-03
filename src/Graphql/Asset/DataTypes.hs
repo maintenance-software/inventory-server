@@ -18,7 +18,7 @@ module Graphql.Asset.DataTypes where
 import Import
 import GHC.Generics
 import Data.Morpheus.Types (GQLType)
-import Graphql.Utils (Page, PageArg, GetEntityByIdArg, EntityChangeStatusArg)
+import Graphql.Utils (Page, PageArg, EntityIdArg, EntityChangeStatusArg)
 import Graphql.Category
 import Graphql.Asset.Unit
 
@@ -33,10 +33,11 @@ data Inventory o = Inventory { inventoryId :: Int
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
 
-data Inventories o = Inventories { inventory :: GetEntityByIdArg ->  o () Handler (Inventory o)
+data Inventories o = Inventories { inventory :: EntityIdArg ->  o () Handler (Inventory o)
                                  , list :: () -> o () Handler [Inventory o]
                                  , saveInventory :: InventoryArg -> o () Handler (Inventory o)
                                  , saveInventoryItems :: InventoryItemsArg -> o () Handler [InventoryItem o]
+                                 , fetchInventoriesForItem :: EntityIdArg -> o () Handler [Inventory o]
                                  } deriving (Generic, GQLType)
 
 -- Mutation
@@ -60,7 +61,7 @@ data InventoryItem o = InventoryItem { inventoryItemId :: Int
                                    , modifiedDate :: Maybe Text
                                    } deriving (Generic, GQLType)
 
-data InventoryItems o = InventoryItems { inventoryItem :: GetEntityByIdArg -> o () Handler (InventoryItem o)
+data InventoryItems o = InventoryItems { inventoryItem :: EntityIdArg -> o () Handler (InventoryItem o)
                                        , page :: PageArg -> o () Handler (Page (InventoryItem o))
                                        , saveInventoryItem :: InventoryItemArg -> o () Handler (InventoryItem o)
                                        } deriving (Generic, GQLType)
@@ -105,7 +106,7 @@ data Item o = Item { itemId :: Int
                    , modifiedDate :: Maybe Text
                    } deriving (Generic, GQLType)
 
-data Items o = Items { item :: GetEntityByIdArg -> o () Handler (Item o)
+data Items o = Items { item :: EntityIdArg -> o () Handler (Item o)
                      , page :: PageArg -> o () Handler (Page (Item o))
                      , saveItem :: ItemArg -> o () Handler (Item o)
                      , changeItemStatus :: EntityChangeStatusArg -> o () Handler Bool

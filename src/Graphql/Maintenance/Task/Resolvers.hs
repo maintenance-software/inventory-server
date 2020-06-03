@@ -43,8 +43,8 @@ taskResolver_ maintenanceId _ = lift $ do
                                 tasks <- taskQuery maintenanceId
                                 return $ P.map (\t -> toTaskQL t) tasks
 
---getTaskByIdResolver :: GetEntityByIdArg -> Res e Handler (Task Res)
-getTaskByIdResolver GetEntityByIdArg {..} = lift $ do
+--getTaskByIdResolver :: EntityIdArg -> Res e Handler (Task Res)
+getTaskByIdResolver EntityIdArg {..} = lift $ do
                                               let taskId = (toSqlKey $ fromIntegral $ entityId)::Task_Id
                                               task <- runDB $ getJustEntity taskId
                                               return $ toTaskQL task

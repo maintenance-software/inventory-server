@@ -47,8 +47,8 @@ personResolver _ = pure Persons { person = getPersonByIdResolver
                                 , createUpdatePerson = createUpdatePersonResolver
                                 }
 
-getPersonByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => GetEntityByIdArg -> o () Handler (Person o)
-getPersonByIdResolver GetEntityByIdArg {..} = lift $ do
+getPersonByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Person o)
+getPersonByIdResolver EntityIdArg {..} = lift $ do
                                       let personEntityId = (toSqlKey $ fromIntegral $ entityId)::Person_Id
                                       person <- runDB $ getJustEntity personEntityId
                                       return $ toPersonQL person
