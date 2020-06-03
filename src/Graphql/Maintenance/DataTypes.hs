@@ -128,7 +128,8 @@ data WorkOrderArg = WorkOrderArg { workOrderId :: Int
 
 data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
                                                  , humanResourceId :: Maybe Int
-                                                 , inventoryItemId :: Maybe Int
+                                                 , itemId :: Maybe Int
+                                                 , inventoryId :: Maybe Int
                                                  , equipmentId :: Int
                                                  , taskId :: Int
                                                  } deriving (Generic)

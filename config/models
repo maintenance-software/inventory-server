@@ -365,13 +365,11 @@ WorkOrder_ sql=t_work_order
 WorkOrderResource_ sql=t_work_order_resource
     Id sql=work_order_resource_id
     humanResourceId Person_Id Maybe
-    employeeCategoryId Category_Id Maybe
     itemId Item_Id Maybe
     inventoryId Inventory_Id Maybe
-    inventoryItemId InventoryItem_Id Maybe
-    workOrderId WorkOrder_Id
     equipmentId Item_Id
     taskId Task_Id
+    workOrderId WorkOrder_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     Foreign Equipment_ fkt_equipment equipmentId

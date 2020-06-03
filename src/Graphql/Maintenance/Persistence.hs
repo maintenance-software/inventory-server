@@ -423,7 +423,8 @@ createUpdateWorkOrderResource workOrderId resource = do
                                 do
                                   let workOrderResourceKey = (toSqlKey $ fromIntegral $ workOrderResourceId)::WorkOrderResource_Id
                                   _ <- runDB $ update workOrderResourceKey [ WorkOrderResource_HumanResourceId =. (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
-                                                                           , WorkOrderResource_InventoryItemId =. (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
+                                                                           , WorkOrderResource_ItemId =. (case itemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Item_Id))
+                                                                           , WorkOrderResource_InventoryId =. (case inventoryId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Inventory_Id))
                                                                            , WorkOrderResource_WorkOrderId =. workOrderId
                                                                            , WorkOrderResource_EquipmentId =. ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)
                                                                            , WorkOrderResource_TaskId =. ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
@@ -463,13 +464,11 @@ fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrde
 
 fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Maybe UTCTime -> WorkOrderResource_
 fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
-                                                                                           , workOrderResource_EmployeeCategoryId = Nothing
-                                                                                           , workOrderResource_ItemId =  Nothing
-                                                                                           , workOrderResource_InventoryId =  Nothing
-                                                                                           , workOrderResource_InventoryItemId = (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
-                                                                                           , workOrderResource_WorkOrderId = workOrderId
+                                                                                           , workOrderResource_ItemId = (case itemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Item_Id))
+                                                                                           , workOrderResource_InventoryId =  (case inventoryId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Inventory_Id))
                                                                                            , workOrderResource_EquipmentId = ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)
                                                                                            , workOrderResource_TaskId = ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
+                                                                                           , workOrderResource_WorkOrderId = workOrderId
                                                                                            , workOrderResource_CreatedDate = cd
                                                                                            , workOrderResource_ModifiedDate = md
                                                                                            }
