@@ -99,35 +99,6 @@ INSERT INTO "t_person" (first_name,last_name,created_date,document_type,document
 INSERT INTO "t_person" (first_name,last_name,created_date,document_type,document_id) VALUES ('Lydia','Merrill','now()','NIT','16820729 8095');
 INSERT INTO "t_person" (first_name,last_name,created_date,document_type,document_id) VALUES ('Gay','Johns','now()','NIT','16900222 5978');
 
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('venenatis a,','Evans','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('a, dui.','Morris','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('gravida mauris','Morrison','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('lectus rutrum','Howard','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('Nulla aliquet.','Black','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('Ut semper','Bass','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('facilisis facilisis,','Weiss','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('vulputate, posuere','Herrera','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('feugiat tellus','Washington','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('lacus vestibulum','Eaton','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('congue, elit','Wagner','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('sagittis augue,','Lamb','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('natoque penatibus','Beard','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('libero. Donec','Murray','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('Morbi non','French','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('fermentum arcu.','Kirby','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('ut nisi','Price','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('massa non','Ramos','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('facilisis. Suspendisse','Becker','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('magnis dis','Conley','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('eget lacus.','Travis','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('porttitor interdum.','Ray','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('nonummy ultricies','Grant','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('ridiculus mus.','Hogan','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('cursus non,','Burke','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('lorem vitae','Dejesus','now()');
-INSERT INTO "t_employee_job" (tittle,description,created_date) VALUES ('lacus pede','Joyner','now()');
-
-
 INSERT INTO "t_item" (code,name,default_price,description,images,part_number,manufacturer,model,item_type,notes,status,created_date) VALUES ('PHN15AQV2GY','et netus',250,'ipsum primis in','[]','quis,','magna,','pharetra','SPARE_PARTS','vulputate, risus a ultricies adipiscing,','ACTIVE',now());
 INSERT INTO "t_item" (code,name,default_price,description,images,part_number,manufacturer,model,item_type,notes,status,created_date) VALUES ('ZOM72LJN6UL','Cum sociis',264,'imperdiet, erat nonummy','[]','vitae','Ut','ornare','SPARE_PARTS','bibendum sed, est. Nunc laoreet','ACTIVE',now());
 INSERT INTO "t_item" (code,name,default_price,description,images,part_number,manufacturer,model,item_type,notes,status,created_date) VALUES ('JVH32VDA4ZN','id sapien.',97,'sit amet, consectetuer','[]','dictum','fringilla','mauris','SPARE_PARTS','Aliquam erat volutpat. Nulla facilisis.','ACTIVE',now());
@@ -288,90 +259,26 @@ INSERT INTO "t_maintenance" (name,description,status,created_date) VALUES ('semp
 INSERT INTO "t_maintenance" (name,description,status,created_date) VALUES ('a tortor.','et, rutrum eu,','ACTIVE','now()');
 INSERT INTO "t_maintenance" (name,description,status,created_date) VALUES ('ipsum. Donec','laoreet lectus quis','ACTIVE','now()');
 
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('eu','mauris ipsum porta','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('urna,','Etiam bibendum fermentum','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('ipsum.','libero. Integer in','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('non','dapibus rutrum, justo.','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('Cras','iaculis, lacus pede','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('neque.','congue a, aliquet','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('arcu','Curae; Phasellus ornare.','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('orci','et tristique pellentesque,','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('sagittis.','lacus. Quisque imperdiet,','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('mus.','vitae nibh. Donec','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('lorem','amet ornare lectus','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('nulla','nonummy. Fusce fermentum','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('quam','Etiam laoreet, libero','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('est','sed tortor. Integer','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('dolor','sed sem egestas','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('quis','dolor, tempus non,','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('lectus','viverra. Donec tempus,','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('Donec','Suspendisse eleifend. Cras','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('senectus','nec metus facilisis','now()');
-INSERT INTO "t_task_category" (name,description,created_date) VALUES ('nonummy','consequat auctor, nunc','now()');
-
-
-INSERT INTO "t_category" (name,description,created_date) VALUES ('mauris.','id, libero. Donec','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('Sed','Aenean sed pede','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('auctor','urna. Nunc quis','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('sed,','luctus sit amet,','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('Ut','ut, pharetra sed,','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('consequat','Donec est. Nunc','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('enim,','fringilla est. Mauris','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('et,','Aenean egestas hendrerit','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('dui','semper auctor. Mauris','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('libero','penatibus et magnis','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('tellus,','eget, venenatis a,','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('Phasellus','elementum at, egestas','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('ultricies','nunc ac mattis','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('Mauris','est, mollis non,','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('sollicitudin','blandit mattis. Cras','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('fringilla','nonummy ipsum non','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('et','fermentum convallis ligula.','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('vulputate','Proin dolor. Nulla','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('magna','eget laoreet posuere,','now()');
-INSERT INTO "t_category" (name,description,created_date) VALUES ('mus.','aptent taciti sociosqu','now()');
-
-
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('metus','torquent per conubia','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('sapien,','semper, dui lectus','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('vitae','vitae, posuere at,','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('eleifend','enim diam vel','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('Nunc','orci quis lectus.','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('Donec','tempor erat neque','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('tempor','Donec est mauris,','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('Etiam','mi pede, nonummy','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('augue','massa. Quisque porttitor','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('nascetur','libero nec ligula','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('egestas','consectetuer rhoncus. Nullam','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('Cras','nisl elementum purus,','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('euismod','nec, malesuada ut,','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('consectetuer','a neque. Nullam','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('metus','Nunc ac sem','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('Donec','scelerisque mollis. Phasellus','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('aliquam','magna. Praesent interdum','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('non','mus. Proin vel','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('ut','risus odio, auctor','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('libero.','Donec nibh enim,','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('erat','lorem vitae odio','now()');
-INSERT INTO "t_sub_task_kind" (name,description,created_date) VALUES ('odio.','lorem, auctor quis,','now()');
-
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('imperdiet','amet, faucibus ut,','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('Vestibulum','ac, fermentum vel,','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('iaculis','turpis. Nulla aliquet.','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('quis','Nunc ac sem','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('Duis','rutrum, justo. Praesent','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('neque','Morbi non sapien','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('euismod','eget odio. Aliquam','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('magna.','vel, vulputate eu,','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('magna','Nunc laoreet lectus','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('at,','non, feugiat nec,','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('malesuada','eleifend non, dapibus','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('Integer','Nulla tincidunt, neque','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('Proin','neque sed dictum','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('at','Praesent interdum ligula','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('Mauris','ligula. Nullam feugiat','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('auctor','nisi. Cum sociis','now()');
-INSERT INTO "t_event_trigger" (name,description,created_date) VALUES ('amet,','pellentesque eget, dictum','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('mauris', 'ITEM_CATEGORY', 'id, libero. Donec','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('Sed', 'ITEM_CATEGORY', 'Aenean sed pede','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('auctor', 'ITEM_CATEGORY', 'urna. Nunc quis','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('sed', 'ITEM_CATEGORY', 'luctus sit amet,','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('Ut', 'ITEM_CATEGORY', 'ut, pharetra sed,','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('consequat', 'ITEM_CATEGORY', 'Donec est. Nunc','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('enim', 'EMPLOYEE_JOB_CATEGORY', 'fringilla est. Mauris','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('et', 'EMPLOYEE_JOB_CATEGORY', 'Aenean egestas hendrerit','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('dui', 'EMPLOYEE_JOB_CATEGORY', 'semper auctor. Mauris','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('libero', 'EMPLOYEE_JOB_CATEGORY', 'penatibus et magnis','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('tellus', 'EMPLOYEE_JOB_CATEGORY', 'eget, venenatis a,','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('Phasellus', 'ITEM_CATEGORY', 'elementum at, egestas','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('ultricies', 'ITEM_CATEGORY', 'nunc ac mattis','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('Mauris', 'ITEM_CATEGORY', 'est, mollis non,','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('sollicitudin', 'ITEM_CATEGORY', 'blandit mattis. Cras','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('fringilla', 'ITEM_CATEGORY', 'nonummy ipsum non','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('et', 'ITEM_CATEGORY', 'fermentum convallis ligula.','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('vulputate', 'ITEM_CATEGORY', 'Proin dolor. Nulla','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('magna', 'ITEM_CATEGORY', 'eget laoreet posuere,','now()');
+INSERT INTO "t_category" (name,scope, description,created_date) VALUES ('mus.', 'ITEM_CATEGORY', 'aptent taciti sociosqu','now()');
 
 INSERT INTO "t_unit" (key,label,created_date) VALUES ('SECOND','Second','now()');
 INSERT INTO "t_unit" (key,label,created_date) VALUES ('MINUTE','Minute','now()');
@@ -411,6 +318,7 @@ select  item_id,
         true as out_of_service,
         now() as purchase_date,
         null as parent_id,
+        null,
         now() as created_date
 from t_item where item_type = 'EQUIPMENT';
 
@@ -419,6 +327,6 @@ select
        person_id as employee_id,
        now() as hire_date,
        random() * 2000 + 1 as salary,
-       (SELECT employee_job_id FROM t_employee_job ORDER BY RANDOM() LIMIT 1) as employee_job_id,
+       (SELECT category_id FROM t_category where scope = 'EMPLOYEE_JOB_CATEGORY' ORDER BY RANDOM() LIMIT 1) as employee_job_id,
         now() as created_date
 from t_person limit 50;

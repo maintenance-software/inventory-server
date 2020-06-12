@@ -52,7 +52,7 @@ WITH row AS (
     , email
     , password
     , status
-    , language
+    , locale
     , expiration
     , new_password_required
     , person_id
