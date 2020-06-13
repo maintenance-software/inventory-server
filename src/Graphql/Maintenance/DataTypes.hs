@@ -26,6 +26,7 @@ import Graphql.Maintenance.TaskTrigger.DataTypes
 import Graphql.Asset.Equipment.DataTypes
 import Graphql.Category
 import Graphql.Utils (EntityIdsArg)
+import Graphql.DataTypes (Equipment)
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -36,19 +37,6 @@ data Maintenance o = Maintenance { maintenanceId :: Int
                                  , tasks :: () -> o () Handler [Task o]
                                  , equipments :: () -> o () Handler [Equipment o]
                                  } deriving (Generic, GQLType)
-
-data WorkQueue o = WorkQueue { workQueueId :: Int
-                             , rescheduledDate :: Maybe Text
-                             , scheduledDate :: Text
-                             , incidentDate :: Maybe Text
-                             , rescheduled :: Bool
-                             , status :: Text
-                             , workType :: Text
-                             , tasks :: () -> o () Handler (Task o)
-                             , taskTrigger :: () -> o () Handler (TaskTrigger o)
-                             , createdDate :: Text
-                             , modifiedDate :: Maybe Text
-                             } deriving (Generic, GQLType)
 
 data WorkOrder o = WorkOrder { workOrderId :: Int
                              , workOrderCode :: Text
@@ -79,7 +67,6 @@ data Maintenances o = Maintenances { maintenance :: EntityIdArg ->  o () Handler
                                    , workOrders :: PageArg -> o () Handler (Page (WorkOrder o))
                                    , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
                                    , woPreResources :: EntityIdsArg -> o () Handler [WoAssets]
-                                   , fetchWorkQueues :: PageArg -> o () Handler (Page (Equipment o))
                                    } deriving (Generic, GQLType)
 
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int

@@ -22,34 +22,13 @@ import Graphql.Utils (Page, PageArg, EntityIdArg)
 import Graphql.Asset.DataTypes
 import Graphql.Asset.DataTypes
 import Graphql.Category
---import Graphql.Maintenance.DataTypes (WorkQueue(..))
-
-data Equipment o = Equipment { equipmentId :: Int
-                             , name :: Text
-                             , description :: Maybe Text
-                             , code :: Text
-                             , partNumber :: Maybe Text
-                             , manufacturer :: Maybe Text
-                             , model :: Maybe Text
-                             , notes:: Maybe Text
-                             , status :: Text
-                             , images :: [Text]
-                             , priority :: Int
-                             , hoursAverageDailyUse :: Int
-                             , outOfService :: Bool
-                             , purchaseDate :: Maybe Text
-                             , children :: PageArg -> o () Handler (Page (Equipment o))
-                             , parent :: Maybe(() -> o () Handler (Equipment o))
-                             , category :: () -> o () Handler Category
---                             , workQueue :: () -> o () Handler [WorkQueue o]
-                             , createdDate :: Text
-                             , modifiedDate :: Maybe Text
-                             } deriving (Generic, GQLType)
+import Graphql.DataTypes (Equipment)
 
 data Equipments o = Equipments { equipment :: EntityIdArg -> o () Handler (Equipment o)
                                , page :: PageArg -> o () Handler (Page (Equipment o))
                                , saveEquipment :: EquipmentArg -> o () Handler (Equipment o)
                                , setMaintenance :: SetMaintenanceArg -> o () Handler Bool
+                               , fetchWorkQueues :: PageArg -> o () Handler (Page (Equipment o))
                                } deriving (Generic, GQLType)
 
 data EquipmentArg = EquipmentArg { equipmentId :: Int

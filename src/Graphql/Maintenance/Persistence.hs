@@ -31,6 +31,7 @@ module Graphql.Maintenance.Persistence (
       , workQueueCountTasksQuery
       , fetchPendingWorkQueueQueryCount
       , fetchPendingWorkQueueQuery
+      , fetchPendingWorkQueueByEquipmentIdQuery
 ) where
 
 import Import

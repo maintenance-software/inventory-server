@@ -16,6 +16,8 @@ module Graphql.Maintenance.Resolvers (
     , getMaintenanceByIdResolver_
     , saveMaintenanceResolver
     , toMaintenanceQL
+    , toWorkQueueQL
+    , workQueueByEquipmentIdResolver_
 ) where
 
 import Import
@@ -33,14 +35,15 @@ import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
 import Graphql.Category
+import Graphql.DataTypes (WorkQueue(..), Equipment(..))
 import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Maintenance.Task.DataTypes (Task(..))
-import Graphql.Asset.Equipment.DataTypes (Equipment(..))
+import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
+
 --maintenanceResolver :: () -> Res e Handler Maintenances
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
---                                          , taskActivities = workQueuePageResolver
                                           , equipmentTasks = equipmentTasksResolver
                                           , addWorkQueueDate = addWorkQueueDateResolver
                                           , addWorkQueueEvent = addWorkQueueEventResolver
@@ -51,7 +54,6 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , createUpdateWorkOrder = createUpdateWorkOrderResolver
                                           , workOrders = workOrderPageResolver
                                           , woPreResources = woPreResourcesResolver
-                                          , fetchWorkQueues = fetchWorkQueuesResolver
 --                                          , eventTriggers = listEventTriggerResolver
 --                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
@@ -115,24 +117,6 @@ availableEquipmentPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
---fetchWorkQueuesResolver :: PageArg -> t () Handler (Page Equipment)
-fetchWorkQueuesResolver page = lift $ do
-                        countItems <- fetchPendingWorkQueueQueryCount page
-                        queryResult <- fetchPendingWorkQueueQuery page
-                        let result = P.map (\ (e, i) -> toEquipmentQL e i) queryResult
-                        return Page { totalCount = countItems
-                                    , content = result
-                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
-                                                          , hasPreview = pageIndex_ * pageSize_ > 0
-                                                          , pageSize = pageSize_
-                                                          , pageIndex = pageIndex_
-                                    }
-                        }
-                         where
-                            PageArg {..} = page
-                            pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
-                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
-
 --workQueuePageResolver :: PageArg -> t () Handler (Page WorkQueue)
 workOrderPageResolver page = lift $ do
                         countItems <- workOrderQueryCount page
@@ -152,7 +136,7 @@ workOrderPageResolver page = lift $ do
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
 
-equipmentResolver_ :: (MonadTrans t, MonadTrans (o ())) => Maintenance_Id -> p -> t Handler [Equipment o]
+equipmentResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Maintenance_Id -> () -> o () Handler [Equipment o]
 equipmentResolver_ maintenanceId _ = lift $ do
                               itemEquipments <- equipmentQuery maintenanceId
                               let result = P.map (\(e, i) -> toEquipmentQL e i) itemEquipments
@@ -168,7 +152,11 @@ equipmentTasksResolver EntityIdArg {..} = lift $ do
                                     Just maintenanceId -> taskQuery maintenanceId
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
-
+workQueueByEquipmentIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Item_Id -> () -> o () Handler [WorkQueue o]
+workQueueByEquipmentIdResolver_ equipmentId _ = lift $ do
+                              workQueues <- fetchPendingWorkQueueByEquipmentIdQuery equipmentId
+                              let result = P.map (\ w -> toWorkQueueQL w) workQueues
+                              return result
 
 --resourceRequirementResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => WoResourceRequirement -> t Handler [WoAssets]
 woPreResourcesResolver requestArg = lift $ do
