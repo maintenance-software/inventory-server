@@ -324,20 +324,19 @@ TaskResource_ sql=t_task_resource
 --    Foreign Equipment_ fkt_equipment equipmentId
 --    deriving Typeable Show
 
-TaskActivity_ sql=t_task_activity
-    Id sql=task_activity_id
-    scheduledDate UTCTime Maybe
-    calculatedDate UTCTime
+WorkQueue_ sql=t_work_queue
+    Id sql=work_queue_id
+    rescheduledDate UTCTime Maybe
+    scheduledDate UTCTime
     incidentDate UTCTime Maybe
-    rescheduled Bool
+    workType Text
+    status EntityStatus
+    equipmentId Item_Id
     taskId Task_Id
     taskTriggerId TaskTrigger_Id
     reportedById Person_Id Maybe
-    taskType Text
-    status EntityStatus
-    maintenanceId Maintenance_Id Maybe
-    equipmentId Item_Id
     workOrderId WorkOrder_Id Maybe
+    maintenanceId Maintenance_Id Maybe
     Foreign Equipment_ fkt_equipment equipmentId
     createdDate UTCTime
     modifiedDate UTCTime Maybe
@@ -364,15 +363,13 @@ WorkOrder_ sql=t_work_order
 
 WorkOrderResource_ sql=t_work_order_resource
     Id sql=work_order_resource_id
+    amount Int
     humanResourceId Person_Id Maybe
-    itemId Item_Id Maybe
-    inventoryId Inventory_Id Maybe
-    equipmentId Item_Id
-    taskId Task_Id
+    inventoryItemId InventoryItem_Id Maybe
+    workQueueId WorkQueue_Id
     workOrderId WorkOrder_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
-    Foreign Equipment_ fkt_equipment equipmentId
     deriving Typeable Show
 
 -- InventoryResource_ sql=t_inventory_resource

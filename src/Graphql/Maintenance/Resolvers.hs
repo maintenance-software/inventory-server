@@ -38,10 +38,10 @@ import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
-                                          , taskActivities = taskActivityPageResolver
+                                          , taskActivities = workQueuePageResolver
                                           , equipmentTasks = equipmentTasksResolver
-                                          , addTaskActivityDate = addTaskActivityDateResolver
-                                          , addTaskActivityEvent = addTaskActivityEventResolver
+                                          , addWorkQueueDate = addWorkQueueDateResolver
+                                          , addWorkQueueEvent = addWorkQueueEventResolver
                                           , saveMaintenance = saveMaintenanceResolver
                                           , task = getTaskByIdResolver
                                           , createUpdateTasks = createUpdateTasksResolver
@@ -112,11 +112,11 @@ availableEquipmentPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
---taskActivityPageResolver :: PageArg -> t () Handler (Page TaskActivity)
-taskActivityPageResolver page = lift $ do
-                        countItems <- taskActivityQueryCount page
-                        queryResult <- taskActivityQuery page
-                        let result = P.map (\ (i, e, ta, t, tt, m, c) -> toTaskActivityQL i e ta t tt m c) queryResult
+--workQueuePageResolver :: PageArg -> t () Handler (Page WorkQueue)
+workQueuePageResolver page = lift $ do
+                        countItems <- workQueueQueryCount page
+                        queryResult <- workQueueQuery page
+                        let result = P.map (\ (i, e, ta, t, tt, m, c) -> toWorkQueueQL i e ta t tt m c) queryResult
                         return Page { totalCount = countItems
                                     , content = result
                                     , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
@@ -130,7 +130,7 @@ taskActivityPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
---taskActivityPageResolver :: PageArg -> t () Handler (Page TaskActivity)
+--workQueuePageResolver :: PageArg -> t () Handler (Page WorkQueue)
 workOrderPageResolver page = lift $ do
                         countItems <- workOrderQueryCount page
                         queryResult <- workOrderQuery page
@@ -169,7 +169,7 @@ equipmentTasksResolver EntityIdArg {..} = lift $ do
 
 --resourceRequirementResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => WoResourceRequirement -> t Handler [WoAssets]
 woPreResourcesResolver requestArg = lift $ do
-                       equipmentIds <- taskActivityCountTasksQuery requestArg
+                       equipmentIds <- workQueueCountTasksQuery requestArg
                        equipments <- runDB $ selectList [Item_Id <-. (P.map (\(a, _) -> a) equipmentIds)] []
                        tasks <- runDB $ selectList [Task_Id <-. (P.concat $ P.map (\(_, b) -> b) equipmentIds)] []
                        let findAssetById = \assetId -> (P.filter (\(Entity i _) -> i == assetId) equipments)
@@ -205,17 +205,17 @@ createUpdateTasksResolver MaintenanceTaskArg {..} = lift $ do
                          entityTasks <- getTaskByIds taskIds
                          return $ P.map (\t -> toTaskQL t) entityTasks
 
---addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
-addTaskActivityDateResolver arg = lift $ do
-                         taskActivitySuccess <- addDateTaskActivityPersistent arg
-                         return $ taskActivitySuccess
+--addDateWorkQueueResolver :: WorkQueueDateArg -> t Handler Int
+addWorkQueueDateResolver arg = lift $ do
+                         workQueueSuccess <- addDateWorkQueuePersistent arg
+                         return $ workQueueSuccess
 
---addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
-addTaskActivityEventResolver arg = lift $ do
-                         taskActivitySuccess <- addEventTaskActivityPersistent arg
-                         return $ taskActivitySuccess
+--addDateWorkQueueResolver :: WorkQueueDateArg -> t Handler Int
+addWorkQueueEventResolver arg = lift $ do
+                         workQueueSuccess <- addEventWorkQueuePersistent arg
+                         return $ workQueueSuccess
 
---addDateTaskActivityResolver :: TaskActivityDateArg -> t Handler Int
+--addDateWorkQueueResolver :: WorkQueueDateArg -> t Handler Int
 createUpdateWorkOrderResolver arg = lift $ do
                          workOrderId <- createUpdateWorkOrderPersistent arg
                          workOrder <-  runDB $ getJustEntity workOrderId
@@ -239,13 +239,12 @@ toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
 
-toTaskActivityQL :: Entity Item_ -> Entity Equipment_ -> Entity TaskActivity_ -> Entity Task_ -> Entity TaskTrigger_ -> Maybe (Entity Maintenance_) -> Maybe (Entity Category_) -> TaskActivity
-toTaskActivityQL item equipment taskActivity task trigger maintenance category = TaskActivity { taskActivityId = fromIntegral $ fromSqlKey taskActivityId
-                                                                                     , scheduledDate = case taskActivity_ScheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
-                                                                                     , calculatedDate = fromString $ show taskActivity_CalculatedDate
-                                                                                     , rescheduled = taskActivity_Rescheduled
-                                                                                     , incidentDate = case taskActivity_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
-                                                                                     , status = T.pack $ show taskActivity_Status
+toWorkQueueQL :: Entity Item_ -> Entity Equipment_ -> Entity WorkQueue_ -> Entity Task_ -> Entity TaskTrigger_ -> Maybe (Entity Maintenance_) -> Maybe (Entity Category_) -> WorkQueue
+toWorkQueueQL item equipment workQueue task trigger maintenance category = WorkQueue { workQueueId = fromIntegral $ fromSqlKey workQueueId
+                                                                                     , rescheduledDate = case workQueue_RescheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                                                     , scheduledDate = fromString $ show workQueue_ScheduledDate
+                                                                                     , incidentDate = case workQueue_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                                                     , status = T.pack $ show workQueue_Status
                                                                                      , assetId = fromIntegral $ fromSqlKey itemId
                                                                                      , assetCode = item_Code
                                                                                      , assetName = item_Name
@@ -258,13 +257,13 @@ toTaskActivityQL item equipment taskActivity task trigger maintenance category =
                                                                                      , taskCategoryName = categoryName
                                                                                      , taskTriggerId = fromIntegral $ fromSqlKey triggerId
                                                                                      , triggerDescription = taskTrigger_TriggerType
-                                                                                     , taskType = taskActivity_TaskType
-                                                                                     , createdDate = T.pack $ show taskActivity_CreatedDate
+                                                                                     , workType = workQueue_WorkType
+                                                                                     , createdDate = T.pack $ show workQueue_CreatedDate
                                                                                      }
                                           where
                                             Entity itemId (Item_ {..}) = item
                                             Entity _ (Equipment_ {..}) = equipment
-                                            Entity taskActivityId (TaskActivity_ {..}) = taskActivity
+                                            Entity workQueueId (WorkQueue_ {..}) = workQueue
 --                                            Entity maintenanceId (Maintenance_ {..}) = maintenance
                                             Entity taskId (Task_ {..}) = task
                                             Entity triggerId (TaskTrigger_ {..}) = trigger

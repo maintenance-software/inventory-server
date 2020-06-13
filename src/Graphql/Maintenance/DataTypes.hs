@@ -36,9 +36,9 @@ data Maintenance o = Maintenance { maintenanceId :: Int
                                  , equipments :: () -> o () Handler [Equipment o]
                                  } deriving (Generic, GQLType)
 
-data TaskActivity = TaskActivity { taskActivityId :: Int
-                                 , scheduledDate :: Maybe Text
-                                 , calculatedDate :: Text
+data WorkQueue = WorkQueue { workQueueId :: Int
+                                 , rescheduledDate :: Maybe Text
+                                 , scheduledDate :: Text
                                  , incidentDate :: Maybe Text
                                  , rescheduled :: Bool
                                  , status :: Text
@@ -54,7 +54,7 @@ data TaskActivity = TaskActivity { taskActivityId :: Int
                                  , taskCategoryId :: Maybe Int
                                  , taskCategoryName :: Maybe Text
                                  , triggerDescription :: Text
-                                 , taskType :: Text
+                                 , workType :: Text
                                  , createdDate :: Text
                                  } deriving (Generic, GQLType)
 
@@ -77,9 +77,9 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
 data Maintenances o = Maintenances { maintenance :: EntityIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
-                                   , taskActivities :: PageArg -> o () Handler (Page TaskActivity)
-                                   , addTaskActivityDate :: TaskActivityDateArg -> o () Handler Bool
-                                   , addTaskActivityEvent :: TaskActivityEventArg -> o () Handler Bool
+                                   , taskActivities :: PageArg -> o () Handler (Page WorkQueue)
+                                   , addWorkQueueDate :: WorkQueueDateArg -> o () Handler Bool
+                                   , addWorkQueueEvent :: WorkQueueEventArg -> o () Handler Bool
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: EntityIdArg -> o () Handler (Task o)
@@ -100,12 +100,12 @@ data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Maybe Int
                                              , tasks :: [TaskArg]
                                              } deriving (Generic)
 
-data TaskActivityDateArg = TaskActivityDateArg { lastMaintenanceDate :: Text
+data WorkQueueDateArg = WorkQueueDateArg { lastMaintenanceDate :: Text
                                                , assetId :: Int
                                                , maintenanceId :: Int
                                                } deriving (Generic)
 
-data TaskActivityEventArg = TaskActivityEventArg { assetId :: Int
+data WorkQueueEventArg = WorkQueueEventArg { assetId :: Int
                                                  , taskId :: Int
                                                  , taskTriggerId :: Int
                                                  , maintenanceId :: Maybe Int
@@ -127,11 +127,10 @@ data WorkOrderArg = WorkOrderArg { workOrderId :: Int
                                  } deriving (Generic, GQLType)
 
 data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
+                                                 , amount :: Int
                                                  , humanResourceId :: Maybe Int
-                                                 , itemId :: Maybe Int
-                                                 , inventoryId :: Maybe Int
-                                                 , equipmentId :: Int
-                                                 , taskId :: Int
+                                                 , workQueueId :: Int
+                                                 , inventoryItemId :: Maybe Int
                                                  } deriving (Generic)
 
 instance GQLType WorkOrderResourceArg where

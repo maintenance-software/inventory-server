@@ -21,14 +21,14 @@ module Graphql.Maintenance.Persistence (
       , maintenanceFilters
       , availableEquipmentQuery
       , availableEquipmentQueryCount
-      , taskActivityQueryCount
-      , taskActivityQuery
-      , addDateTaskActivityPersistent
-      , addEventTaskActivityPersistent
+      , workQueueQueryCount
+      , workQueueQuery
+      , addDateWorkQueuePersistent
+      , addEventWorkQueuePersistent
       , createUpdateWorkOrderPersistent
       , workOrderQueryCount
       , workOrderQuery
-      , taskActivityCountTasksQuery
+      , workQueueCountTasksQuery
 ) where
 
 import Import
@@ -146,9 +146,9 @@ equipmentQuery maintenanceId =  do
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
 --                                        let subquery =
---                                              E.from $ \taskActivity -> do
---                                              E.where_ (taskActivity ^. TaskActivity_MaintenanceId E.==. E.val (Just maintenanceId))
---                                              return (taskActivity ^. TaskActivity_EquipmentId)
+--                                              E.from $ \workQueue -> do
+--                                              E.where_ (workQueue ^. WorkQueue_MaintenanceId E.==. E.val (Just maintenanceId))
+--                                              return (workQueue ^. WorkQueue_EquipmentId)
 --                                        E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
                                         E.where_ (equipment ^. Equipment_MaintenanceId E.==. E.val (Just maintenanceId))
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
@@ -162,9 +162,9 @@ availableEquipmentQueryCount page =  do
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
 --                                        let subquery =
---                                              E.from $ \taskActivity -> do
---                                              E.where_ (taskActivity ^. TaskActivity_Status E.!=. E.val DELETED)
---                                              return (taskActivity ^. TaskActivity_EquipmentId)
+--                                              E.from $ \workQueue -> do
+--                                              E.where_ (workQueue ^. WorkQueue_Status E.!=. E.val DELETED)
+--                                              return (workQueue ^. WorkQueue_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
 --                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
                                         E.where_ (filters E.&&. E.isNothing (equipment ^. Equipment_MaintenanceId))
@@ -178,9 +178,9 @@ availableEquipmentQuery page =  do
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                         let subquery =
-                                              E.from $ \taskActivity -> do
-                                              E.where_ (taskActivity ^. TaskActivity_Status E.!=. E.val DELETED)
-                                              return (taskActivity ^. TaskActivity_EquipmentId)
+                                              E.from $ \workQueue -> do
+                                              E.where_ (workQueue ^. WorkQueue_Status E.!=. E.val DELETED)
+                                              return (workQueue ^. WorkQueue_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
@@ -193,39 +193,39 @@ availableEquipmentQuery page =  do
                         pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
-taskActivityQueryCount :: PageArg -> Handler Int
-taskActivityQueryCount page =  do
+workQueueQueryCount :: PageArg -> Handler Int
+workQueueQueryCount page =  do
                       res  <- runDB
                                    $ E.select
-                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger `E.LeftOuterJoin` maintenance `E.LeftOuterJoin` category) -> do
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` workQueue `E.InnerJoin` task `E.InnerJoin` trigger `E.LeftOuterJoin` maintenance `E.LeftOuterJoin` category) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
-                                        E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
-                                        E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
-                                        E.on $ taskActivity ^. TaskActivity_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
-                                        E.on $ (taskActivity ^. TaskActivity_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
+                                        E.on $ equipment ^. Equipment_ItemId E.==. workQueue ^. WorkQueue_EquipmentId
+                                        E.on $ workQueue ^. WorkQueue_TaskId E.==. task ^. Task_Id
+                                        E.on $ workQueue ^. WorkQueue_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
+                                        E.on $ (workQueue ^. WorkQueue_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
                                         E.on $ (task ^. Task_TaskCategoryId) E.==. (category ?. Category_Id)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
-taskActivityQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity TaskActivity_, Entity Task_, Entity TaskTrigger_, Maybe (Entity Maintenance_), Maybe (Entity Category_))]
-taskActivityQuery page =  do
+workQueueQuery :: PageArg -> Handler [(Entity Item_, Entity Equipment_, Entity WorkQueue_, Entity Task_, Entity TaskTrigger_, Maybe (Entity Maintenance_), Maybe (Entity Category_))]
+workQueueQuery page =  do
                       result <- runDB
                                    $ E.select
-                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` taskActivity `E.InnerJoin` task `E.InnerJoin` trigger `E.LeftOuterJoin` maintenance `E.LeftOuterJoin` category) -> do
+                                   $ E.from $ \(item `E.InnerJoin` equipment `E.InnerJoin` workQueue `E.InnerJoin` task `E.InnerJoin` trigger `E.LeftOuterJoin` maintenance `E.LeftOuterJoin` category) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
-                                        E.on $ equipment ^. Equipment_ItemId E.==. taskActivity ^. TaskActivity_EquipmentId
-                                        E.on $ taskActivity ^. TaskActivity_TaskId E.==. task ^. Task_Id
-                                        E.on $ taskActivity ^. TaskActivity_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
-                                        E.on $ (taskActivity ^. TaskActivity_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
+                                        E.on $ equipment ^. Equipment_ItemId E.==. workQueue ^. WorkQueue_EquipmentId
+                                        E.on $ workQueue ^. WorkQueue_TaskId E.==. task ^. Task_Id
+                                        E.on $ workQueue ^. WorkQueue_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
+                                        E.on $ (workQueue ^. WorkQueue_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
                                         E.on $ (task ^. Task_TaskCategoryId) E.==. (category ?. Category_Id)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ filters
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
-                                        return (item, equipment, taskActivity, task, trigger, maintenance, category)
+                                        return (item, equipment, workQueue, task, trigger, maintenance, category)
                       return result
                       where
                         PageArg {..} = page
@@ -250,8 +250,8 @@ createOrUpdateMaintenance maintenance = do
                                   return maintenanceKey
                 return entityId
 
-addEventTaskActivityPersistent :: TaskActivityEventArg -> Handler Bool
-addEventTaskActivityPersistent TaskActivityEventArg {..} = do
+addEventWorkQueuePersistent :: WorkQueueEventArg -> Handler Bool
+addEventWorkQueuePersistent WorkQueueEventArg {..} = do
                     now <- liftIO getCurrentTime
                     let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
                     let taskEntityId = ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
@@ -259,28 +259,27 @@ addEventTaskActivityPersistent TaskActivityEventArg {..} = do
                     let reportedByEntityId = ((toSqlKey $ fromIntegral $ reportedById)::Person_Id)
                     let taskTriggerEntityId = ((toSqlKey $ fromIntegral $ taskTriggerId)::TaskTrigger_Id)
                     let incidentUtcDate = case incidentDate of Nothing -> Nothing; Just d -> Just ((read $ T.unpack d)::UTCTime)
-                    let newTaskActivity = TaskActivity_ { taskActivity_ScheduledDate = Nothing
-                                                        , taskActivity_CalculatedDate = now
-                                                        , taskActivity_Rescheduled = False
-                                                        , taskActivity_IncidentDate = incidentUtcDate
-                                                        , taskActivity_TaskId = taskEntityId
-                                                        , taskActivity_TaskTriggerId = taskTriggerEntityId
-                                                        , taskActivity_Status = ACTIVE
-                                                        , taskActivity_TaskType = if hasAssetFailure then "EVENT_FAILURE" else "EVENT"
-                                                        , taskActivity_MaintenanceId = maintenanceEntityId
-                                                        , taskActivity_EquipmentId = assetEntityId
-                                                        , taskActivity_WorkOrderId = Nothing
-                                                        , taskActivity_ReportedById = Just reportedByEntityId
-                                                        , taskActivity_ModifiedDate = Nothing
-                                                        , taskActivity_CreatedDate = now
-                                                        }
-                    _ <- runDB $ insert $ newTaskActivity
+                    let newWorkQueue = WorkQueue_ { workQueue_RescheduledDate = Nothing
+                                                     , workQueue_ScheduledDate = now
+                                                     , workQueue_IncidentDate = incidentUtcDate
+                                                     , workQueue_TaskId = taskEntityId
+                                                     , workQueue_TaskTriggerId = taskTriggerEntityId
+                                                     , workQueue_Status = ACTIVE
+                                                     , workQueue_WorkType = if hasAssetFailure then "EVENT_FAILURE" else "EVENT"
+                                                     , workQueue_MaintenanceId = maintenanceEntityId
+                                                     , workQueue_EquipmentId = assetEntityId
+                                                     , workQueue_WorkOrderId = Nothing
+                                                     , workQueue_ReportedById = Just reportedByEntityId
+                                                     , workQueue_ModifiedDate = Nothing
+                                                     , workQueue_CreatedDate = now
+                                                     }
+                    _ <- runDB $ insert $ newWorkQueue
 --                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
 --                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
-addDateTaskActivityPersistent :: TaskActivityDateArg -> Handler Bool
-addDateTaskActivityPersistent TaskActivityDateArg {..} = do
+addDateWorkQueuePersistent :: WorkQueueDateArg -> Handler Bool
+addDateWorkQueuePersistent WorkQueueDateArg {..} = do
                     now <- liftIO getCurrentTime
                     let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
                     let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
@@ -288,14 +287,14 @@ addDateTaskActivityPersistent TaskActivityDateArg {..} = do
                     tasks <- taskQuery maintenanceEntityId
                     let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
                     triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_TriggerType ==. "DATE"] []
-                    _ <- createTaskActivityForDate maintenanceEntityId assetEntityId maintenanceUtcDate triggers
+                    _ <- createWorkQueueForDate maintenanceEntityId assetEntityId maintenanceUtcDate triggers
 --                    let equipmentKey = Equipment_Key {unEquipment_Key  = assetEntityId}
 --                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. Just maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
-createTaskActivityForDate :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [TaskActivity_Id]
-createTaskActivityForDate _ _ _ []  = pure []
-createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
+createWorkQueueForDate :: Maintenance_Id -> Item_Id -> UTCTime -> [Entity TaskTrigger_] -> Handler [WorkQueue_Id]
+createWorkQueueForDate _ _ _ []  = pure []
+createWorkQueueForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                     now <- liftIO getCurrentTime
                     let UTCTime today _ = now
                     let (a, b, _) = toWeekDate today
@@ -314,46 +313,45 @@ createTaskActivityForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                                           WEEK -> firstDayOfCurrentWeek
                                           MONTH -> firstDayOfCurrentMonth
                                           YEAR -> firstDayOfCurrentYear
-                    let newTaskActivity = TaskActivity_ { taskActivity_ScheduledDate = Nothing
-                                                        , taskActivity_CalculatedDate = UTCTime calculatedDate 0
-                                                        , taskActivity_Rescheduled = False
-                                                        , taskActivity_IncidentDate = Nothing
-                                                        , taskActivity_TaskId = taskTrigger_TaskId
-                                                        , taskActivity_TaskTriggerId = taskTriggerId
-                                                        , taskActivity_Status = ACTIVE
-                                                        , taskActivity_TaskType = "PLAN"
-                                                        , taskActivity_MaintenanceId = (Just maintenanceId)
-                                                        , taskActivity_EquipmentId = assetId
-                                                        , taskActivity_WorkOrderId = Nothing
-                                                        , taskActivity_ReportedById = Nothing
-                                                        , taskActivity_ModifiedDate = Nothing
-                                                        , taskActivity_CreatedDate = now
-                                                        }
-                    taskActivityEntityId <- runDB $ insert $ newTaskActivity
-                    taskActivityEntityIds <- createTaskActivityForDate maintenanceId assetId maintenanceUtcDate hs
-                    return (taskActivityEntityId:taskActivityEntityIds)
+                    let newWorkQueue = WorkQueue_ { workQueue_RescheduledDate = Nothing
+                                                     , workQueue_ScheduledDate = UTCTime calculatedDate 0
+                                                     , workQueue_IncidentDate = Nothing
+                                                     , workQueue_TaskId = taskTrigger_TaskId
+                                                     , workQueue_TaskTriggerId = taskTriggerId
+                                                     , workQueue_Status = ACTIVE
+                                                     , workQueue_WorkType = "PLAN"
+                                                     , workQueue_MaintenanceId = (Just maintenanceId)
+                                                     , workQueue_EquipmentId = assetId
+                                                     , workQueue_WorkOrderId = Nothing
+                                                     , workQueue_ReportedById = Nothing
+                                                     , workQueue_ModifiedDate = Nothing
+                                                     , workQueue_CreatedDate = now
+                                                     }
+                    workQueueEntityId <- runDB $ insert $ newWorkQueue
+                    workQueueEntityIds <- createWorkQueueForDate maintenanceId assetId maintenanceUtcDate hs
+                    return (workQueueEntityId:workQueueEntityIds)
 
 
---taskActivityCountTasksQuery :: WoResourceRequirement -> Handler [(Item_Id, Task_Id, Int)]
---taskActivityCountTasksQuery WoResourceRequirement{..} =  do
+--workQueueCountTasksQuery :: WoResourceRequirement -> Handler [(Item_Id, Task_Id, Int)]
+--workQueueCountTasksQuery WoResourceRequirement{..} =  do
 --                      result <- runDB
 --                                   $ E.select
---                                   $ E.from $ \ taskActivity -> do
---                                        E.where_ (taskActivity ^. TaskActivity_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) taskActivityIds))
---                                        E.groupBy (taskActivity ^. TaskActivity_EquipmentId, taskActivity ^. TaskActivity_TaskId)
---                                        let count' = E.count (taskActivity ^. TaskActivity_TaskId)
---                                        return (taskActivity ^. TaskActivity_EquipmentId, taskActivity ^. TaskActivity_TaskId, count')
+--                                   $ E.from $ \ workQueue -> do
+--                                        E.where_ (workQueue ^. WorkQueue_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) workQueueIds))
+--                                        E.groupBy (workQueue ^. WorkQueue_EquipmentId, workQueue ^. WorkQueue_TaskId)
+--                                        let count' = E.count (workQueue ^. WorkQueue_TaskId)
+--                                        return (workQueue ^. WorkQueue_EquipmentId, workQueue ^. WorkQueue_TaskId, count')
 --                      return $ fmap (\(E.Value a, E.Value b, E.Value c) -> (a, b, c)) $ result
 
-taskActivityCountTasksQuery :: EntityIdsArg -> Handler [(Item_Id, [Task_Id])]
-taskActivityCountTasksQuery EntityIdsArg{..} =  do
+workQueueCountTasksQuery :: EntityIdsArg -> Handler [(Item_Id, [Task_Id])]
+workQueueCountTasksQuery EntityIdsArg{..} =  do
                       result <- runDB
                                    $ E.select
-                                   $ E.from $ \ taskActivity -> do
-                                        E.where_ (taskActivity ^. TaskActivity_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) entityIds))
-                                        E.groupBy (taskActivity ^. TaskActivity_EquipmentId)
-                                        let toList = arrayAggDistinct (taskActivity ^. TaskActivity_TaskId)
-                                        return (taskActivity ^. TaskActivity_EquipmentId, toList)
+                                   $ E.from $ \ workQueue -> do
+                                        E.where_ (workQueue ^. WorkQueue_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) entityIds))
+                                        E.groupBy (workQueue ^. WorkQueue_EquipmentId)
+                                        let toList = arrayAggDistinct (workQueue ^. WorkQueue_TaskId)
+                                        return (workQueue ^. WorkQueue_EquipmentId, toList)
                       return $ fmap (\(E.Value a, E.Value (Just b)) -> (a, b)) $ result
 
 
@@ -423,11 +421,10 @@ createUpdateWorkOrderResource workOrderId resource = do
                                 do
                                   let workOrderResourceKey = (toSqlKey $ fromIntegral $ workOrderResourceId)::WorkOrderResource_Id
                                   _ <- runDB $ update workOrderResourceKey [ WorkOrderResource_HumanResourceId =. (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
-                                                                           , WorkOrderResource_ItemId =. (case itemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Item_Id))
-                                                                           , WorkOrderResource_InventoryId =. (case inventoryId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Inventory_Id))
+                                                                           , WorkOrderResource_Amount =. amount
+                                                                           , WorkOrderResource_InventoryItemId =. (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
                                                                            , WorkOrderResource_WorkOrderId =. workOrderId
-                                                                           , WorkOrderResource_EquipmentId =. ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)
-                                                                           , WorkOrderResource_TaskId =. ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
+                                                                           , WorkOrderResource_WorkQueueId =. ((toSqlKey $ fromIntegral $ workQueueId)::WorkQueue_Id)
                                                                            , WorkOrderResource_ModifiedDate =. Just now
                                                                           ]
                                   return workOrderResourceKey
@@ -464,10 +461,9 @@ fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrde
 
 fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Maybe UTCTime -> WorkOrderResource_
 fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
-                                                                                           , workOrderResource_ItemId = (case itemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Item_Id))
-                                                                                           , workOrderResource_InventoryId =  (case inventoryId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Inventory_Id))
-                                                                                           , workOrderResource_EquipmentId = ((toSqlKey $ fromIntegral $ equipmentId)::Item_Id)
-                                                                                           , workOrderResource_TaskId = ((toSqlKey $ fromIntegral $ taskId)::Task_Id)
+                                                                                           , workOrderResource_Amount = amount
+                                                                                           , workOrderResource_InventoryItemId =  (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
+                                                                                           , workOrderResource_WorkQueueId = (toSqlKey $ fromIntegral workQueueId)::WorkQueue_Id
                                                                                            , workOrderResource_WorkOrderId = workOrderId
                                                                                            , workOrderResource_CreatedDate = cd
                                                                                            , workOrderResource_ModifiedDate = md
