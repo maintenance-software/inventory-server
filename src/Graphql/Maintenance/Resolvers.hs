@@ -237,7 +237,7 @@ toWorkQueueQL (Entity workQueueId workQueue) = WorkQueue { workQueueId = fromInt
                                                          , incidentDate = case workQueue_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
                                                          , status = T.pack $ show workQueue_Status
                                                          , workType = workQueue_WorkType
-                                                         , tasks = getTaskByIdResolver_ workQueue_TaskId
+                                                         , task = getTaskByIdResolver_ workQueue_TaskId
                                                          , taskTrigger = getTaskTriggerByIdResolver_ workQueue_TaskTriggerId
                                                          , createdDate = T.pack $ show workQueue_CreatedDate
                                                          , modifiedDate = m
