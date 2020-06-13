@@ -14,6 +14,7 @@
 module Graphql.Maintenance.TaskTrigger.Resolvers (
       taskTriggerResolver_
     , getTaskTriggerByIdResolver
+    , getTaskTriggerByIdResolver_
     , toTaskTriggerQL
 ) where
 
@@ -38,6 +39,11 @@ taskTriggerResolver_ taskId _ = lift $ do
 --getTaskTriggerByIdResolver :: EntityIdArg -> Res e Handler (TaskTrigger Res)
 getTaskTriggerByIdResolver EntityIdArg {..} = lift $ do
                                               let taskTriggerId = (toSqlKey $ fromIntegral $ entityId)::TaskTrigger_Id
+                                              taskTrigger <- runDB $ getJustEntity taskTriggerId
+                                              return $ toTaskTriggerQL taskTrigger
+
+--getTaskTriggerByIdResolver :: EntityIdArg -> Res e Handler (TaskTrigger Res)
+getTaskTriggerByIdResolver_ taskTriggerId _ = lift $ do
                                               taskTrigger <- runDB $ getJustEntity taskTriggerId
                                               return $ toTaskTriggerQL taskTrigger
 

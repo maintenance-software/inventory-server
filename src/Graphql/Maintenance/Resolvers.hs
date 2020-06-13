@@ -25,6 +25,8 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums ()
 import Graphql.Utils
+import Graphql.Maintenance.TaskTrigger.Resolvers (getTaskTriggerByIdResolver_)
+import Graphql.Maintenance.Task.Resolvers (getTaskByIdResolver_)
 import Graphql.Maintenance.Task.Resolvers
 import Graphql.Maintenance.Task.Persistence
 import Graphql.Asset.Equipment.Resolvers
@@ -38,7 +40,7 @@ import Graphql.Asset.Equipment.DataTypes (Equipment(..))
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
-                                          , taskActivities = workQueuePageResolver
+--                                          , taskActivities = workQueuePageResolver
                                           , equipmentTasks = equipmentTasksResolver
                                           , addWorkQueueDate = addWorkQueueDateResolver
                                           , addWorkQueueEvent = addWorkQueueEventResolver
@@ -49,6 +51,7 @@ maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdReso
                                           , createUpdateWorkOrder = createUpdateWorkOrderResolver
                                           , workOrders = workOrderPageResolver
                                           , woPreResources = woPreResourcesResolver
+                                          , fetchWorkQueues = fetchWorkQueuesResolver
 --                                          , eventTriggers = listEventTriggerResolver
 --                                          , saveEventTrigger = saveEventTriggerResolver
                                           }
@@ -112,11 +115,11 @@ availableEquipmentPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
---workQueuePageResolver :: PageArg -> t () Handler (Page WorkQueue)
-workQueuePageResolver page = lift $ do
-                        countItems <- workQueueQueryCount page
-                        queryResult <- workQueueQuery page
-                        let result = P.map (\ (i, e, ta, t, tt, m, c) -> toWorkQueueQL i e ta t tt m c) queryResult
+--fetchWorkQueuesResolver :: PageArg -> t () Handler (Page Equipment)
+fetchWorkQueuesResolver page = lift $ do
+                        countItems <- fetchPendingWorkQueueQueryCount page
+                        queryResult <- fetchPendingWorkQueueQuery page
+                        let result = P.map (\ (e, i) -> toEquipmentQL e i) queryResult
                         return Page { totalCount = countItems
                                     , content = result
                                     , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
@@ -239,38 +242,23 @@ toMaintenanceQL (Entity maintenanceId maintenance) = Maintenance { maintenanceId
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
 
-toWorkQueueQL :: Entity Item_ -> Entity Equipment_ -> Entity WorkQueue_ -> Entity Task_ -> Entity TaskTrigger_ -> Maybe (Entity Maintenance_) -> Maybe (Entity Category_) -> WorkQueue
-toWorkQueueQL item equipment workQueue task trigger maintenance category = WorkQueue { workQueueId = fromIntegral $ fromSqlKey workQueueId
-                                                                                     , rescheduledDate = case workQueue_RescheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
-                                                                                     , scheduledDate = fromString $ show workQueue_ScheduledDate
-                                                                                     , incidentDate = case workQueue_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
-                                                                                     , status = T.pack $ show workQueue_Status
-                                                                                     , assetId = fromIntegral $ fromSqlKey itemId
-                                                                                     , assetCode = item_Code
-                                                                                     , assetName = item_Name
-                                                                                     , maintenanceId = maintenanceId
-                                                                                     , maintenanceName = maintenanceName
-                                                                                     , taskId = fromIntegral $ fromSqlKey taskId
-                                                                                     , taskName = task_Name
-                                                                                     , taskPriority = task_Priority
-                                                                                     , taskCategoryId = categoryId
-                                                                                     , taskCategoryName = categoryName
-                                                                                     , taskTriggerId = fromIntegral $ fromSqlKey triggerId
-                                                                                     , triggerDescription = taskTrigger_TriggerType
-                                                                                     , workType = workQueue_WorkType
-                                                                                     , createdDate = T.pack $ show workQueue_CreatedDate
-                                                                                     }
+toWorkQueueQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) =>Entity WorkQueue_ -> WorkQueue o
+toWorkQueueQL (Entity workQueueId workQueue) = WorkQueue { workQueueId = fromIntegral $ fromSqlKey workQueueId
+                                                         , rescheduledDate = case workQueue_RescheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                         , scheduledDate = fromString $ show workQueue_ScheduledDate
+                                                         , incidentDate = case workQueue_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                         , status = T.pack $ show workQueue_Status
+                                                         , workType = workQueue_WorkType
+                                                         , tasks = getTaskByIdResolver_ workQueue_TaskId
+                                                         , taskTrigger = getTaskTriggerByIdResolver_ workQueue_TaskTriggerId
+                                                         , createdDate = T.pack $ show workQueue_CreatedDate
+                                                         , modifiedDate = m
+                                                         }
                                           where
-                                            Entity itemId (Item_ {..}) = item
-                                            Entity _ (Equipment_ {..}) = equipment
-                                            Entity workQueueId (WorkQueue_ {..}) = workQueue
---                                            Entity maintenanceId (Maintenance_ {..}) = maintenance
-                                            Entity taskId (Task_ {..}) = task
-                                            Entity triggerId (TaskTrigger_ {..}) = trigger
-                                            maintenanceName = (case maintenance of Nothing -> Nothing; Just (Entity _ (Maintenance_ {..})) -> Just maintenance_Name)
-                                            maintenanceId = (case maintenance of Nothing -> Nothing; Just (Entity maintenanceId _) -> Just $ fromIntegral $ fromSqlKey maintenanceId)
-                                            categoryName = (case category of Nothing -> Nothing; Just (Entity _ (Category_ {..})) -> Just category_Name)
-                                            categoryId = (case category of Nothing -> Nothing; Just (Entity categoryId _) -> Just $ fromIntegral $ fromSqlKey categoryId)
+                                            WorkQueue_ {..} = workQueue
+                                            m = case workQueue_ModifiedDate of
+                                                  Just d -> Just $ fromString $ show d
+                                                  Nothing -> Nothing
 
 --toWorkOrderQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrder_ -> WorkOrder o
 toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromIntegral $ fromSqlKey workOrderId

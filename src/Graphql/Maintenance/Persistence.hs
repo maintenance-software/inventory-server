@@ -29,6 +29,8 @@ module Graphql.Maintenance.Persistence (
       , workOrderQueryCount
       , workOrderQuery
       , workQueueCountTasksQuery
+      , fetchPendingWorkQueueQueryCount
+      , fetchPendingWorkQueueQuery
 ) where
 
 import Import
@@ -231,6 +233,52 @@ workQueueQuery page =  do
                         PageArg {..} = page
                         pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
+
+
+fetchPendingWorkQueueQueryCount :: PageArg -> Handler Int
+fetchPendingWorkQueueQueryCount page =  do
+                      res  <- runDB
+                                   $ E.select
+                                   $ E.from $ \(item `E.InnerJoin` equipment) -> do
+                                        E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
+                                        let subquery = E.from $ \workQueue -> do
+                                                       E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ PENDING))
+                                                       return (workQueue ^. WorkQueue_EquipmentId)
+                                        filters <- equipmentQueryFilters equipment item page
+                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+                                        return E.countRows
+                      return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
+
+fetchPendingWorkQueueQuery :: PageArg -> Handler [(Entity Equipment_, Entity Item_)]
+fetchPendingWorkQueueQuery page =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(item `E.InnerJoin` equipment) -> do
+                                        E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
+                                        let subquery = E.from $ \workQueue -> do
+                                                       E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ PENDING))
+                                                       return (workQueue ^. WorkQueue_EquipmentId)
+                                        filters <- equipmentQueryFilters equipment item page
+                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+                                        E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
+                                        E.offset $ pageIndex_ * pageSize_
+                                        E.limit pageSize_
+                                        return (equipment, item)
+                      return result
+                      where
+                        PageArg {..} = page
+                        pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
+                        pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
+
+fetchPendingWorkQueueByEquipmentIdQuery :: Item_Id -> Handler [Entity WorkQueue_]
+fetchPendingWorkQueueByEquipmentIdQuery equipmentId =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \ workQueue -> do
+                                        E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ PENDING) E.&&. workQueue ^. WorkQueue_EquipmentId E.==. (E.val $ equipmentId))
+                                        E.orderBy [E.asc (workQueue ^. WorkQueue_Id)]
+                                        return workQueue
+                      return result
 
 --createOrUpdateMaintenance :: MaintenanceArg -> Handler (Maintenance MutRes)
 createOrUpdateMaintenance maintenance = do

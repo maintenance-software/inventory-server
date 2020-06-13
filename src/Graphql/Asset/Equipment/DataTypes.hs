@@ -22,6 +22,7 @@ import Graphql.Utils (Page, PageArg, EntityIdArg)
 import Graphql.Asset.DataTypes
 import Graphql.Asset.DataTypes
 import Graphql.Category
+--import Graphql.Maintenance.DataTypes (WorkQueue(..))
 
 data Equipment o = Equipment { equipmentId :: Int
                              , name :: Text
@@ -40,6 +41,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , children :: PageArg -> o () Handler (Page (Equipment o))
                              , parent :: Maybe(() -> o () Handler (Equipment o))
                              , category :: () -> o () Handler Category
+--                             , workQueue :: () -> o () Handler [WorkQueue o]
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)

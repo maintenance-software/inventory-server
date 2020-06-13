@@ -16,6 +16,7 @@
 module Graphql.Maintenance.Task.Resolvers (
       taskResolver_
     , getTaskByIdResolver
+    , getTaskByIdResolver_
     , toTaskQL
 ) where
 
@@ -46,6 +47,10 @@ taskResolver_ maintenanceId _ = lift $ do
 --getTaskByIdResolver :: EntityIdArg -> Res e Handler (Task Res)
 getTaskByIdResolver EntityIdArg {..} = lift $ do
                                               let taskId = (toSqlKey $ fromIntegral $ entityId)::Task_Id
+                                              task <- runDB $ getJustEntity taskId
+                                              return $ toTaskQL task
+
+getTaskByIdResolver_ taskId _ = lift $ do
                                               task <- runDB $ getJustEntity taskId
                                               return $ toTaskQL task
 
