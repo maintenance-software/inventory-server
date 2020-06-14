@@ -11,7 +11,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards       #-}
 
-module Graphql.Asset.Inventory.Persistence (createOrUpdateInventory, fetchInventoriesForItemQuery) where
+module Graphql.Asset.Inventory.Persistence (createOrUpdateInventory) where
 
 import Import
 import GHC.Generics
@@ -37,19 +37,19 @@ import Graphql.Asset.DataTypes
 --                       inventories <- runDB $ selectList ([] :: [Filter Inventory_]) []
 --                       return $ P.map toInventoryQL inventories
 
-fetchInventoriesForItemQuery :: Item_Id -> Handler [Entity Inventory_]
-fetchInventoriesForItemQuery itemId = do
-                      result <- runDB
-                                   $ E.select
-                                   $ E.from $ \ inventory -> do
-                                        let subquery =
-                                              E.from $ \inventoryItem -> do
-                                              E.where_ (inventoryItem ^. InventoryItem_ItemId E.==. E.val itemId)
-                                              return (inventoryItem ^. InventoryItem_InventoryId)
-                                        E.where_ (inventory ^. Inventory_Id `E.in_` E.subList_select subquery)
-                                        E.orderBy [E.asc (inventory ^. Inventory_Id)]
-                                        return inventory
-                      return result
+--fetchInventoriesForItemQuery :: Item_Id -> Handler [Entity Inventory_]
+--fetchInventoriesForItemQuery itemId = do
+--                      result <- runDB
+--                                   $ E.select
+--                                   $ E.from $ \ inventory -> do
+--                                        let subquery =
+--                                              E.from $ \inventoryItem -> do
+--                                              E.where_ (inventoryItem ^. InventoryItem_ItemId E.==. E.val itemId)
+--                                              return (inventoryItem ^. InventoryItem_InventoryId)
+--                                        E.where_ (inventory ^. Inventory_Id `E.in_` E.subList_select subquery)
+--                                        E.orderBy [E.asc (inventory ^. Inventory_Id)]
+--                                        return inventory
+--                      return result
 
 --createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
 createOrUpdateInventory inventory = do

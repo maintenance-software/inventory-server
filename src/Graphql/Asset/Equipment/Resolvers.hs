@@ -17,14 +17,9 @@ module Graphql.Asset.Equipment.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Prelude as P
 import qualified Data.Text as T
-import Enums
 import Graphql.Utils
 import Graphql.Asset.DataTypes
 import Graphql.Category
@@ -117,9 +112,9 @@ fetchWorkQueuesResolver page = lift $ do
 saveEquipmentResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EquipmentArg -> t Handler (Equipment o)
 saveEquipmentResolver arg = lift $ do
                                   itemId <- createOrUpdateItem itemArg
-                                  equipmentId <- createOrUpdateEquipment itemId arg
+                                  entityEquipmentId <- createOrUpdateEquipment itemId arg
                                   itemEntity <- runDB $ getJustEntity itemId
-                                  equipmentEntity <- runDB $ getJustEntity equipmentId
+                                  equipmentEntity <- runDB $ getJustEntity entityEquipmentId
                                   return $ toEquipmentQL equipmentEntity itemEntity
                       where
                         EquipmentArg {..} = arg
@@ -162,6 +157,7 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                      , parent = case equipment_ParentId of Nothing -> Nothing; Just parentId -> Just $ getEquipmentByIdResolver_ parentId
                                                      , children = childrenResolver itemId
                                                      , workQueues = workQueueByEquipmentIdResolver_ itemId
+                                                     , category = case item_CategoryId of Nothing -> Nothing; Just c -> Just $ getCategoryByIdResolver_ c
                                                      , createdDate = fromString $ show equipment_CreatedDate
                                                      , modifiedDate = m
                                                      }

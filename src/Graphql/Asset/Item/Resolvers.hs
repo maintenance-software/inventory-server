@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -22,23 +21,19 @@ module Graphql.Asset.Item.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import qualified Data.Text as T
 import Prelude as P
 import Graphql.Utils
 import Enums
-import Data.Time
+import Data.Time ()
 import Graphql.Category
 import Graphql.Asset.DataTypes
 import Graphql.Asset.InventoryItem.Resolvers
 import Graphql.Asset.Unit
 import Graphql.Asset.Item.Persistence
-import Graphql.Asset.DataTypes
 
 -- Query Resolvers
---getItemByIdResolver :: EntityIdArg -> Res e Handler (Item Res)
 getItemByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Item o)
 getItemByIdResolver EntityIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId)::Item_Id
@@ -55,7 +50,7 @@ getItemByIdResolver_ itemId _ = lift $ do
 --                                      category <- dbFetchCategoryById categoryId
 --                                      return category
 
---itemsPageResolver :: PageArg -> Res e Handler (Page (Item Res))
+itemsPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Item o))
 itemsPageResolver page = lift $ do
                         countItems <- itemQueryCount page
                         result <- itemQuery page
@@ -99,7 +94,6 @@ availableItemsPageResolver_ inventoryId page = lift $ do
                                             Just y -> y
                                             Nothing -> 10
 
---itemResolver :: () -> Res e Handler Items
 itemResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => p -> f (Items o)
 itemResolver _ = pure Items { item = getItemByIdResolver
                             , page = itemsPageResolver
@@ -144,15 +138,12 @@ toItemQL (Entity itemId item) = Item { itemId = fromIntegral $ fromSqlKey itemId
                                     Just d -> Just $ fromString $ show d
                                     Nothing -> Nothing
 
---changeItemStatusResolver :: EntityChangeStatusArg -> MutRes e Handler Bool
 changeItemStatusResolver :: MonadTrans t => EntityChangeStatusArg -> t Handler Bool
 changeItemStatusResolver EntityChangeStatusArg {..} = lift $ do
                               () <- changeStatus entityIds (readEntityStatus status)
                               return True
 
---saveItemResolver :: ItemArg -> MutRes e Handler (Item MutRes)
 saveItemResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => ItemArg -> t Handler (Item o)
-
 saveItemResolver arg = lift $ do
                               itemId <- createOrUpdateItem arg
                               item <- runDB $ getJustEntity itemId

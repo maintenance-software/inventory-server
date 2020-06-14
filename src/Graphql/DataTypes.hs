@@ -42,7 +42,7 @@ data Equipment o = Equipment { equipmentId :: Int
                              , purchaseDate :: Maybe Text
                              , children :: PageArg -> o () Handler (Page (Equipment o))
                              , parent :: Maybe(() -> o () Handler (Equipment o))
-                             , category :: () -> o () Handler Category
+                             , category :: Maybe(() -> o () Handler Category)
                              , workQueues :: () -> o () Handler [WorkQueue o]
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text

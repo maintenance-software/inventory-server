@@ -22,34 +22,36 @@ module Graphql.Asset.InventoryItem.Resolvers (
 ) where
 
 import Import
-import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import qualified Data.Text as T
 import Prelude as P
-import qualified Data.Set as S
 import Graphql.Utils
 import {-# SOURCE #-} Graphql.Asset.Item.Resolvers
 import {-# SOURCE #-} Graphql.Asset.Inventory.Resolvers
-import Graphql.Asset.Unit
+import Graphql.Asset.Unit ()
 import Graphql.Asset.DataTypes
-import Enums
-import Graphql.Asset.DataTypes
+import Graphql.Asset.DataTypes ()
 import Graphql.Asset.InventoryItem.Persistence
 
 -- Query Resolvers
---findInventoryItemByIdResolver :: EntityIdArg -> Res e Handler (InventoryItem Res)
+inventoryItemsResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (InventoryItems o)
+inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver
+                                               , page = inventoryItemsPageResolver
+                                               , saveInventoryItem = saveInventoryItemResolver
+                                               }
+
+findInventoryItemByIdResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EntityIdArg -> t Handler (InventoryItem o)
 findInventoryItemByIdResolver EntityIdArg {..} = lift $ do
                                               let inventoryItemId = (toSqlKey $ fromIntegral $ entityId)::InventoryItem_Id
 --                                              let inventoryItemId = InventoryItem_Key {unInventoryItem_Key  = itemId}
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 
---getInventoryItemByIdResolver_ :: InventoryItem_Id -> () -> Res e Handler (InventoryItem Res)
+getInventoryItemByIdResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => InventoryItem_Id -> () -> t Handler (InventoryItem o)
 getInventoryItemByIdResolver_ inventoryItemId _ = lift $ do
                                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                                               return $ toInventoryItemQL inventoryItem
 
---inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
+inventoryItemsPageResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Inventory_Id -> PageArg -> t Handler (Page (InventoryItem o))
 inventoryItemsPageResolver_ inventoryId (PageArg {..}) = lift $ do
                                     countItems <- runDB $ count ([InventoryItem_InventoryId ==. inventoryId] :: [Filter InventoryItem_])
                                     items <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
@@ -70,7 +72,7 @@ inventoryItemsPageResolver_ inventoryId (PageArg {..}) = lift $ do
                                                       Just y -> y
                                                       Nothing -> 10
 
---inventoryItemsResolver :: Inventory_Id -> PageArg -> Res e Handler (Page InventoryItem)
+inventoryItemsItemPageResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Item_Id -> PageArg -> t Handler (Page (InventoryItem o))
 inventoryItemsItemPageResolver_ itemId (PageArg {..}) = lift $ do
                                     countItems <- runDB $ count ([InventoryItem_ItemId ==. itemId] :: [Filter InventoryItem_])
                                     items <- runDB $ selectList [InventoryItem_ItemId ==. itemId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
@@ -91,7 +93,7 @@ inventoryItemsItemPageResolver_ itemId (PageArg {..}) = lift $ do
                                                       Just y -> y
                                                       Nothing -> 10
 
---inventoryItemsPageResolver :: PageArg -> Res e Handler (Page (InventoryItem Res))
+inventoryItemsPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (InventoryItem o))
 inventoryItemsPageResolver PageArg {..} = lift $ do
                         countItems <- runDB $ count ([] :: [Filter InventoryItem_])
                         items <- runDB $ selectList [] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
@@ -112,19 +114,15 @@ inventoryItemsPageResolver PageArg {..} = lift $ do
                                           Just y -> y
                                           Nothing -> 10
 
---inventoryItemsResolver :: () -> Res e Handler InventoryItems
-inventoryItemsResolver _ = pure InventoryItems { inventoryItem = findInventoryItemByIdResolver
-                                               , page = inventoryItemsPageResolver
-                                               , saveInventoryItem = saveInventoryItemResolver
-                                               }
-
 -- Mutation Resolvers
 --saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler (InventoryItem MutRes)
+saveInventoryItemResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => InventoryItemArg -> t Handler (InventoryItem o)
 saveInventoryItemResolver arg = lift $ do
                               inventoryItemId <- createOrUpdateInventoryItem arg
                               inventoryItem <- runDB $ getJustEntity inventoryItemId
                               return $ toInventoryItemQL inventoryItem
 
+saveInventoryItemsResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => InventoryItemsArg -> t Handler [InventoryItem o]
 saveInventoryItemsResolver arg = lift $ do
                               let InventoryItemsArg {..} = arg
                               let inventoryItemArgs =  P.map (\itemId -> InventoryItemArg { inventoryItemId = 0
@@ -141,8 +139,8 @@ saveInventoryItemsResolver arg = lift $ do
                               inventoryItems <- runDB $ mapM getJustEntity inventoryItemIds
                               return $ P.map toInventoryItemQL inventoryItems
 
---toInventoryItemQL :: Entity InventoryItem_ -> InventoryItem
-toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItem_ItemId
+toInventoryItemQL :: (Typeable o, MonadTrans (o ())) => Entity InventoryItem_ -> InventoryItem o
+toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inventoryItemId = fromIntegral $ fromSqlKey inventoryItemId
                                                                          , level = inventoryItem_Level
                                                                          , maxLevelAllowed = inventoryItem_MaxLevelAllowed
                                                                          , minLevelAllowed = inventoryItem_MinLevelAllowed

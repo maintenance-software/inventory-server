@@ -37,7 +37,6 @@ data Inventories o = Inventories { inventory :: EntityIdArg ->  o () Handler (In
                                  , list :: () -> o () Handler [Inventory o]
                                  , saveInventory :: InventoryArg -> o () Handler (Inventory o)
                                  , saveInventoryItems :: InventoryItemsArg -> o () Handler [InventoryItem o]
-                                 , fetchInventoriesForItem :: EntityIdArg -> o () Handler [Inventory o]
                                  } deriving (Generic, GQLType)
 
 -- Mutation
