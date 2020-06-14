@@ -439,8 +439,7 @@ createUpdateWorkOrderPersistent arg = do
                 entityId <- if workOrderId > 0 then
                                 do
                                   let workOrderKey = (toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id
-                                  _ <- runDB $ update workOrderKey [ WorkOrder_WorkOrderStatus =. workOrderStatus
-                                                                   , WorkOrder_EstimateDuration =. estimateDuration
+                                  _ <- runDB $ update workOrderKey [ WorkOrder_EstimateDuration =. estimateDuration
                                                                    , WorkOrder_Rate =. rate
                                                                    , WorkOrder_Notes =. notes
                                                                    , WorkOrder_GeneratedById =. ((toSqlKey $ fromIntegral $ generatedById)::Person_Id)
@@ -453,6 +452,7 @@ createUpdateWorkOrderPersistent arg = do
                                   workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
                 _ <- saveWorkOrderResource ((toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id) resources
+                _ <- runDB $ updateWhere  [WorkQueue_Id <-. P.map (\wqId -> (toSqlKey $ fromIntegral $ wqId)) workQueueIds] [WorkQueue_WorkOrderId =. Just entityId]
                 return entityId
 
 saveWorkOrderResource :: WorkOrder_Id -> [WorkOrderResourceArg] -> Handler [WorkOrderResource_Id]
@@ -473,7 +473,7 @@ createUpdateWorkOrderResource workOrderId resource = do
                                                                            , WorkOrderResource_Amount =. amount
                                                                            , WorkOrderResource_InventoryItemId =. (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
                                                                            , WorkOrderResource_WorkOrderId =. workOrderId
-                                                                           , WorkOrderResource_WorkQueueId =. ((toSqlKey $ fromIntegral $ workQueueId)::WorkQueue_Id)
+                                                                           , WorkOrderResource_WorkQueueId =. ((toSqlKey $ fromIntegral $ workQueueTaskId)::WorkQueue_Id)
                                                                            , WorkOrderResource_ModifiedDate =. Just now
                                                                           ]
                                   return workOrderResourceKey
@@ -492,7 +492,7 @@ fromMaintenanceQL (MaintenanceArg {..}) cd md = Maintenance_ { maintenance_Name 
 
 fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> Text -> WorkOrder_
 fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrderCode = code
-                                                            , workOrder_WorkOrderStatus = workOrderStatus
+                                                            , workOrder_WorkOrderStatus = "IN_PROGRESS"
                                                             , workOrder_EstimateDuration = estimateDuration
                                                             , workOrder_ExecutionDuration = 0
                                                             , workOrder_Rate = rate
@@ -512,7 +512,7 @@ fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Ma
 fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
                                                                                            , workOrderResource_Amount = amount
                                                                                            , workOrderResource_InventoryItemId =  (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
-                                                                                           , workOrderResource_WorkQueueId = (toSqlKey $ fromIntegral workQueueId)::WorkQueue_Id
+                                                                                           , workOrderResource_WorkQueueId = (toSqlKey $ fromIntegral workQueueTaskId)::WorkQueue_Id
                                                                                            , workOrderResource_WorkOrderId = workOrderId
                                                                                            , workOrderResource_CreatedDate = cd
                                                                                            , workOrderResource_ModifiedDate = md

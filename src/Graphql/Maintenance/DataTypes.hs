@@ -94,22 +94,21 @@ data WorkQueueEventArg = WorkQueueEventArg { assetId :: Int
                                                  } deriving (Generic)
 
 data WorkOrderArg = WorkOrderArg { workOrderId :: Int
-                                 , workOrderStatus :: Text
                                  , estimateDuration :: Int
                                  , rate :: Int
                                  , notes :: Text
                                  , generatedById :: Int
                                  , responsibleId :: Int
                                  , parentId :: Maybe Int
-                                 , activityIds :: [Int]
+                                 , workQueueIds :: [Int]
                                  , resources :: [WorkOrderResourceArg]
                                  } deriving (Generic, GQLType)
 
 data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
                                                  , amount :: Int
                                                  , humanResourceId :: Maybe Int
-                                                 , workQueueId :: Int
                                                  , inventoryItemId :: Maybe Int
+                                                 , workQueueTaskId :: Int
                                                  } deriving (Generic)
 
 instance GQLType WorkOrderResourceArg where
