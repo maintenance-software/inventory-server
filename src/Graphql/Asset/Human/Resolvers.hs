@@ -18,13 +18,9 @@ module Graphql.Asset.Human.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Data.Maybe (maybeToList, listToMaybe)
+--import Data.Maybe (maybeToList, listToMaybe)
 import Prelude as P
-import qualified Data.Text as T
-import Enums
 import Graphql.Utils
 import Graphql.Asset.Human.DataTypes
 import Graphql.Asset.Human.Persistence
@@ -33,12 +29,13 @@ import Graphql.Admin.DataTypes (PersonArg(..))
 import Graphql.Admin.Person (createOrUpdatePerson, addressResolver, contactInfoResolver)
 
 --inventoryResolver :: () -> Res e Handler Inventories
+employeeResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Employees o)
 employeeResolver _ = pure Employees { employee = getEmployeeByIdResolver
                                     , page = employeesPageResolver
                                     , saveEmployee = saveEmployeeResolver
                                     }
 
---getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
+getEmployeeByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Employee o)
 getEmployeeByIdResolver EntityIdArg {..} = lift $ do
                                               let personId = (toSqlKey $ fromIntegral $ entityId) :: Person_Id
                                               let employeeId = Employee_Key {unEmployee_Key  = personId}
@@ -46,12 +43,14 @@ getEmployeeByIdResolver EntityIdArg {..} = lift $ do
                                               personEntity <- runDB $ getJustEntity personId
                                               return $ toEmployeeQL personEntity employeeEntity
 
+getEmployeeByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Person_Id -> () -> o () Handler (Employee o)
 getEmployeeByIdResolver_ personId _ = lift $ do
                                             let employeeId = Employee_Key {unEmployee_Key  = personId}
                                             employeeEntity <- runDB $ getJustEntity employeeId
                                             personEntity <- runDB $ getJustEntity personId
                                             return $ toEmployeeQL personEntity employeeEntity
 
+employeesPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Employee o))
 employeesPageResolver page = lift $ do
                         countItems <- employeeQueryCount page
                         result <- employeeQuery page
@@ -70,6 +69,7 @@ employeesPageResolver page = lift $ do
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
 --saveEmployeeResolver :: EquipmentArg -> MutRes e Handler (Employee MutRes)
+saveEmployeeResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EmployeeArg -> t Handler (Employee o)
 saveEmployeeResolver arg = lift $ do
                                   let EmployeeArg {..} = arg
                                   let personArg = PersonArg { personId = employeeId
@@ -81,14 +81,14 @@ saveEmployeeResolver arg = lift $ do
                                                             , contactInfo = contactInfo
                                                             }
                                   personId <- createOrUpdatePerson personArg
-                                  employeeId <- createOrUpdateEmployee personId arg
-                                  let employeeKey = Employee_Key {unEmployee_Key  = employeeId}
+                                  entityEmployeeId <- createOrUpdateEmployee personId arg
+                                  let employeeKey = Employee_Key {unEmployee_Key  = entityEmployeeId}
                                   personEntity <- runDB $ getJustEntity personId
                                   employeeEntity <- runDB $ getJustEntity employeeKey
                                   return $ toEmployeeQL personEntity employeeEntity
 
 
---toEmployeeQL (Entity employeeId employee)  = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
+toEmployeeQL :: (Typeable o, MonadTrans (o ())) => Entity Person_ -> Entity Employee_ -> Employee o
 toEmployeeQL personEntity employeeEntity = Employee { employeeId = fromIntegral $ fromSqlKey personId
                                                     , firstName = person_FirstName
                                                     , lastName = person_LastName

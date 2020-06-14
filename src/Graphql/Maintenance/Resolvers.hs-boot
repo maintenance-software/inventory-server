@@ -20,8 +20,6 @@ module Graphql.Maintenance.Resolvers (
 
 import Import
 import Graphql.DataTypes (WorkQueue)
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 
 workQueueByEquipmentIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Item_Id -> () -> o () Handler [WorkQueue o]
 

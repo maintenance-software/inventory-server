@@ -32,15 +32,15 @@ data PageInfo = PageInfo { hasNext:: Bool
                          , pageIndex :: Int
                          } deriving (Generic, GQLType)
 
-data Sort = Sort { isUnsorted :: Bool
-                 , isSorted :: Bool
-                 , direction :: Text
-                 } deriving (Generic, GQLType)
+--data Sort = Sort { isUnsorted :: Bool
+--                 , isSorted :: Bool
+--                 , direction :: Text
+--                 } deriving (Generic, GQLType)
 
 data Page a = Page { totalCount :: Int
                    , content :: [a]
                    , pageInfo :: PageInfo
-                   , sort :: Sort
+--                   , sort :: Sort
                    } deriving (Generic, GQLType)
 
 data EntityArg a = EntityArg { arg :: a } deriving (Generic, GQLType)

@@ -23,25 +23,18 @@ module Graphql.Admin.Person (
                 , getPersonByIdResolver_
                 ) where
 
-import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
+import Import hiding (zip)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Crypto.KDF.BCrypt (hashPassword, validatePassword)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import qualified Data.Text as T
-import qualified Data.ByteString.Char8 as B
-import Prelude as P
-import qualified Data.Set as S
+import Database.Esqueleto      ((^.), (%), (++.){-, (?.), notIn, in_-})
+--import qualified Data.Text as T
+--import qualified Data.ByteString.Char8 as B
+import Prelude as P hiding (zip)
 import Graphql.Utils
-import Data.Time
-import Enums
 import Graphql.Admin.DataTypes
 
 -- Query Resolvers
---personResolver :: () -> Res e Handler Persons
+personResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Persons o)
 personResolver _ = pure Persons { person = getPersonByIdResolver
                                 , page = pagePersonResolver
                                 , createUpdatePerson = createUpdatePersonResolver
@@ -58,7 +51,7 @@ getPersonByIdResolver_ personId _ = lift $ do
                                       person <- runDB $ getJustEntity personId
                                       return $ toPersonQL person
 
---addressResolver :: Person_Id -> () -> () e Handler (Maybe Address)
+addressResolver :: (MonadTrans t) => Person_Id -> () -> t Handler (Maybe Address)
 addressResolver personId _ = lift $ do
                     addressMaybe <- runDB $ selectFirst [Address_PersonId ==. personId] []
                     let address = case addressMaybe of
@@ -66,12 +59,12 @@ addressResolver personId _ = lift $ do
                                     Just a -> Just $ toAddressQL a
                     return address
 
---contactInfoResolver :: Person_Id -> PersonContactInfoArg -> Res e Handler [ContactInfo]
+contactInfoResolver :: (MonadTrans t) => Person_Id -> () -> t Handler [ContactInfo]
 contactInfoResolver personId _ = lift $ do
                                       contacts <- runDB $ selectList [ContactInfo_PersonId ==. personId] []
                                       return $ P.map toContactQL contacts
 
---pagePersonResolver :: PageArg -> Res e Handler (Page (Person Res))
+pagePersonResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Person o))
 pagePersonResolver page = lift $ do
                                 countItems <- personQueryCount page
                                 persons <- personQuery page
@@ -89,6 +82,7 @@ pagePersonResolver page = lift $ do
                           pageIndex' = case pageIndex of Just  x  -> x; Nothing -> 0
                           pageSize' = case pageSize of Just y -> y; Nothing -> 10
 
+personFilters :: Monad m => E.SqlExpr (Entity Person_) -> PageArg -> m (E.SqlExpr (E.Value Bool))
 personFilters person PageArg {..} = do
                             let searchFilters = case searchString of
                                                   Just s -> [ person ^. Person_DocumentId E.==. E.val s
@@ -114,8 +108,8 @@ personQuery page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \ person -> do
-                                        filters <- personFilters person page
-                                        E.where_ filters
+                                        pFilters <- personFilters person page
+                                        E.where_ pFilters
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
                                         return person
@@ -125,7 +119,7 @@ personQuery page =  do
                         pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
---createUpdatePersonResolver :: PersonArg -> MutRes e Handler (Person MutRes)
+createUpdatePersonResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PersonArg -> t Handler (Person o)
 createUpdatePersonResolver arg = lift $ do
                                 personId <- createOrUpdatePerson arg
                                 person <- runDB $ getJustEntity personId
@@ -185,10 +179,11 @@ createOrUpdateContactInfo personId  contactInfo = do
                                now <- liftIO getCurrentTime
                                let c1 = P.filter (\ContactInfoArg {..} -> contactId <= 0)  $ contactInfo
                                let c2 = P.filter (\ContactInfoArg {..} -> contactId > 0)  $ contactInfo
-                               contactIds <- runDB $ insertMany  $ [fromContactQL_ personId c now Nothing | c <- c1]
+                               _ <- runDB $ insertMany  $ [fromContactQL_ personId c now Nothing | c <- c1]
                                _ <- updateContact_ c2
                                return ()
 
+updateContact_ :: [ContactInfoArg] -> Handler ()
 updateContact_ [] = return ()
 updateContact_ (x:xs)= do
                         let ContactInfoArg {..} = x
@@ -202,7 +197,7 @@ updateContact_ (x:xs)= do
                         return ()
 
 --toPersonQL :: Entity Person_ -> (Person Res)
-toPersonQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Person_ -> Person o
+toPersonQL :: (Typeable o, MonadTrans (o ())) => Entity Person_ -> Person o
 toPersonQL (Entity personId person) = Person { personId = fromIntegral $ fromSqlKey personId
                                              , firstName = person_FirstName
                                              , lastName = person_LastName

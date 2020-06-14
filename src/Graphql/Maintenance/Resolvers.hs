@@ -21,26 +21,22 @@ module Graphql.Maintenance.Resolvers (
 ) where
 
 import Import
-import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import qualified Data.Text as T
 import Enums ()
 import Graphql.Utils
 import Graphql.Maintenance.TaskTrigger.Resolvers (getTaskTriggerByIdResolver_)
-import Graphql.Maintenance.Task.Resolvers (getTaskByIdResolver_)
-import Graphql.Maintenance.Task.Resolvers
+import Graphql.Maintenance.Task.Resolvers (toTaskQL, getTaskByIdResolver, getTaskByIdResolver_, taskResolver_)
 import Graphql.Maintenance.Task.Persistence
-import Graphql.Asset.Equipment.Resolvers
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
-import Graphql.Category
 import Graphql.DataTypes (WorkQueue(..), Equipment(..))
 import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Maintenance.Task.DataTypes (Task(..))
 import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
 
---maintenanceResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => () -> o () Handler (Maintenances o)
+maintenanceResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Maintenances o)
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
                                           , page = maintenancePageResolver
                                           , availableEquipments = availableEquipmentPageResolver
@@ -167,17 +163,17 @@ workQueueByEquipmentIdResolver_ equipmentId _ = lift $ do
 --                       let response = P.map (\(itemId, taskIds) -> (toWOAsset (P.head $ findAssetById itemId) (findTasksByIds taskIds))) equipmentIds
 --                       return response
 
-toWOAsset :: Entity Item_ -> [Entity Task_] -> WoAssets
-toWOAsset (Entity itemId Item_{..}) tasks = WoAssets { assetId = fromIntegral $ fromSqlKey itemId
-                                                     , name = item_Name
-                                                     , tasks = P.map toWOTask tasks
-                                                     }
+--toWOAsset :: Entity Item_ -> [Entity Task_] -> WoAssets
+--toWOAsset (Entity itemId Item_{..}) tasks = WoAssets { assetId = fromIntegral $ fromSqlKey itemId
+--                                                     , name = item_Name
+--                                                     , tasks = P.map toWOTask tasks
+--                                                     }
 
-toWOTask :: Entity Task_ -> WoAssetTask
-toWOTask (Entity taskId Task_{..}) = WoAssetTask { taskId = fromIntegral $ fromSqlKey taskId
-                                                 , name = task_Name
-                                                 , requiredResource = True
-                                                 }
+--toWOTask :: Entity Task_ -> WoAssetTask
+--toWOTask (Entity taskId Task_{..}) = WoAssetTask { taskId = fromIntegral $ fromSqlKey taskId
+--                                                 , name = task_Name
+--                                                 , requiredResource = True
+--                                                 }
 
 
 

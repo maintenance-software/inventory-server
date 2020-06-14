@@ -36,6 +36,7 @@ import Graphql.Maintenance.Persistence (fetchPendingWorkQueueQueryCount, fetchPe
 import {-# SOURCE #-}Graphql.Maintenance.Resolvers (workQueueByEquipmentIdResolver_)
 
 --inventoryResolver :: () -> Res e Handler Inventories
+equipmentResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Equipments o)
 equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
                                       , page = equipmentsPageResolver
                                       , saveEquipment = saveEquipmentResolver
@@ -44,6 +45,7 @@ equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
                                       }
 
 --getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
+getEquipmentByIdResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EntityIdArg -> t Handler (Equipment o)
 getEquipmentByIdResolver EntityIdArg {..} = lift $ do
                                               let itemId = (toSqlKey $ fromIntegral $ entityId) :: Item_Id
                                               let equipmentId = Equipment_Key {unEquipment_Key  = itemId}
@@ -51,12 +53,14 @@ getEquipmentByIdResolver EntityIdArg {..} = lift $ do
                                               itemEntity <- runDB $ getJustEntity itemId
                                               return $ toEquipmentQL equipmentEntity itemEntity
 
+getEquipmentByIdResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Item_Id -> () -> t Handler (Equipment o)
 getEquipmentByIdResolver_ itemId _ = lift $ do
                                             let equipmentId = Equipment_Key {unEquipment_Key  = itemId}
                                             equipmentEntity <- runDB $ getJustEntity equipmentId
                                             itemEntity <- runDB $ getJustEntity itemId
                                             return $ toEquipmentQL equipmentEntity itemEntity
 
+equipmentsPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Equipment o))
 equipmentsPageResolver page = lift $ do
                         countItems <- equipmentQueryCount page
                         result <- equipmentQuery page
@@ -74,6 +78,7 @@ equipmentsPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
+childrenResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Item_Id -> PageArg -> t Handler (Page (Equipment o))
 childrenResolver itemId page = lift $ do
                         countItems <- childrenQueryCount itemId page
                         result <- equipmentChildrenQuery itemId page
@@ -91,7 +96,7 @@ childrenResolver itemId page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
---fetchWorkQueuesResolver :: PageArg -> t () Handler (Page Equipment)
+fetchWorkQueuesResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Equipment o))
 fetchWorkQueuesResolver page = lift $ do
                         countItems <- fetchPendingWorkQueueQueryCount page
                         queryResult <- fetchPendingWorkQueueQuery page
@@ -109,7 +114,7 @@ fetchWorkQueuesResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
---saveEquipmentResolver :: EquipmentArg -> MutRes e Handler (Equipment MutRes)
+saveEquipmentResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EquipmentArg -> t Handler (Equipment o)
 saveEquipmentResolver arg = lift $ do
                                   itemId <- createOrUpdateItem itemArg
                                   equipmentId <- createOrUpdateEquipment itemId arg
@@ -134,11 +139,12 @@ saveEquipmentResolver arg = lift $ do
                                           , unitId = Nothing
                         }
 
+setMaintenanceResolver :: (MonadTrans t) => SetMaintenanceArg -> t Handler Bool
 setMaintenanceResolver arg = lift $ do
                       success <- setMaintenancePersistence arg
                       return success
 
---toEquipmentQL (Entity equipmentId equipment)  = Inventory { inventoryId = fromIntegral $ fromSqlKey inventoryId
+toEquipmentQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Equipment_ -> Entity Item_ -> Equipment o
 toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegral $ fromSqlKey itemId
                                                      , name  = item_Name
                                                      , description  = item_Description

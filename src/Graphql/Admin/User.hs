@@ -13,17 +13,14 @@
 {-# LANGUAGE RecordWildCards       #-}
 
 module Graphql.Admin.User (
-                  userResolver
-                , getUserByIdResolver
-                , getUserByIdResolver_
-                ) where
+    userResolver
+  , getUserByIdResolver
+  , getUserByIdResolver_
+) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Crypto.KDF.BCrypt (hashPassword, validatePassword)
+import Crypto.KDF.BCrypt (hashPassword, {-validatePassword-})
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as B
 import Prelude as P
@@ -33,31 +30,48 @@ import Graphql.Admin.DataTypes
 import Graphql.Admin.Role
 import Graphql.Admin.Privilege
 import Graphql.Admin.Person (createOrUpdatePerson, getPersonByIdResolver_)
-import Data.Time
+import Data.Time ()
 import Enums
 
-
--- Query Resolvers
---userResolver :: () -> Res e Handler Users
+userResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Users o)
 userResolver _ = pure Users { user = getUserByIdResolver
---                             , page = listUserResolver
-                             , createUpdateUser = createUpdateUserResolver 
-                             , resetPassword = resetPasswordResolver
-                             , changePassword = changePasswordResolver
-                             , updatePassword = updatePasswordResolver
-                             }
+                            , page = usersPageResolver
+                            , createUpdateUser = createUpdateUserResolver
+                            , resetPassword = resetPasswordResolver
+                            , changePassword = changePasswordResolver
+                            , updatePassword = updatePasswordResolver
+                            }
 
---getUserByIdResolver :: EntityIdArg -> Res e Handler (User Res)
+getUserByIdResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EntityIdArg -> t Handler (User o)
 getUserByIdResolver EntityIdArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ entityId)::User_Id
                                       user <- runDB $ getJustEntity userEntityId
                                       return $ toUserQL user
 
+getUserByIdResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => User_Id -> () -> t Handler (User o)
 getUserByIdResolver_ userId _ = lift $ do
                                       user <- runDB $ getJustEntity userId
                                       return $ toUserQL user
 
---resetPasswordResolver :: EntityIdArg -> Res e Handler Text
+usersPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (User o))
+usersPageResolver _ = lift $ do
+--                        countItems <- equipmentQueryCount page
+--                        result <- equipmentQuery page
+--                        let itemsQL = P.map (\(e, i) -> toEquipmentQL e i) result
+                        return Page { totalCount = 0
+                                    , content = []
+                                    , pageInfo = PageInfo { hasNext = False
+                                                          , hasPreview = False
+                                                          , pageSize = 0
+                                                          , pageIndex = 0
+                                    }
+                        }
+--                         where
+--                            PageArg {..} = page
+--                            pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
+--                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
+
+resetPasswordResolver :: (MonadTrans t) => EntityIdArg -> t Handler Text
 resetPasswordResolver EntityIdArg {..} = lift $ do
                                       password <- liftIO $ genRandomAlphaNumString 8
                                       hashedPassword <- liftIO $ hashPassword 6 (encodeUtf8 $ T.pack password)
@@ -66,7 +80,7 @@ resetPasswordResolver EntityIdArg {..} = lift $ do
                                       _ <- runDB $ update userEntityId [ User_Password =. passwordEncrypted, User_NewPasswordRequired =. True ]
                                       return $ T.pack password
 
---changePasswordResolver :: ChangePasswordArg -> Res e Handler Bool
+changePasswordResolver :: (MonadTrans t) => ChangePasswordArg -> t Handler Bool
 changePasswordResolver ChangePasswordArg {..} = lift $ do
                                       p <- liftIO $ hashPassword 6 (encodeUtf8 password)
                                       let hashedPassword = T.pack $ B.unpack p
@@ -83,7 +97,7 @@ changePasswordResolver ChangePasswordArg {..} = lift $ do
                                                 False ->  return False
                                       return result
 
---updatePasswordResolver :: UpdatePasswordArg -> Res e Handler Bool
+updatePasswordResolver :: (MonadTrans t) => UpdatePasswordArg -> t Handler Bool
 updatePasswordResolver UpdatePasswordArg {..} = lift $ do
                                       let userEntityId = (toSqlKey $ fromIntegral $ userId)::User_Id
                                       userEntity <- runDB $ getJustEntity userEntityId
@@ -115,14 +129,14 @@ updatePasswordResolver UpdatePasswordArg {..} = lift $ do
 --                                          Just y -> y
 --                                          Nothing -> 10
 
---userPrivilegeResolver :: User_Id -> UserPrivilegeArg -> Res e Handler [Privilege]
+userPrivilegeResolver :: (MonadTrans t) => User_Id -> () -> t Handler [Privilege]
 userPrivilegeResolver userId _ = lift $ do
                                       userPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
                                       let privilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) userPrivileges
                                       privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
                                       return $ P.map toPrivilegeQL privileges
 
---userRoleResolver :: User_Id -> UserRoleArg -> Res e Handler [Role Res]
+userRoleResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => User_Id -> () -> t Handler [Role o]
 userRoleResolver userId _ = lift $ do
                                       userRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                       let roleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) userRoles
@@ -130,7 +144,7 @@ userRoleResolver userId _ = lift $ do
                                       return $ P.map toRoleQL roles
 
 -- Mutation Resolvers
---createUpdateUserResolver :: Person_Id -> PersonUserArg -> MutRes e Handler (Maybe (User MutRes))
+createUpdateUserResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => UserArg -> t Handler (User o)
 createUpdateUserResolver userArg = lift $ do
                                 userId <- createOrUpdateUser userArg
                                 user <- runDB $ getJustEntity userId
@@ -154,7 +168,7 @@ createUpdateUserResolver userArg = lift $ do
 --                                          privileges <- runDB $ selectList ([Privilege_Id <-. privilegeIds] :: [Filter Privilege_]) []
 --                                          return $ P.map toPrivilegeQL privileges
 
---createOrUpdateUser :: Person_Id -> UserArg -> Handler User_Id
+createOrUpdateUser :: UserArg -> Handler User_Id
 createOrUpdateUser userArg = do
                                let UserArg{..} = userArg
                                now <- liftIO getCurrentTime
@@ -178,7 +192,7 @@ createOrUpdateUser userArg = do
                                _ <- createOrUpdateUserPrivilege userEntityId $ P.map (\ pId -> (toSqlKey $ fromIntegral pId)::Privilege_Id) privilegeIds
                                return userEntityId
 
---createUpdateUserRole :: User_Id -> [Role_Id] -> Handler ()
+createUpdateUserRole :: User_Id -> [Role_Id] -> Handler ()
 createUpdateUserRole userId requestRoleIds = do
                                      entityUserRoles <- runDB $ selectList ([UserRole_UserId ==. userId] :: [Filter UserRole_]) []
                                      let existingRoleIds = P.map (\(Entity _ (UserRole_ _ roleId)) -> roleId) entityUserRoles
@@ -188,7 +202,7 @@ createUpdateUserRole userId requestRoleIds = do
                                      _ <- runDB $ insertMany $ P.map (\roleId -> (UserRole_ userId roleId)) newIds
                                      return ()
 
---createOrUpdateUserPrivilege :: User_Id -> [Privilege_Id] -> Handler ()
+createOrUpdateUserPrivilege :: User_Id -> [Privilege_Id] -> Handler ()
 createOrUpdateUserPrivilege userId entityPrivilegeIds = do
                             entityUserPrivileges <- runDB $ selectList ([UserPrivilege_UserId ==. userId] :: [Filter UserPrivilege_]) []
                             let existingPrivilegeIds = P.map (\(Entity _ (UserPrivilege_ _ privilegeId)) -> privilegeId) entityUserPrivileges
@@ -199,10 +213,11 @@ createOrUpdateUserPrivilege userId entityPrivilegeIds = do
                             return ()
 
 
--- toUserQL :: Entity User_ -> User Res
+toUserQL :: (Typeable o, MonadTrans (o ())) => Entity User_ -> User o
 toUserQL (Entity userId user) = User { userId = fromIntegral $ fromSqlKey userId
                                      , username = user_Username
                                      , email = user_Email
+                                     , newPasswordRequired = user_NewPasswordRequired
                                      , status = T.pack $ show user_Status
                                      , locale = T.pack $ show user_Locale
                                      , expiration = user_Expiration
