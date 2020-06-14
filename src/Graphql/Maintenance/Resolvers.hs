@@ -230,7 +230,7 @@ toWorkQueueQL (Entity workQueueId workQueue) = WorkQueue { workQueueId = fromInt
                                                          , rescheduledDate = case workQueue_RescheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
                                                          , scheduledDate = fromString $ show workQueue_ScheduledDate
                                                          , incidentDate = case workQueue_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
-                                                         , status = T.pack $ show workQueue_Status
+                                                         , status = workQueue_Status
                                                          , workType = workQueue_WorkType
                                                          , task = getTaskByIdResolver_ workQueue_TaskId
                                                          , taskTrigger = getTaskTriggerByIdResolver_ workQueue_TaskTriggerId
