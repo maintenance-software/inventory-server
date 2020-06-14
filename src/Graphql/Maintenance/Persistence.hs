@@ -182,7 +182,7 @@ availableEquipmentQuery page =  do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
                                         let subquery =
                                               E.from $ \workQueue -> do
-                                              E.where_ (workQueue ^. WorkQueue_Status E.!=. E.val DELETED)
+                                              E.where_ (workQueue ^. WorkQueue_Status E.!=. E.val "DELETED")
                                               return (workQueue ^. WorkQueue_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
@@ -243,7 +243,7 @@ fetchPendingWorkQueueQueryCount page =  do
                                    $ E.from $ \(item `E.InnerJoin` equipment) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
                                         let subquery = E.from $ \workQueue -> do
-                                                       E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ PENDING))
+                                                       E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ "PENDING"))
                                                        return (workQueue ^. WorkQueue_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
@@ -257,7 +257,7 @@ fetchPendingWorkQueueQuery page =  do
                                    $ E.from $ \(item `E.InnerJoin` equipment) -> do
                                         E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
                                         let subquery = E.from $ \workQueue -> do
-                                                       E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ PENDING))
+                                                       E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ "PENDING"))
                                                        return (workQueue ^. WorkQueue_EquipmentId)
                                         filters <- equipmentQueryFilters equipment item page
                                         E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
@@ -276,7 +276,7 @@ fetchPendingWorkQueueByEquipmentIdQuery equipmentId =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \ workQueue -> do
-                                        E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ PENDING) E.&&. workQueue ^. WorkQueue_EquipmentId E.==. (E.val $ equipmentId))
+                                        E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ "PENDING") E.&&. workQueue ^. WorkQueue_EquipmentId E.==. (E.val $ equipmentId))
                                         E.orderBy [E.asc (workQueue ^. WorkQueue_Id)]
                                         return workQueue
                       return result
@@ -313,7 +313,7 @@ addEventWorkQueuePersistent WorkQueueEventArg {..} = do
                                                      , workQueue_IncidentDate = incidentUtcDate
                                                      , workQueue_TaskId = taskEntityId
                                                      , workQueue_TaskTriggerId = taskTriggerEntityId
-                                                     , workQueue_Status = PENDING
+                                                     , workQueue_Status = "PENDING"
                                                      , workQueue_WorkType = if hasAssetFailure then "EVENT_FAILURE" else "EVENT"
                                                      , workQueue_MaintenanceId = maintenanceEntityId
                                                      , workQueue_EquipmentId = assetEntityId
@@ -367,7 +367,7 @@ createWorkQueueForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                                                      , workQueue_IncidentDate = Nothing
                                                      , workQueue_TaskId = taskTrigger_TaskId
                                                      , workQueue_TaskTriggerId = taskTriggerId
-                                                     , workQueue_Status = PENDING
+                                                     , workQueue_Status = "PENDING"
                                                      , workQueue_WorkType = "PLAN"
                                                      , workQueue_MaintenanceId = (Just maintenanceId)
                                                      , workQueue_EquipmentId = assetId
@@ -452,7 +452,7 @@ createUpdateWorkOrderPersistent arg = do
                                   workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
                 _ <- saveWorkOrderResource ((toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id) resources
-                _ <- runDB $ updateWhere  [WorkQueue_Id <-. P.map (\wqId -> (toSqlKey $ fromIntegral $ wqId)) workQueueIds] [WorkQueue_WorkOrderId =. Just entityId]
+                _ <- runDB $ updateWhere  [WorkQueue_Id <-. P.map (\wqId -> (toSqlKey $ fromIntegral $ wqId)) workQueueIds] [WorkQueue_WorkOrderId =. Just entityId, WorkQueue_Status =. "WO_CREATED"]
                 return entityId
 
 saveWorkOrderResource :: WorkOrder_Id -> [WorkOrderResourceArg] -> Handler [WorkOrderResource_Id]

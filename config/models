@@ -330,7 +330,7 @@ WorkQueue_ sql=t_work_queue
     scheduledDate UTCTime
     incidentDate UTCTime Maybe
     workType Text
-    status EntityStatus
+    status Text
     equipmentId Item_Id
     taskId Task_Id
     taskTriggerId TaskTrigger_Id

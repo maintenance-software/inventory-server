@@ -66,7 +66,7 @@ data Maintenances o = Maintenances { maintenance :: EntityIdArg ->  o () Handler
                                    , workOrder :: EntityIdArg -> o () Handler (WorkOrder o)
                                    , workOrders :: PageArg -> o () Handler (Page (WorkOrder o))
                                    , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
-                                   , woPreResources :: EntityIdsArg -> o () Handler [WoAssets]
+--                                   , woPreResources :: EntityIdsArg -> o () Handler [WoAssets]
                                    } deriving (Generic, GQLType)
 
 data MaintenanceArg = MaintenanceArg { maintenanceId :: Int
