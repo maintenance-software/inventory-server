@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -16,16 +15,15 @@
 module Graphql.Maintenance.DataTypes where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
+import GHC.Generics ()
+import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types (GQLType(..))
 import Graphql.Utils (EntityIdArg, Page, PageArg)
 import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
-import Graphql.Maintenance.TaskTrigger.DataTypes
-import Graphql.Asset.Equipment.DataTypes
-import Graphql.Category
-import Graphql.Utils (EntityIdsArg)
+import Graphql.Asset.Equipment.DataTypes ()
+import Graphql.Category ()
+import Graphql.Utils ()
 import Graphql.DataTypes (Equipment)
 
 data Maintenance o = Maintenance { maintenanceId :: Int
@@ -50,6 +48,7 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
                              , generatedBy :: () -> o () Handler (Person o)
                              , responsible :: () -> o () Handler (Person o)
                              , parent :: Maybe (() -> o () Handler (WorkOrder o))
+                             , workQueues :: () -> o () Handler [Equipment o]
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
@@ -112,24 +111,14 @@ data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
                                                  } deriving (Generic)
 
 instance GQLType WorkOrderResourceArg where
-    type  KIND WorkOrderResourceArg = INPUT_OBJECT
+    type  KIND WorkOrderResourceArg = INPUT
     description = const $ Just $ pack "The item that holds the WorkOrderResourceArg information"
 
-data WoAssets = WoAssets { assetId :: Int
-                         , name :: Text
-                         , tasks :: [WoAssetTask]
-                         } deriving (Generic, GQLType)
-
-data WoAssetTask = WoAssetTask { taskId :: Int
-                               , name :: Text
-                               , requiredResource :: Bool
-                               } deriving (Generic, GQLType)
-
-data WoTaskResource = WoTaskResource { resourceId :: Int
-                                     , name :: Text
-                                     , itemId :: Maybe Int
-                                     , inventoryItemId :: Int
-                                     , employeeCategoryId :: Int
-                                     , personId :: Maybe Int
-                                     , resourceType :: Text
-                                     } deriving (Generic, GQLType)
+data WorkOrderResource = WorkOrderResource { resourceId :: Int
+                                           , name :: Text
+                                           , itemId :: Maybe Int
+                                           , inventoryItemId :: Int
+                                           , employeeCategoryId :: Int
+                                           , personId :: Maybe Int
+                                           , resourceType :: Text
+                                           } deriving (Generic, GQLType)

@@ -153,6 +153,12 @@ workQueueByEquipmentIdResolver_ equipmentId _ = lift $ do
                               let result = P.map (\ w -> toWorkQueueQL w) workQueues
                               return result
 
+fetchWorkQueuesByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [Equipment o]
+fetchWorkQueuesByWorkOrderIdResolver_ workOrderId _ = lift $ do
+                              workQueues <- fetchWorkQueuesByWorkOrderIdQuery workOrderId
+                              let result = P.map (\ (e, i) -> toEquipmentQL e i) workQueues
+                              return result
+
 --resourceRequirementResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => WoResourceRequirement -> t Handler [WoAssets]
 --woPreResourcesResolver requestArg = lift $ do
 --                       equipmentIds <- workQueueCountTasksQuery requestArg
@@ -256,6 +262,7 @@ toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromInt
                                                          , generatedBy = getPersonByIdResolver_ workOrder_GeneratedById
                                                          , responsible = getPersonByIdResolver_ workOrder_ResponsibleId
                                                          , parent = (case workOrder_ParentId of Nothing -> Nothing; Just a -> Just $ getWorkOrderByIdResolver_ a)
+                                                         , workQueues = fetchWorkQueuesByWorkOrderIdResolver_ workOrderId
                                                          , createdDate = fromString $ show workOrder_CreatedDate
                                                          , modifiedDate = m
                                                          }

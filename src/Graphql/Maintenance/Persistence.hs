@@ -32,6 +32,7 @@ module Graphql.Maintenance.Persistence (
       , fetchPendingWorkQueueQueryCount
       , fetchPendingWorkQueueQuery
       , fetchPendingWorkQueueByEquipmentIdQuery
+      , fetchWorkQueuesByWorkOrderIdQuery
 ) where
 
 import Import hiding (union)
@@ -290,6 +291,20 @@ fetchPendingWorkQueueByEquipmentIdQuery equipmentId =  do
                                         E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ "PENDING") E.&&. workQueue ^. WorkQueue_EquipmentId E.==. (E.val $ equipmentId))
                                         E.orderBy [E.asc (workQueue ^. WorkQueue_Id)]
                                         return workQueue
+                      return result
+
+fetchWorkQueuesByWorkOrderIdQuery :: WorkOrder_Id -> Handler [(Entity Equipment_, Entity Item_)]
+fetchWorkQueuesByWorkOrderIdQuery workOrderId =  do
+                      result <- runDB
+                                   $ E.select
+                                   $ E.from $ \(item `E.InnerJoin` equipment) -> do
+                                        E.on $ item ^. Item_Id E.==. equipment ^. Equipment_ItemId
+                                        let subquery = E.from $ \workQueue -> do
+                                                       E.where_ (workQueue ^. WorkQueue_WorkOrderId E.==. (E.val $ Just workOrderId) E.&&. workQueue ^. WorkQueue_Status E.==. (E.val $ "WO_CREATED"))
+                                                       return (workQueue ^. WorkQueue_EquipmentId)
+                                        E.where_ (equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+                                        E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
+                                        return (equipment, item)
                       return result
 
 createOrUpdateMaintenance :: MaintenanceArg -> Handler Maintenance_Id
