@@ -34,45 +34,50 @@ module Graphql.Maintenance.Persistence (
       , fetchPendingWorkQueueByEquipmentIdQuery
 ) where
 
-import Import
-import GHC.Generics
+import Import hiding (union)
 import Data.Time.Calendar.WeekDate (toWeekDate, fromWeekDate)
-import Data.Time.Calendar (toGregorian, fromGregorian)
+--import Data.Time.Calendar (toGregorian, fromGregorian)
 --import Data.Text.Time (parseISODateTime)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
+--import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Database.Persist.Sql (toSqlKey)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_, countRows)
+import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_, {-countRows-})
 import Database.Esqueleto.PostgreSQL (arrayAggDistinct)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils
-import Data.Time
+import Data.Time ()
 import Graphql.Maintenance.DataTypes
 import Graphql.Asset.Equipment.Persistence (equipmentQueryFilters)
 import Graphql.Maintenance.Task.Persistence (taskQuery)
 
+getMaintenancePredicate :: E.SqlExpr (Entity Maintenance_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getMaintenancePredicate maintenance Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                                    | T.strip field == "name" = [getOperator operator (maintenance ^. Maintenance_Name) (E.val value)]
                                                    | T.strip field == "status" = [getOperator operator (maintenance ^. Maintenance_Status) (E.val (readEntityStatus $ T.strip value))]
                                                    | otherwise = []
 
+getMaintenanceInPredicate :: E.SqlExpr (Entity Maintenance_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getMaintenanceInPredicate maintenance Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
                                                      | T.strip field == "name" = [(maintenance ^. Maintenance_Name) `in_` (E.valList $ fromText P.id value)]
                                                      | T.strip field == "status" = [(maintenance ^. Maintenance_Status) `in_` (E.valList $ fromText readEntityStatus value)]
                                                      | otherwise = []
 
+getMaintenanceNotInPredicate :: E.SqlExpr (Entity Maintenance_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getMaintenanceNotInPredicate maintenance Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
                                                         | T.strip field == "name" = [(maintenance ^. Maintenance_Name) `notIn` (E.valList $ fromText P.id value)]
                                                         | T.strip field == "status" = [(maintenance ^. Maintenance_Status) `notIn` (E.valList $ fromText readEntityStatus value)]
                                                         | otherwise = []
+
+getMaintenancePredicates :: E.SqlExpr (Entity Maintenance_) -> [Predicate] -> [[E.SqlExpr (E.Value Bool)]]
 getMaintenancePredicates _ [] = []
 getMaintenancePredicates maintenance (x:xs) | P.length p == 0 = getMaintenancePredicates maintenance xs
                                             | otherwise = p : getMaintenancePredicates maintenance xs
                    where
                       p = (getMaintenancePredicate maintenance x) P.++ (getMaintenanceInPredicate maintenance x) P.++ (getMaintenanceNotInPredicate maintenance x)
 
+maintenanceFilters :: Monad m => E.SqlExpr (Entity Maintenance_) -> PageArg -> m (E.SqlExpr (E.Value Bool))
 maintenanceFilters maintenance PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
                             let predicates = P.concat $ getMaintenancePredicates maintenance justFilters
@@ -86,26 +91,32 @@ maintenanceFilters maintenance PageArg {..} = do
                             let searchFilters_ = unionFilters searchFilters
                             return (searchFilters_ E.&&. predicates_)
 
+workOrderPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 workOrderPredicate workOrder Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                             | T.strip field == "workOrderCode" = [getOperator operator (workOrder ^. WorkOrder_WorkOrderCode) (E.val $ T.strip value)]
                                             | T.strip field == "workOrderStatus" = [getOperator operator (workOrder ^. WorkOrder_WorkOrderStatus) (E.val $ T.strip value)]
                                             | otherwise = []
 
+workOrderInPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 workOrderInPredicate workOrder Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
                                               | T.strip field == "workOrderCode" = [(workOrder ^. WorkOrder_WorkOrderCode) `in_` (E.valList $ fromText P.id value)]
                                               | T.strip field == "workOrderStatus" = [(workOrder ^. WorkOrder_WorkOrderStatus) `in_` (E.valList $ fromText P.id value)]
                                               | otherwise = []
 
+workOrderNotInPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 workOrderNotInPredicate workOrder Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
                                                  | T.strip field == "workOrderCode" = [(workOrder ^. WorkOrder_WorkOrderCode) `notIn` (E.valList $ fromText P.id value)]
                                                  | T.strip field == "workOrderStatus" = [(workOrder ^. WorkOrder_WorkOrderStatus) `notIn` (E.valList $ fromText P.id value)]
                                                  | otherwise = []
+
+workOrderPredicates :: E.SqlExpr (Entity WorkOrder_) -> [Predicate] -> [[E.SqlExpr (E.Value Bool)]]
 workOrderPredicates _ [] = []
 workOrderPredicates workOrder (x:xs) | P.length p == 0 = workOrderPredicates workOrder xs
                                      | otherwise = p : workOrderPredicates workOrder xs
                    where
                       p = (workOrderPredicate workOrder x) P.++ (workOrderInPredicate workOrder x) P.++ (workOrderNotInPredicate workOrder x)
 
+workOrderFilters :: Monad m => E.SqlExpr (Entity WorkOrder_) -> PageArg -> m (E.SqlExpr (E.Value Bool))
 workOrderFilters workOrder PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
                             let predicates = P.concat $ workOrderPredicates workOrder justFilters
@@ -130,8 +141,8 @@ maintenanceQuery page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \ maintenance -> do
-                                        filters <- maintenanceFilters maintenance page
-                                        E.where_ filters
+                                        mFilters <- maintenanceFilters maintenance page
+                                        E.where_ mFilters
                                         E.orderBy [E.asc (maintenance ^. Maintenance_Id)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
@@ -184,8 +195,8 @@ availableEquipmentQuery page =  do
                                               E.from $ \workQueue -> do
                                               E.where_ (workQueue ^. WorkQueue_Status E.!=. E.val "DELETED")
                                               return (workQueue ^. WorkQueue_EquipmentId)
-                                        filters <- equipmentQueryFilters equipment item page
-                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
+                                        eFilters <- equipmentQueryFilters equipment item page
+                                        E.where_ (eFilters E.&&. equipment ^. Equipment_ItemId `E.notIn` E.subList_select subquery)
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
@@ -223,8 +234,8 @@ workQueueQuery page =  do
                                         E.on $ workQueue ^. WorkQueue_TaskTriggerId E.==. trigger ^. TaskTrigger_Id
                                         E.on $ (workQueue ^. WorkQueue_MaintenanceId) E.==. (maintenance ?. Maintenance_Id)
                                         E.on $ (task ^. Task_TaskCategoryId) E.==. (category ?. Category_Id)
-                                        filters <- equipmentQueryFilters equipment item page
-                                        E.where_ filters
+                                        wqFilters <- equipmentQueryFilters equipment item page
+                                        E.where_ wqFilters
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
@@ -259,8 +270,8 @@ fetchPendingWorkQueueQuery page =  do
                                         let subquery = E.from $ \workQueue -> do
                                                        E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ "PENDING"))
                                                        return (workQueue ^. WorkQueue_EquipmentId)
-                                        filters <- equipmentQueryFilters equipment item page
-                                        E.where_ (filters E.&&. equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
+                                        wqFilters <- equipmentQueryFilters equipment item page
+                                        E.where_ (wqFilters E.&&. equipment ^. Equipment_ItemId `E.in_` E.subList_select subquery)
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
@@ -281,7 +292,7 @@ fetchPendingWorkQueueByEquipmentIdQuery equipmentId =  do
                                         return workQueue
                       return result
 
---createOrUpdateMaintenance :: MaintenanceArg -> Handler (Maintenance MutRes)
+createOrUpdateMaintenance :: MaintenanceArg -> Handler Maintenance_Id
 createOrUpdateMaintenance maintenance = do
                 let MaintenanceArg {..} = maintenance
                 now <- liftIO getCurrentTime
@@ -329,7 +340,7 @@ addEventWorkQueuePersistent WorkQueueEventArg {..} = do
 
 addDateWorkQueuePersistent :: WorkQueueDateArg -> Handler Bool
 addDateWorkQueuePersistent WorkQueueDateArg {..} = do
-                    now <- liftIO getCurrentTime
+--                    now <- liftIO getCurrentTime
                     let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
                     let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
                     let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
@@ -399,8 +410,8 @@ workQueueCountTasksQuery EntityIdsArg{..} =  do
                                    $ E.from $ \ workQueue -> do
                                         E.where_ (workQueue ^. WorkQueue_Id `in_` (E.valList $ P.map (\i -> toSqlKey $ fromIntegral i) entityIds))
                                         E.groupBy (workQueue ^. WorkQueue_EquipmentId)
-                                        let toList = arrayAggDistinct (workQueue ^. WorkQueue_TaskId)
-                                        return (workQueue ^. WorkQueue_EquipmentId, toList)
+                                        let toListAgg = arrayAggDistinct (workQueue ^. WorkQueue_TaskId)
+                                        return (workQueue ^. WorkQueue_EquipmentId, toListAgg)
                       return $ fmap (\(E.Value a, E.Value (Just b)) -> (a, b)) $ result
 
 
@@ -419,8 +430,8 @@ workOrderQuery page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \ workOrder -> do
-                                        filters <- workOrderFilters workOrder page
-                                        E.where_ filters
+                                        woFilters <- workOrderFilters workOrder page
+                                        E.where_ woFilters
                                         E.orderBy [E.asc (workOrder ^. WorkOrder_Id)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
@@ -451,7 +462,7 @@ createUpdateWorkOrderPersistent arg = do
                                else do
                                   workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
-                _ <- saveWorkOrderResource ((toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id) resources
+                _ <- saveWorkOrderResource entityId resources
                 _ <- runDB $ updateWhere  [WorkQueue_Id <-. P.map (\wqId -> (toSqlKey $ fromIntegral $ wqId)) workQueueIds] [WorkQueue_WorkOrderId =. Just entityId, WorkQueue_Status =. "WO_CREATED"]
                 return entityId
 
