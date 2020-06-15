@@ -22,9 +22,10 @@ import Graphql.Utils (EntityIdArg, Page, PageArg)
 import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes ()
+import Graphql.Asset.DataTypes (InventoryItem)
 import Graphql.Category ()
 import Graphql.Utils ()
-import Graphql.DataTypes (Equipment)
+import Graphql.DataTypes (Equipment, WorkQueue)
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
@@ -49,6 +50,7 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
                              , responsible :: () -> o () Handler (Person o)
                              , parent :: Maybe (() -> o () Handler (WorkOrder o))
                              , workQueues :: () -> o () Handler [Equipment o]
+                             , workOrderResources :: () -> o () Handler [WorkOrderResource o]
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
@@ -114,11 +116,11 @@ instance GQLType WorkOrderResourceArg where
     type  KIND WorkOrderResourceArg = INPUT
     description = const $ Just $ pack "The item that holds the WorkOrderResourceArg information"
 
-data WorkOrderResource = WorkOrderResource { resourceId :: Int
-                                           , name :: Text
-                                           , itemId :: Maybe Int
-                                           , inventoryItemId :: Int
-                                           , employeeCategoryId :: Int
-                                           , personId :: Maybe Int
-                                           , resourceType :: Text
-                                           } deriving (Generic, GQLType)
+data WorkOrderResource o = WorkOrderResource { workOrderResourceId :: Int
+                                             , amount :: Int
+                                             , humanResource :: Maybe (() -> o () Handler (Person o))
+                                             , inventoryItem :: Maybe (() -> o () Handler (InventoryItem o))
+                                             , workQueue :: () -> o () Handler (WorkQueue o)
+                                             , createdDate :: Text
+                                             , modifiedDate :: Maybe Text
+                                             } deriving (Generic, GQLType)

@@ -21,22 +21,22 @@ module Graphql.Asset.Equipment.Persistence (
     , setMaintenancePersistence
 ) where
 
-import Import
-import GHC.Generics
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import Import hiding (union)
+import Database.Persist.Sql (toSqlKey, {-fromSqlKey-})
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import Data.Maybe (maybeToList, listToMaybe)
+import Database.Esqueleto      ((^.), (%), (++.), notIn, in_, {-(?.)-})
+--import Data.Maybe (maybeToList, listToMaybe)
 import Prelude as P
 import qualified Data.Text as T
 import Enums
 import Graphql.Utils
-import Graphql.Asset.DataTypes
+import Graphql.Asset.DataTypes ()
 import Data.Time ()
-import Graphql.Asset.Item.Resolvers
-import Graphql.Category
+import Graphql.Asset.Item.Resolvers ()
+import Graphql.Category ()
 import Graphql.Asset.Equipment.DataTypes
 
+getPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
                                  | T.strip field == "name" = [getOperator operator (item ^. Item_Name) (E.val value)]
                                  | T.strip field == "code" = [getOperator operator (item ^. Item_Code) (E.val $ T.strip value)]
@@ -46,11 +46,13 @@ getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.
                                  | T.strip field == "itemId" = [getOperator operator (item ^. Item_Id) (E.val (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
                                  | otherwise = []
 
+getEquipmentPredicate :: E.SqlExpr (Entity Equipment_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getEquipmentPredicate equipment Predicate {..} | T.strip field == "parentId" && T.strip operator == "=" && T.strip value == "null" = [E.isNothing (equipment ^. Equipment_ParentId)]
                                                | T.strip field == "parentId" && T.strip operator == "=" && T.strip value /= "" = [equipment ^. Equipment_ParentId E.==. E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)]
                                                | T.strip field == "parentId" && T.strip operator == "!=" && T.strip value /= "" = [equipment ^. Equipment_ParentId E.!=. E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value)]
                                                | otherwise = []
 
+getInPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
                                    | T.strip field == "name" = [(item ^. Item_Name) `in_` (E.valList $ fromText P.id value)]
                                    | T.strip field == "code" = [(item ^. Item_Code) `in_` (E.valList $ fromText P.id value)]
@@ -59,6 +61,7 @@ getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value =
                                    | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `in_` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
                                    | otherwise = []
 
+getNotInPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
                                       | T.strip field == "name" = [(item ^. Item_Name) `notIn` (E.valList $ fromText P.id value)]
                                       | T.strip field == "code" = [(item ^. Item_Code) `notIn` (E.valList $ fromText P.id value)]
@@ -66,12 +69,15 @@ getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip 
                                       | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `notIn` (E.valList $ fromText (\e -> Just e) value)]
                                       | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `notIn` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
                                       | otherwise = []
-getPredicates equipment item [] = []
+
+getPredicates :: E.SqlExpr (Entity Equipment_) -> E.SqlExpr (Entity Item_) -> [Predicate] -> [[E.SqlExpr (E.Value Bool)]]
+getPredicates _ _ [] = []
 getPredicates equipment item (x:xs) | P.length p == 0 = getPredicates equipment item xs
                                     | otherwise = p : getPredicates equipment item xs
                    where
                       p = (getEquipmentPredicate equipment x) P.++ (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
 
+equipmentQueryFilters :: Monad m => E.SqlExpr (Entity Equipment_) -> E.SqlExpr (Entity Item_) -> PageArg -> m (E.SqlExpr (E.Value Bool))
 equipmentQueryFilters equipment item PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
                             let predicates = P.concat $ getPredicates equipment item justFilters
@@ -91,8 +97,8 @@ equipmentQueryCount page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        filters <- equipmentQueryFilters equipment item page
-                                        E.where_ filters
+                                        eFilters <- equipmentQueryFilters equipment item page
+                                        E.where_ eFilters
                                         return E.countRows
                       return $ fromMaybe 0 $ listToMaybe $ fmap (\(E.Value v) -> v) $ res
 
@@ -114,10 +120,10 @@ equipmentChildrenQuery parentId page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \(equipment, item) -> do
-                                     filters <- equipmentQueryFilters equipment item page
+                                     ecFilters <- equipmentQueryFilters equipment item page
                                      E.where_ (equipment ^. Equipment_ParentId E.==. E.val (Just parentId)
                                                 E.&&. equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                                E.&&. filters
+                                                E.&&. ecFilters
                                               )
                                      E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                      E.offset $ pageIndex_ * pageSize_
@@ -135,8 +141,8 @@ equipmentQuery page =  do
                                    $ E.select
                                    $ E.from $ \(equipment `E.InnerJoin` item) -> do
                                         E.on $ equipment ^. Equipment_ItemId E.==. item ^. Item_Id
-                                        filters <- equipmentQueryFilters equipment item page
-                                        E.where_ filters
+                                        eFilters <- equipmentQueryFilters equipment item page
+                                        E.where_ eFilters
                                         E.orderBy [E.asc (equipment ^. Equipment_ItemId)]
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
@@ -148,6 +154,7 @@ equipmentQuery page =  do
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
 --createOrUpdateEquipment :: EquipmentArg -> Handler (Equipment MutRes)
+createOrUpdateEquipment :: Item_Id -> EquipmentArg -> Handler Equipment_Id
 createOrUpdateEquipment itemEntityId equipment = do
                 let EquipmentArg {..} = equipment
                 now <- liftIO getCurrentTime
@@ -168,6 +175,7 @@ createOrUpdateEquipment itemEntityId equipment = do
                                   return equipmentKey
                 return entityId
 
+setMaintenancePersistence :: SetMaintenanceArg -> Handler Bool
 setMaintenancePersistence (SetMaintenanceArg {..}) = do
                 now <- liftIO getCurrentTime
                 let itemId = (toSqlKey $ fromIntegral $ equipmentId) :: Item_Id
