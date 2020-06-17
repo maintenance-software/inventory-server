@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: morpheus-graphql-0.10.0@sha256:02d06672f508d0c199932f81fdab1337e967375d57d91cec00fa02b7bfc70abb,24229
-    pantry-tree:
-      size: 35491
-      sha256: bab034192a83daee625055d762eb988fb139cbed12c549ba8939c1fcade2d25f
-  original:
-    hackage: morpheus-graphql-0.10.0
-- completed:
     hackage: yesod-auth-oauth2-0.6.1.2@sha256:181c757c8ba0f57c23119414db90e1859271bfeb85667d88a99746001c064aba,2891
     pantry-tree:
       size: 1763
@@ -27,7 +20,7 @@ packages:
     hackage: hoauth2-1.8.9
 snapshots:
 - completed:
-    size: 491373
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/3.yaml
-    sha256: 29e9ff61b8bf4b4fcff55cde3ac106ebb971f0d21331dccac9eee63374fa6ca8
-  original: lts-15.3
+    size: 531237
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/1.yaml
+    sha256: 954b6b14b0c8130732cf4773f7ebb4efc9a44600d1a5265d142868bf93462bc6
+  original: lts-16.1
