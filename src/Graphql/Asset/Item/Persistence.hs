@@ -20,15 +20,15 @@ module Graphql.Asset.Item.Persistence (
     , createOrUpdateItem
 ) where
 
-import Import
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import Import hiding (union)
+import Database.Persist.Sql (toSqlKey)
 import qualified Data.Text as T
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
+import Database.Esqueleto      ((^.), (%), (++.), notIn, in_)
 import Prelude as P
 import Graphql.Utils
 import Enums
-import Graphql.Asset.Unit
+import Graphql.Asset.Unit ()
 import Graphql.Asset.DataTypes
 --getFilters Nothing = []
 --getFilters (Just []) = []
@@ -44,7 +44,7 @@ import Graphql.Asset.DataTypes
 --                   where
 --                      Predicate {..} = x
 
---getPredicate Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
+--getItemPredicate Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
 --                            | T.strip field == "status" = [((getOperator operator) Item_Status (readEntityStatus $ T.strip value))]
 --                            | T.strip field == "itemType" = [((getOperator operator) Item_ItemType (readItemType $ T.strip value))]
 --                            | T.strip field == "name" = [((getOperator operator) Item_Name (T.strip value))]
@@ -54,7 +54,7 @@ import Graphql.Asset.DataTypes
 --                            | T.strip field == "categoryId" = [((getOperator operator) Item_CategoryId (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
 --                            | otherwise = []
 --
---getInPredicate Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
+--getItemInPredicate Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
 --                              | T.strip field == "status" = [Item_Status <-. textToList value readEntityStatus]
 --                              | T.strip field == "itemType" = [Item_ItemType <-. textToList value readItemType]
 --                              | T.strip field == "name" = [Item_Name <-. textToList value P.id]
@@ -64,26 +64,29 @@ import Graphql.Asset.DataTypes
 --                              | T.strip field == "categoryId" = [Item_CategoryId <-. textToList value (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e)]
 --                              | otherwise = []
 
-getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
-                                 | T.strip field == "name" = [getOperator operator (item ^. Item_Name) (E.val value)]
-                                 | T.strip field == "code" = [getOperator operator (item ^. Item_Code) (E.val $ T.strip value)]
-                                 | T.strip field == "status" = [getOperator operator (item ^. Item_Status) (E.val (readEntityStatus $ T.strip value))]
-                                 | T.strip field == "itemType" = [getOperator operator (item ^. Item_ItemType) (E.val (readItemType $ T.strip value))]
-                                 | T.strip field == "partNumber" = [getOperator operator (item ^. Item_PartNumber) (E.val $ Just $ T.strip value)]
-                                 | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
-                                 | T.strip field == "itemId" = [getOperator operator (item ^. Item_Id) (E.val (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
-                                 | otherwise = []
+getItemPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
+getItemPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
+                                     | T.strip field == "name" = [getOperator operator (item ^. Item_Name) (E.val value)]
+                                     | T.strip field == "code" = [getOperator operator (item ^. Item_Code) (E.val $ T.strip value)]
+                                     | T.strip field == "status" = [getOperator operator (item ^. Item_Status) (E.val (readEntityStatus $ T.strip value))]
+                                     | T.strip field == "itemType" = [getOperator operator (item ^. Item_ItemType) (E.val (readItemType $ T.strip value))]
+                                     | T.strip field == "partNumber" = [getOperator operator (item ^. Item_PartNumber) (E.val $ Just $ T.strip value)]
+                                     | T.strip field == "categoryId" = [getOperator operator (item ^. Item_CategoryId) (E.val (Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                                     | T.strip field == "itemId" = [getOperator operator (item ^. Item_Id) (E.val (toSqlKey $ fromIntegral $ parseToInteger $ T.strip value))]
+                                     | otherwise = []
 
-getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
-                                   | T.strip field == "name" = [(item ^. Item_Name) `in_` (E.valList $ fromText P.id value)]
-                                   | T.strip field == "code" = [(item ^. Item_Code) `in_` (E.valList $ fromText P.id value)]
-                                   | T.strip field == "status" = [(item ^. Item_Status) `in_` (E.valList $ fromText readEntityStatus value)]
-                                   | T.strip field == "itemType" = [(item ^. Item_ItemType) `in_` (E.valList $ fromText readItemType value)]
-                                   | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `in_` (E.valList $ fromText (\e -> Just e) value)]
-                                   | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `in_` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
-                                   | otherwise = []
+getItemInPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
+getItemInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value == "" = []
+                                       | T.strip field == "name" = [(item ^. Item_Name) `in_` (E.valList $ fromText P.id value)]
+                                       | T.strip field == "code" = [(item ^. Item_Code) `in_` (E.valList $ fromText P.id value)]
+                                       | T.strip field == "status" = [(item ^. Item_Status) `in_` (E.valList $ fromText readEntityStatus value)]
+                                       | T.strip field == "itemType" = [(item ^. Item_ItemType) `in_` (E.valList $ fromText readItemType value)]
+                                       | T.strip field == "partNumber" = [(item ^. Item_PartNumber) `in_` (E.valList $ fromText (\e -> Just e) value)]
+                                       | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `in_` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
+                                       | otherwise = []
 
-getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+getItemNotInPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
+getItemNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
                                       | T.strip field == "name" = [(item ^. Item_Name) `notIn` (E.valList $ fromText P.id value)]
                                       | T.strip field == "code" = [(item ^. Item_Code) `notIn` (E.valList $ fromText P.id value)]
                                       | T.strip field == "status" = [(item ^. Item_Status) `notIn` (E.valList $ fromText readEntityStatus value)]
@@ -92,15 +95,17 @@ getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip 
                                       | T.strip field == "categoryId" = [(item ^. Item_CategoryId) `notIn` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
                                       | otherwise = []
 
-getPredicates _ [] = []
-getPredicates item (x:xs) | P.length p == 0 = getPredicates item xs
-                          | otherwise = p : getPredicates item xs
+getItemPredicates :: E.SqlExpr (Entity Item_) -> [Predicate] -> [[E.SqlExpr (E.Value Bool)]]
+getItemPredicates _ [] = []
+getItemPredicates item (x:xs) | P.length p == 0 = getItemPredicates item xs
+                          | otherwise = p : getItemPredicates item xs
                    where
-                      p = (getPredicate item x) P.++ (getInPredicate item x) P.++ (getNotInPredicate item x)
+                      p = (getItemPredicate item x) P.++ (getItemInPredicate item x) P.++ (getItemNotInPredicate item x)
 
+itemFilters :: Monad m => E.SqlExpr (Entity Item_) -> PageArg -> m (E.SqlExpr (E.Value Bool))
 itemFilters item PageArg {..} = do
                             let justFilters = case filters of Just a -> a; Nothing -> []
-                            let predicates = P.concat $ getPredicates item justFilters
+                            let predicates = P.concat $ getItemPredicates item justFilters
                             let predicates_ = if P.length predicates > 0 then
                                                   conjunctionFilters predicates
                                               else
@@ -127,8 +132,8 @@ itemQuery page =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \ item -> do
-                                        filters <- itemFilters item page
-                                        E.where_ filters
+                                        iFilters <- itemFilters item page
+                                        E.where_ iFilters
                                         E.offset $ pageIndex_ * pageSize_
                                         E.limit pageSize_
                                         return item

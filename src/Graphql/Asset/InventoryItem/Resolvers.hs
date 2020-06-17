@@ -115,7 +115,6 @@ inventoryItemsPageResolver PageArg {..} = lift $ do
                                           Nothing -> 10
 
 -- Mutation Resolvers
---saveInventoryItemResolver :: InventoryItemArg -> MutRes e Handler (InventoryItem MutRes)
 saveInventoryItemResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => InventoryItemArg -> t Handler (InventoryItem o)
 saveInventoryItemResolver arg = lift $ do
                               inventoryItemId <- createOrUpdateInventoryItem arg

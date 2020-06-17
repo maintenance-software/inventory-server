@@ -1,7 +1,4 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -21,17 +18,9 @@ module Graphql.Maintenance.Task.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Prelude as P
-import qualified Data.Text as T
-import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
-import Data.Time
 import Graphql.Category
 import Graphql.Maintenance.SubTask.Resolvers
 import Graphql.Maintenance.TaskTrigger.Resolvers
@@ -40,22 +29,23 @@ import Graphql.Maintenance.Task.Persistence
 import Graphql.Maintenance.Task.TaskResource (fetchTaskResourceResolver_)
 
 
+taskResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Maintenance_Id -> () -> o () Handler [Task o]
 taskResolver_ maintenanceId _ = lift $ do
                                 tasks <- taskQuery maintenanceId
                                 return $ P.map (\t -> toTaskQL t) tasks
 
---getTaskByIdResolver :: EntityIdArg -> Res e Handler (Task Res)
+getTaskByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Task o)
 getTaskByIdResolver EntityIdArg {..} = lift $ do
                                               let taskId = (toSqlKey $ fromIntegral $ entityId)::Task_Id
                                               task <- runDB $ getJustEntity taskId
                                               return $ toTaskQL task
 
+getTaskByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Task_Id -> () -> o () Handler (Task o)
 getTaskByIdResolver_ taskId _ = lift $ do
                                               task <- runDB $ getJustEntity taskId
                                               return $ toTaskQL task
 
 -- CONVERTERS
---toTaskQL :: Entity Task_ -> Task
 toTaskQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity Task_ -> Task o
 toTaskQL (Entity taskId task) = Task { taskId = fromIntegral $ fromSqlKey taskId
                                      , name = task_Name

@@ -20,22 +20,18 @@ module Graphql.WorkOrder.Persistence (
 ) where
 
 import Import hiding (union)
-import Data.Time.Calendar.WeekDate (toWeekDate, fromWeekDate)
 --import Data.Time.Calendar (toGregorian, fromGregorian)
 --import Data.Text.Time (parseISODateTime)
 --import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
 import Database.Persist.Sql (toSqlKey)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_, {-countRows-})
-import Database.Esqueleto.PostgreSQL (arrayAggDistinct)
+import Database.Esqueleto      ((^.), notIn, in_, {-countRows-})
+--import Database.Esqueleto.PostgreSQL (arrayAggDistinct)
 import Prelude as P
 import qualified Data.Text as T
-import Enums
 import Graphql.Utils
 import Data.Time ()
 import Graphql.WorkOrder.DataTypes
-import Graphql.Asset.Equipment.Persistence (equipmentQueryFilters)
-import Graphql.Maintenance.Task.Persistence (taskQuery)
 
 workOrderPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 workOrderPredicate workOrder Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []

@@ -14,16 +14,8 @@
 module Graphql.Asset.Inventory.Persistence (createOrUpdateInventory) where
 
 import Import
-import GHC.Generics
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Prelude as P
-import qualified Data.Text as T
+import Database.Persist.Sql (toSqlKey, {-fromSqlKey-})
 import Enums
-import Graphql.Utils
-import Data.Time
 import Graphql.Asset.DataTypes
 
 -- DB ACTIONS
@@ -51,7 +43,7 @@ import Graphql.Asset.DataTypes
 --                                        return inventory
 --                      return result
 
---createOrUpdateInventory :: InventoryArg -> Handler (Inventory MutRes)
+createOrUpdateInventory :: InventoryArg -> Handler Inventory_Id
 createOrUpdateInventory inventory = do
                 let InventoryArg {..} = inventory
                 now <- liftIO getCurrentTime

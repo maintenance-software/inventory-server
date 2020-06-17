@@ -51,19 +51,10 @@ data CategoryArg = CategoryArg { categoryId :: Int
 data CategoryFilter = CategoryFilter { scope :: Text } deriving (Generic)
 -- DB ACTIONS
 
+getCategoryByIdResolver_ :: (MonadTrans t) => Category_Id -> () -> t Handler Category
 getCategoryByIdResolver_ categoryId _ = lift $ do
                                       category <- runDB $ getJustEntity categoryId
                                       return $ toCategoryQL category
-
---dbFetchCategoryById:: Category_Id -> Handler Category
---dbFetchCategoryById categoryId = do
---                                      category <- runDB $ getJustEntity categoryId
---                                      return $ toCategoryQL category
-
---dbFetchCategories:: Handler [Category]
---dbFetchCategories = do
---                       categories <- runDB $ selectList [] []
---                       return $ P.map toCategoryQL categories
 
 listCategoryResolver :: CategoryFilter -> Res e Handler [Category]
 listCategoryResolver (CategoryFilter {..}) = lift $ do

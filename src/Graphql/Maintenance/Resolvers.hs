@@ -33,10 +33,10 @@ import Graphql.Maintenance.Task.Persistence
 import Graphql.Maintenance.DataTypes
 import Graphql.Maintenance.Persistence
 import Graphql.DataTypes (WorkQueue(..), Equipment(..))
-import Graphql.Admin.Person (getPersonByIdResolver_)
+--import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Maintenance.Task.DataTypes (Task(..))
 import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
-import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
+--import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
 
 maintenanceResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Maintenances o)
 maintenanceResolver _ = pure Maintenances { maintenance = getMaintenanceByIdResolver
@@ -125,11 +125,11 @@ workQueueByEquipmentIdResolver_ equipmentId _ = lift $ do
                               let result = P.map (\ w -> toWorkQueueQL w) workQueues
                               return result
 
-fetchEquipmentsByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [Equipment o]
-fetchEquipmentsByWorkOrderIdResolver_ workOrderId _ = lift $ do
-                              workQueues <- fetchWorkQueuesByWorkOrderIdQuery workOrderId
-                              let result = P.map (\ (e, i) -> toEquipmentQL e i) workQueues
-                              return result
+--fetchEquipmentsByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [Equipment o]
+--fetchEquipmentsByWorkOrderIdResolver_ workOrderId _ = lift $ do
+--                              workQueues <- fetchWorkQueuesByWorkOrderIdQuery workOrderId
+--                              let result = P.map (\ (e, i) -> toEquipmentQL e i) workQueues
+--                              return result
 
 saveMaintenanceResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => MaintenanceArg -> t Handler (Maintenance o)
 saveMaintenanceResolver arg = lift $ do

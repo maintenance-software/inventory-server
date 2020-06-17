@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -16,17 +14,9 @@
 module Graphql.Maintenance.Task.Persistence ( saveTasks, taskQuery, getTaskByIds ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import Database.Persist.Sql (toSqlKey)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import Prelude as P
-import qualified Data.Text as T
-import Enums
-import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
-import Data.Time
+import Database.Esqueleto      ((^.), in_)
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Maintenance.SubTask.Persistence
 import Graphql.Maintenance.TaskTrigger.Persistence
@@ -63,14 +53,14 @@ getTaskByIds taskIds =  do
                                         return task
                       return result
 
---saveTasks :: Maintenance_Id -> [TaskArg] -> Handler [Task_Id]
+saveTasks :: Maybe Maintenance_Id -> [TaskArg] -> HandlerFor App [Task_Id]
 saveTasks _ [] = pure []
 saveTasks maintenanceId (x:xs) = do
                                   taskId <-  createOrUpdateTask maintenanceId x
                                   taskIds <- saveTasks maintenanceId xs
                                   return (taskId:taskIds)
 
---createOrUpdateTask :: MaintenanceArg -> Handler (Task MutRes)
+createOrUpdateTask :: Maybe Maintenance_Id -> TaskArg -> Handler Task_Id
 createOrUpdateTask maintenanceId task = do
                 let TaskArg {..} = task
                 now <- liftIO getCurrentTime
@@ -92,9 +82,9 @@ createOrUpdateTask maintenanceId task = do
                                else do
                                   taskKey <- runDB $ insert $ fromTaskQL maintenanceId task now Nothing
                                   return taskKey
-                subTaskIds <- saveSubTasks entityId subTasks
-                taskTriggerIds <- saveTaskTriggers entityId taskTriggers
-                taskResourceIds <- saveTaskResources entityId taskResources
+                _ <- saveSubTasks entityId subTasks
+                _ <- saveTaskTriggers entityId taskTriggers
+                _ <- saveTaskResources entityId taskResources
                 return entityId
 
 fromTaskQL :: Maybe Maintenance_Id -> TaskArg -> UTCTime -> Maybe UTCTime -> Task_

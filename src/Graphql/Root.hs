@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -w #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -57,9 +58,6 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , users :: () -> Res () Handler (Users Res)
                          , categories :: CategoryFilter -> m [Category]
                          , units :: () -> m [Unit]
---                         , taskCategories :: () -> m [TaskCategory]
---                         , subTaskKinds :: () -> m [SubTaskKind]
---                         , employeeJobs :: () -> m [EmployeeJob]
                          , inventories :: () -> Res () Handler (Inventories Res)
                          , items :: () -> Res () Handler (Items Res)
                          , equipments :: () -> Res () Handler (Equipments Res)

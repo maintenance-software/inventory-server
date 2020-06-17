@@ -37,7 +37,6 @@ inventoryResolver _ = pure Inventories { inventory = getInventoryByIdResolver
                                        , saveInventoryItems = saveInventoryItemsResolver
                                        }
 
---getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
 getInventoryByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (Inventory o)
 getInventoryByIdResolver EntityIdArg {..} = lift $ do
                                               let inventoryId = (toSqlKey $ fromIntegral $ entityId)::Inventory_Id

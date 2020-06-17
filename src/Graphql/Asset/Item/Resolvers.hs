@@ -45,11 +45,6 @@ getItemByIdResolver_ itemId _ = lift $ do
                                          item <- runDB $ getJustEntity itemId
                                          return $ toItemQL item
 
---categoryResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Category_Id -> () -> o () Handler Category
---categoryResolver_ categoryId arg = lift $ do
---                                      category <- dbFetchCategoryById categoryId
---                                      return category
-
 itemsPageResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Item o))
 itemsPageResolver page = lift $ do
                         countItems <- itemQueryCount page
