@@ -121,7 +121,7 @@ getWorkQueueByIdResolver_ workQueueId _ = lift $ do
 
 workQueueByEquipmentIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Item_Id -> () -> o () Handler [WorkQueue o]
 workQueueByEquipmentIdResolver_ equipmentId _ = lift $ do
-                              workQueues <- fetchPendingWorkQueueByEquipmentIdQuery equipmentId
+                              workQueues <- fetchWorkQueueByEquipmentIdQuery equipmentId
                               let result = P.map (\ w -> toWorkQueueQL w) workQueues
                               return result
 

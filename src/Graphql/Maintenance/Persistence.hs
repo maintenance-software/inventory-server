@@ -28,7 +28,7 @@ module Graphql.Maintenance.Persistence (
       , workQueueCountTasksQuery
       , fetchPendingWorkQueueQueryCount
       , fetchPendingWorkQueueQuery
-      , fetchPendingWorkQueueByEquipmentIdQuery
+      , fetchWorkQueueByEquipmentIdQuery
       , fetchWorkQueuesByWorkOrderIdQuery
 ) where
 
@@ -245,12 +245,12 @@ fetchPendingWorkQueueQuery page =  do
                         pageIndex_ = fromIntegral $ case pageIndex of Just  x  -> x; Nothing -> 0
                         pageSize_ = fromIntegral $ case pageSize of Just y -> y; Nothing -> 10
 
-fetchPendingWorkQueueByEquipmentIdQuery :: Item_Id -> Handler [Entity WorkQueue_]
-fetchPendingWorkQueueByEquipmentIdQuery equipmentId =  do
+fetchWorkQueueByEquipmentIdQuery :: Item_Id -> Handler [Entity WorkQueue_]
+fetchWorkQueueByEquipmentIdQuery equipmentId =  do
                       result <- runDB
                                    $ E.select
                                    $ E.from $ \ workQueue -> do
-                                        E.where_ (workQueue ^. WorkQueue_Status E.==. (E.val $ "PENDING") E.&&. workQueue ^. WorkQueue_EquipmentId E.==. (E.val $ equipmentId))
+                                        E.where_ (workQueue ^. WorkQueue_EquipmentId E.==. (E.val $ equipmentId))
                                         E.orderBy [E.asc (workQueue ^. WorkQueue_Id)]
                                         return workQueue
                       return result
