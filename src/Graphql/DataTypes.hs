@@ -16,13 +16,12 @@
 module Graphql.DataTypes where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
+import GHC.Generics ()
 import Data.Morpheus.Types (GQLType(..))
-import Graphql.Utils (Page, PageArg, EntityIdArg, EntityChangeStatusArg)
+import Graphql.Utils (Page, PageArg)
 import Graphql.Category
-import Graphql.Admin.Privilege
-import Graphql.Admin.Role
+import Graphql.Admin.Privilege ()
+import Graphql.Admin.Role ()
 import Graphql.Maintenance.Task.DataTypes (Task)
 import Graphql.Maintenance.TaskTrigger.DataTypes (TaskTrigger)
 

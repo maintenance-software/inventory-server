@@ -16,12 +16,10 @@
 module Graphql.Maintenance.Task.DataTypes where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import Enums
-import Data.Time
+import GHC.Generics ()
+import Data.Morpheus.Kind (INPUT)
+import Data.Morpheus.Types (GQLType(..))
+import Enums ()
 import Graphql.Category
 import Graphql.Maintenance.Task.TaskResource
 import Graphql.Maintenance.SubTask.DataTypes
@@ -59,7 +57,7 @@ data TaskArg = TaskArg { taskId :: Int
                        } deriving (Generic)
 
 instance GQLType TaskArg where
-    type  KIND TaskArg = INPUT_OBJECT
+    type  KIND TaskArg = INPUT
     description = const $ Just $ pack "This field holds Task Input information"
 
 

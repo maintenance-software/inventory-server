@@ -50,6 +50,7 @@ readLocale :: Text -> Locale
 readLocale "en_US" = EN_US
 readLocale "es_US" = ES_US
 readLocale "es_BO" = ES_BO
+readLocale _ = EN_US
 
 readEntityStatus :: Text -> EntityStatus
 readEntityStatus "ACTIVE" = ACTIVE
@@ -71,6 +72,7 @@ readTimeFrequency "DAY" = DAY
 readTimeFrequency "WEEK" = WEEK
 readTimeFrequency "MONTH" = MONTH
 readTimeFrequency "YEAR" = YEAR
+readTimeFrequency _ = DAY
 
 readCategoryScope :: Text -> CategoryScope
 readCategoryScope "ITEM_CATEGORY" = ITEM_CATEGORY

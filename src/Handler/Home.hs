@@ -9,7 +9,7 @@
 module Handler.Home where
 
 import Import
-import Text.Hamlet          (hamletFile)
+import Text.Hamlet          ()
 import URI.ByteString.Extension (toText)
 -- getHomeR :: Handler Html
 -- getHomeR = homePage

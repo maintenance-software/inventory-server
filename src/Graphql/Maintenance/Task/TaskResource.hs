@@ -21,18 +21,15 @@ module Graphql.Maintenance.Task.TaskResource (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
+import GHC.Generics ()
+import Data.Morpheus.Kind (INPUT)
+import Data.Morpheus.Types (GQLType(..))
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import Graphql.Asset.DataTypes (Item(..))
 import Graphql.Asset.Item.Resolvers (getItemByIdResolver_)
-import Graphql.Asset.Human.DataTypes (Employee(..))
-import Graphql.Asset.Human.Resolvers (getEmployeeByIdResolver_)
 import Graphql.Category
-import Graphql.Asset.Unit (Unit(..), getUnitByIdResolver_)
-import Data.Time
+import Graphql.Asset.Unit (Unit, getUnitByIdResolver_)
 
 data TaskResource o = TaskResource { taskResourceId :: Int
                                    , order :: Int
@@ -57,15 +54,16 @@ data TaskResourceArg = TaskResourceArg { taskResourceId :: Int
                                        } deriving (Generic)
 
 instance GQLType TaskResourceArg where
-    type  KIND TaskResourceArg = INPUT_OBJECT
+    type  KIND TaskResourceArg = INPUT
     description = const $ Just $ pack "This field holds TaskResource Input information"
 
 
-getTaskResourceByIdResolver_ taskResourceId arg = lift $ do
+getTaskResourceByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => TaskResource_Id -> () -> o () Handler (TaskResource o)
+getTaskResourceByIdResolver_ taskResourceId _ = lift $ do
                                       taskResource <- runDB $ getJustEntity taskResourceId
                                       return $ toTaskResourceQL taskResource
 
---fetchTaskResourceResolver_ :: Task_Id -> () -> Res e Handler [TaskResource Res]
+fetchTaskResourceResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Task_Id -> () -> o () Handler [TaskResource o]
 fetchTaskResourceResolver_ taskId _ = lift $ do
                                taskResources <- runDB $ selectList [TaskResource_TaskId ==. taskId] []
                                return $ P.map toTaskResourceQL taskResources
@@ -73,13 +71,14 @@ fetchTaskResourceResolver_ taskId _ = lift $ do
 --saveTaskResourceResolver :: Task_Id -> TaskResourceArg -> MutRes e Handler TaskResource
 --saveTaskResourceResolver taskId arg = lift $ createOrUpdateTaskResource arg
 
+saveTaskResources :: Task_Id -> [TaskResourceArg] -> Handler [TaskResource_Id]
 saveTaskResources _ [] = pure []
 saveTaskResources taskId (x:xs) = do
                                   taskResourceId <-  createOrUpdateTaskResource taskId x
                                   taskResourceIds <- saveTaskResources taskId xs
                                   return (taskResourceId:taskResourceIds)
 
---createOrUpdateTaskResource :: Task_Id -> TaskResourceArg -> Handler TaskResource_Id
+createOrUpdateTaskResource :: Task_Id -> TaskResourceArg -> Handler TaskResource_Id
 createOrUpdateTaskResource taskId taskResourceArg = do
                           let TaskResourceArg {..} = taskResourceArg
                           now <- liftIO getCurrentTime
@@ -103,6 +102,7 @@ createOrUpdateTaskResource taskId taskResourceArg = do
                           return $ entityId
 
 --toTaskResourceQL :: Entity TaskResource_ -> TaskResource MutRes
+toTaskResourceQL :: (Typeable o, MonadTrans (o ())) => Entity TaskResource_ -> TaskResource o
 toTaskResourceQL (Entity taskResourceId taskResourceArg) = TaskResource { taskResourceId = fromIntegral $ fromSqlKey taskResourceId
                                                                         , order = taskResource_Order
                                                                         , amount = taskResource_Amount

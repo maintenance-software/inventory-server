@@ -16,12 +16,9 @@
 module Graphql.Asset.Equipment.DataTypes where
 
 import Import
-import GHC.Generics
+import GHC.Generics ()
 import Data.Morpheus.Types (GQLType)
 import Graphql.Utils (Page, PageArg, EntityIdArg)
-import Graphql.Asset.DataTypes
-import Graphql.Asset.DataTypes
-import Graphql.Category
 import Graphql.DataTypes (Equipment)
 
 data Equipments o = Equipments { equipment :: EntityIdArg -> o () Handler (Equipment o)
