@@ -307,6 +307,9 @@ addEventWorkQueuePersistent WorkQueueEventArg {..} = do
                                                      , workQueue_EquipmentId = assetEntityId
                                                      , workQueue_WorkOrderId = Nothing
                                                      , workQueue_ReportedById = Just reportedByEntityId
+                                                     , workQueue_StartWorkDate = Nothing
+                                                     , workQueue_FinishedWorkDate = Nothing
+                                                     , workQueue_OutOfServiceInterval = 0
                                                      , workQueue_ModifiedDate = Nothing
                                                      , workQueue_CreatedDate = now
                                                      }
@@ -361,6 +364,9 @@ createWorkQueueForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                                                      , workQueue_EquipmentId = assetId
                                                      , workQueue_WorkOrderId = Nothing
                                                      , workQueue_ReportedById = Nothing
+                                                     , workQueue_StartWorkDate = Nothing
+                                                     , workQueue_FinishedWorkDate = Nothing
+                                                     , workQueue_OutOfServiceInterval = 0
                                                      , workQueue_ModifiedDate = Nothing
                                                      , workQueue_CreatedDate = now
                                                      }

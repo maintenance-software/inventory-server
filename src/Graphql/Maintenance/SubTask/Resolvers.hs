@@ -14,6 +14,7 @@
 module Graphql.Maintenance.SubTask.Resolvers (
       subTaskResolver_
     , getSubTaskByIdResolver
+    , getSubTaskByIdResolver_
 ) where
 
 import Import
@@ -33,9 +34,14 @@ subTaskResolver_ taskId _ = lift $ do
                                 subTasks <- subTaskQuery taskId
                                 return $ P.map (\t -> toSubTaskQL t) subTasks
 
---getSubTaskByIdResolver :: EntityIdArg -> Res e Handler (SubTask Res)
+getSubTaskByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (SubTask o)
 getSubTaskByIdResolver EntityIdArg {..} = lift $ do
                                               let subTaskId = (toSqlKey $ fromIntegral $ entityId)::SubTask_Id
+                                              subTask <- runDB $ getJustEntity subTaskId
+                                              return $ toSubTaskQL subTask
+
+getSubTaskByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => SubTask_Id -> () -> o () Handler (SubTask o)
+getSubTaskByIdResolver_ subTaskId _ = lift $ do
                                               subTask <- runDB $ getJustEntity subTaskId
                                               return $ toSubTaskQL subTask
 

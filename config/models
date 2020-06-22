@@ -76,14 +76,6 @@ Employee_ json sql=t_employee
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
--- EmployeeJob_ json sql=t_employee_job
---    Id sql=employee_job_id
---    tittle Text
---    description Text Maybe
---    createdDate UTCTime
---    modifiedDate UTCTime Maybe
---    deriving Typeable Show
-
 Address_ json sql=t_address
     Id sql=address_id
     street1 Text
@@ -276,30 +268,6 @@ TaskTrigger_ sql=t_task_trigger
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
--- EventTrigger_ json sql=t_event_trigger
---    Id sql=event_trigger_id
---    name Text
---    description Text Maybe
---    createdDate UTCTime
---    modifiedDate UTCTime Maybe
---    deriving Typeable Show
-
--- TaskCategory_ json sql=t_task_category
---    Id sql=task_category_id
---    name Text
---    description Text Maybe
---    createdDate UTCTime
---    modifiedDate UTCTime Maybe
---    deriving Typeable Show
-
--- SubTaskKind_ json sql=t_sub_task_kind
---    Id sql=sub_task_kind_id
---    name Text
---    description Text Maybe
---    createdDate UTCTime
---    modifiedDate UTCTime Maybe
---    deriving Typeable Show
-
 TaskResource_ sql=t_task_resource
     Id sql=task_resource_id
 	  order Int
@@ -307,28 +275,21 @@ TaskResource_ sql=t_task_resource
 	  resourceType Text
 	  unitId Unit_Id
 	  employeeCategoryId Category_Id Maybe
---    humanResourceId Person_Id Maybe
     inventoryResourceId Item_Id Maybe
---    inventoryItem InventoryItem_Id Maybe
     taskId Task_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
 --    Foreign Employee_ fkEmployee humanResourceId
     deriving Typeable Show
 
--- WorkOrderDetail_ sql=t_work_order_detail
---    Id sql=work_order_detail_id
---    taskId Task_Id
---    equipmentId Item_Id
---    workOrderId WorkOrder_Id
---    Foreign Equipment_ fkt_equipment equipmentId
---    deriving Typeable Show
-
 WorkQueue_ sql=t_work_queue
     Id sql=work_queue_id
     rescheduledDate UTCTime Maybe
     scheduledDate UTCTime
     incidentDate UTCTime Maybe
+    startWorkDate UTCTime Maybe
+    finishedWorkDate UTCTime Maybe
+    outOfServiceInterval Int
     workType Text
     status Text
     equipmentId Item_Id
@@ -372,29 +333,12 @@ WorkOrderResource_ sql=t_work_order_resource
     modifiedDate UTCTime Maybe
     deriving Typeable Show
 
--- InventoryResource_ sql=t_inventory_resource
---    Id sql=inventory_resource_id
---	  order Int
---    resourceId Item_Id
---    inventoryId Inventory_Id
---    workOrderId WorkOrder_Id
---    createdDate UTCTime
---    modifiedDate UTCTime Maybe
---    deriving Typeable Show
-
--- User
---     ident Text
---     password Text Maybe
---     UniqueUser ident
---     deriving Typeable
--- Email
---     email Text
---     userId UserId Maybe
---     verkey Text Maybe
---     UniqueEmail email
-
--- Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
---    message Text
---    userId User_Id Maybe
---    deriving Eq
---    deriving Show
+WorkOrderSubTask_ sql=t_work_order_sub_task
+    Id sql=work_order_sub_task_id
+    subTaskId SubTask_Id
+    workQueueId WorkQueue_Id
+    workOrderId WorkOrder_Id
+    value Text
+    createdDate UTCTime
+    modifiedDate UTCTime Maybe
+    deriving Typeable Show

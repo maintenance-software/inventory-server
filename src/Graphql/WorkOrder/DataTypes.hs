@@ -19,13 +19,14 @@ import GHC.Generics ()
 import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types (GQLType(..))
 import Graphql.Utils (EntityIdArg, Page, PageArg)
-import Graphql.Admin.DataTypes
-import Graphql.Maintenance.Task.DataTypes
+import Graphql.Admin.DataTypes (Person)
+import Graphql.Maintenance.Task.DataTypes ()
 import Graphql.Asset.Equipment.DataTypes ()
 import Graphql.Asset.DataTypes (InventoryItem)
 import Graphql.Category ()
 import Graphql.Utils (EntityChangeStatusArg)
 import Graphql.DataTypes (Equipment, WorkQueue)
+import Graphql.Maintenance.SubTask.DataTypes (SubTask)
 
 data WorkOrders o = WorkOrders { workOrder :: EntityIdArg ->  o () Handler (WorkOrder o)
                                , page :: PageArg -> o () Handler (Page (WorkOrder o))
@@ -47,6 +48,7 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
                              , parent :: Maybe (() -> o () Handler (WorkOrder o))
                              , equipments :: () -> o () Handler [Equipment o]
                              , workOrderResources :: () -> o () Handler [WorkOrderResource o]
+                             , workOrderSubTask :: () -> o () Handler [WorkOrderSubTask o]
                              , createdDate :: Text
                              , modifiedDate :: Maybe Text
                              } deriving (Generic, GQLType)
@@ -59,6 +61,14 @@ data WorkOrderResource o = WorkOrderResource { workOrderResourceId :: Int
                                              , createdDate :: Text
                                              , modifiedDate :: Maybe Text
                                              } deriving (Generic, GQLType)
+
+data WorkOrderSubTask o = WorkOrderSubTask { workOrderSubTaskId :: Int
+                                           , value :: Text
+                                           , subTask :: () -> o () Handler (SubTask o)
+                                           , workQueue :: () -> o () Handler (WorkQueue o)
+                                           , createdDate :: Text
+                                           , modifiedDate :: Maybe Text
+                                           } deriving (Generic, GQLType)
 
 data WorkOrderArg = WorkOrderArg { workOrderId :: Int
                                  , estimateDuration :: Int

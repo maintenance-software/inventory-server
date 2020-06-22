@@ -28,6 +28,7 @@ import Graphql.DataTypes (Equipment(..))
 import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
 import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
+import Graphql.Maintenance.SubTask.Resolvers (getSubTaskByIdResolver_)
 
 workOrderResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (WorkOrders o)
 workOrderResolver _ = pure WorkOrders { workOrder = getWorkOrderByIdResolver
@@ -76,6 +77,11 @@ fetchWorkResourcesByWorkOrderIdResolver_ workOrderId _ = lift $ do
                               workOrderResources <-  runDB $ selectList [WorkOrderResource_WorkOrderId ==. workOrderId] []
                               return $ P.map (\ r -> toWorkOrderResourceQL r) workOrderResources
 
+fetchWorkOrderSubtaskByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [WorkOrderSubTask o]
+fetchWorkOrderSubtaskByWorkOrderIdResolver_ workOrderId _ = lift $ do
+                              workOrderSubtask <-  runDB $ selectList [WorkOrderSubTask_WorkOrderId ==. workOrderId] []
+                              return $ P.map (\ r -> toWorkOrderSubTaskQL r) workOrderSubtask
+
 createUpdateWorkOrderResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrderArg -> o () Handler (WorkOrder o)
 createUpdateWorkOrderResolver arg = lift $ do
                          workOrderId <- createUpdateWorkOrderPersistent arg
@@ -103,6 +109,7 @@ toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromInt
                                                          , parent = (case workOrder_ParentId of Nothing -> Nothing; Just a -> Just $ getWorkOrderByIdResolver_ a)
                                                          , equipments = fetchEquipmentsByWorkOrderIdResolver_ workOrderId
                                                          , workOrderResources = fetchWorkResourcesByWorkOrderIdResolver_ workOrderId
+                                                         , workOrderSubTask = fetchWorkOrderSubtaskByWorkOrderIdResolver_ workOrderId
                                                          , createdDate = fromString $ show workOrder_CreatedDate
                                                          , modifiedDate = m
                                                          }
@@ -125,6 +132,20 @@ toWorkOrderResourceQL (Entity workOrderResourceId workOrderResource) = WorkOrder
                                                                         where
                                                                           WorkOrderResource_ {..} = workOrderResource
                                                                           m = case workOrderResource_ModifiedDate of
+                                                                                Just d -> Just $ fromString $ show d
+                                                                                Nothing -> Nothing
+
+toWorkOrderSubTaskQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrderSubTask_ -> WorkOrderSubTask o
+toWorkOrderSubTaskQL (Entity workOrderSubTaskId workOrderSubTask) = WorkOrderSubTask { workOrderSubTaskId = fromIntegral $ fromSqlKey workOrderSubTaskId
+                                                                                     , value = workOrderSubTask_Value
+                                                                                     , subTask = getSubTaskByIdResolver_ workOrderSubTask_SubTaskId
+                                                                                     , workQueue = getWorkQueueByIdResolver_ workOrderSubTask_WorkQueueId
+                                                                                     , createdDate = fromString $ show workOrderSubTask_CreatedDate
+                                                                                     , modifiedDate = m
+                                                                                     }
+                                                                        where
+                                                                          WorkOrderSubTask_ {..} = workOrderSubTask
+                                                                          m = case workOrderSubTask_ModifiedDate of
                                                                                 Just d -> Just $ fromString $ show d
                                                                                 Nothing -> Nothing
 
