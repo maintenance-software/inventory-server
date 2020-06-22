@@ -19,36 +19,33 @@ module Graphql.Maintenance.TaskTrigger.Resolvers (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Types (lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import qualified Data.Text as T
-import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
-import Graphql.Maintenance.SubTask.Resolvers
+import Graphql.Maintenance.SubTask.Resolvers ()
 import Graphql.Maintenance.TaskTrigger.DataTypes
 import Graphql.Maintenance.TaskTrigger.Persistence
 import Graphql.Asset.Unit
 import Graphql.Category
 
+taskTriggerResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Task_Id -> p -> t (HandlerFor App) [TaskTrigger o]
 taskTriggerResolver_ taskId _ = lift $ do
                                 tasks <- taskTriggerQuery taskId
                                 return $ P.map (\t -> toTaskTriggerQL t) tasks
 
---getTaskTriggerByIdResolver :: EntityIdArg -> Res e Handler (TaskTrigger Res)
+getTaskTriggerByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (TaskTrigger o)
 getTaskTriggerByIdResolver EntityIdArg {..} = lift $ do
                                               let taskTriggerId = (toSqlKey $ fromIntegral $ entityId)::TaskTrigger_Id
                                               taskTrigger <- runDB $ getJustEntity taskTriggerId
                                               return $ toTaskTriggerQL taskTrigger
 
---getTaskTriggerByIdResolver :: EntityIdArg -> Res e Handler (TaskTrigger Res)
+getTaskTriggerByIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => TaskTrigger_Id -> () -> o () Handler (TaskTrigger o)
 getTaskTriggerByIdResolver_ taskTriggerId _ = lift $ do
                                               taskTrigger <- runDB $ getJustEntity taskTriggerId
                                               return $ toTaskTriggerQL taskTrigger
 
 -- CONVERTERS
---toTaskTriggerQL :: Entity TaskTrigger_ -> TaskTrigger
 toTaskTriggerQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity TaskTrigger_ -> TaskTrigger o
 toTaskTriggerQL (Entity taskTriggerId taskTrigger) = TaskTrigger { taskTriggerId = fromIntegral $ fromSqlKey taskTriggerId
                                                                  , triggerType = taskTrigger_TriggerType

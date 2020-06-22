@@ -15,22 +15,13 @@
 
 module Graphql.Maintenance.TaskTrigger.Persistence ( saveTaskTriggers, taskTriggerQuery ) where
 
-import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType(..), lift, Res, MutRes)
-import Database.Persist.Sql (toSqlKey, fromSqlKey)
+import Import hiding (repeat)
+import Prelude hiding (repeat)
+import Database.Persist.Sql (toSqlKey)
 import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
-import Prelude as P
-import qualified Data.Text as T
+import Database.Esqueleto      ((^.))
 import Enums
-import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
-import Data.Time
-import Graphql.Category
-import Graphql.Maintenance.Task.DataTypes
 import Graphql.Maintenance.TaskTrigger.DataTypes
-import Graphql.Maintenance.SubTask.Persistence
 
 --taskTriggerQuery :: Task_Id -> Handler [Entity TaskTrigger_]
 --taskTriggerQuery taskId =  do
@@ -54,15 +45,14 @@ taskTriggerQuery taskId =  do
                                         return taskTrigger
                       return result
 
-
---saveTaskTriggers :: Task_Id -> [TaskTriggerArg] -> Handler [Task_Id]
+saveTaskTriggers :: Task_Id -> [TaskTriggerArg] -> Handler [TaskTrigger_Id]
 saveTaskTriggers _ [] = pure []
 saveTaskTriggers taskId (x:xs) = do
                                   taskTriggerId <-  createOrUpdateTaskTrigger taskId x
                                   taskTriggerIds <- saveTaskTriggers taskId xs
                                   return (taskTriggerId:taskTriggerIds)
 
---createOrUpdateTaskTrigger :: TaskTriggerArg -> Handler (TaskTrigger MutRes)
+createOrUpdateTaskTrigger :: Task_Id -> TaskTriggerArg -> Handler TaskTrigger_Id
 createOrUpdateTaskTrigger taskId taskTrigger = do
                 let TaskTriggerArg {..} = taskTrigger
                 now <- liftIO getCurrentTime

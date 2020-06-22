@@ -23,15 +23,11 @@ module Graphql.Category (
 ) where
 
 import Import
-import GHC.Generics
-import Data.Morpheus.Kind (INPUT_OBJECT)
-import Data.Morpheus.Types (GQLType, lift, Res, MutRes)
+import Data.Morpheus.Types (GQLType, lift)
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
 import qualified Data.Text as T
-import Graphql.Utils
 import Enums (readCategoryScope)
-import Data.Time
 
 data Category = Category { categoryId :: Int
                          , name :: Text
@@ -56,12 +52,12 @@ getCategoryByIdResolver_ categoryId _ = lift $ do
                                       category <- runDB $ getJustEntity categoryId
                                       return $ toCategoryQL category
 
-listCategoryResolver :: CategoryFilter -> Res e Handler [Category]
+listCategoryResolver :: (MonadTrans t) => CategoryFilter -> t Handler [Category]
 listCategoryResolver (CategoryFilter {..}) = lift $ do
                       categories <- runDB $ selectList [Category_Scope ==. (readCategoryScope scope)] []
                       return $ P.map toCategoryQL categories
 
-saveCategoryResolver :: CategoryArg -> MutRes e Handler Category
+saveCategoryResolver :: (MonadTrans t) => CategoryArg -> t Handler Category
 saveCategoryResolver arg = lift $ do
                         categoryId <- createOrUpdateCategory arg
                         category <- runDB $ getJustEntity categoryId

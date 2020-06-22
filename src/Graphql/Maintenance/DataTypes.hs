@@ -16,16 +16,14 @@ module Graphql.Maintenance.DataTypes where
 
 import Import
 import GHC.Generics ()
-import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types (GQLType(..))
 import Graphql.Utils (EntityIdArg, Page, PageArg)
-import Graphql.Admin.DataTypes
 import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes ()
-import Graphql.Asset.DataTypes (InventoryItem)
+import Graphql.Asset.DataTypes ()
 import Graphql.Category ()
 import Graphql.Utils ()
-import Graphql.DataTypes (Equipment, WorkQueue)
+import Graphql.DataTypes (Equipment)
 
 data Maintenance o = Maintenance { maintenanceId :: Int
                                  , name :: Text
