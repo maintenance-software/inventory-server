@@ -17,6 +17,7 @@ module Graphql.WorkOrder.Persistence (
         workOrderQueryCount
       , workOrderQuery
       , createUpdateWorkOrderPersistent
+      , changeWorkOrderStatus
 ) where
 
 import Import hiding (union)
@@ -145,6 +146,14 @@ createUpdateWorkOrderResource workOrderId resource = do
                                   workOrderResourceKey <- runDB $ insert $ fromWorkOrderResourceQL workOrderId resource now Nothing
                                   return workOrderResourceKey
                 return entityId
+
+changeWorkOrderStatus :: EntityChangeStatusArg -> Handler Bool
+changeWorkOrderStatus EntityChangeStatusArg{..} = do
+                                          let entityId = P.head entityIds
+                                          let workOrderId = (toSqlKey $ fromIntegral $ entityId)::WorkOrder_Id
+                                          now <- liftIO getCurrentTime
+                                          _ <- runDB $ update workOrderId [WorkOrder_WorkOrderStatus =. status, WorkOrder_ModifiedDate =. Just now]
+                                          return True
 
 fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> Text -> WorkOrder_
 fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrderCode = code

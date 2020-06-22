@@ -24,12 +24,13 @@ import Graphql.Maintenance.Task.DataTypes
 import Graphql.Asset.Equipment.DataTypes ()
 import Graphql.Asset.DataTypes (InventoryItem)
 import Graphql.Category ()
-import Graphql.Utils ()
+import Graphql.Utils (EntityChangeStatusArg)
 import Graphql.DataTypes (Equipment, WorkQueue)
 
 data WorkOrders o = WorkOrders { workOrder :: EntityIdArg ->  o () Handler (WorkOrder o)
                                , page :: PageArg -> o () Handler (Page (WorkOrder o))
                                , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
+                               , changeStatus :: EntityChangeStatusArg -> o () Handler Bool
                                } deriving (Generic, GQLType)
 
 data WorkOrder o = WorkOrder { workOrderId :: Int
