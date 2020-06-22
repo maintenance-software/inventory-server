@@ -18,18 +18,15 @@ module Graphql.Maintenance.SubTask.Resolvers (
 ) where
 
 import Import
-import Data.Morpheus.Types (lift)
+import Data.Morpheus.Types ()
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
-import qualified Database.Esqueleto      as E
-import Database.Esqueleto      ((^.), (?.), (%), (++.), notIn, in_)
 import Prelude as P
-import qualified Data.Text as T
-import Enums
 import Graphql.Utils hiding(unionFilters, conjunctionFilters, getOperator)
 import Graphql.Category
 import Graphql.Maintenance.SubTask.Persistence
 import Graphql.Maintenance.SubTask.DataTypes
 
+subTaskResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Task_Id -> p -> t (HandlerFor App) [SubTask o]
 subTaskResolver_ taskId _ = lift $ do
                                 subTasks <- subTaskQuery taskId
                                 return $ P.map (\t -> toSubTaskQL t) subTasks
