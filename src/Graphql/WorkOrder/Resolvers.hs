@@ -35,6 +35,7 @@ workOrderResolver _ = pure WorkOrders { workOrder = getWorkOrderByIdResolver
                                        , createUpdateWorkOrder = createUpdateWorkOrderResolver
                                        , page = workOrderPageResolver
                                        , changeStatus = workOrderChangeStatusResolver
+                                       , addWorkOrderSubTasks = addWorkOrderSubTasksResolver
                                        }
 
 getWorkOrderByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (WorkOrder o)
@@ -87,6 +88,13 @@ createUpdateWorkOrderResolver arg = lift $ do
                          workOrderId <- createUpdateWorkOrderPersistent arg
                          workOrder <-  runDB $ getJustEntity workOrderId
                          return $ toWorkOrderQL workOrder
+
+addWorkOrderSubTasksResolver :: (MonadTrans t) => WorkOrderSubTasksArg -> t Handler Bool
+addWorkOrderSubTasksResolver WorkOrderSubTasksArg{..} = lift $ do
+                                              let workOrderEntityId = ((toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id)
+                                              let workQueueEntityId = ((toSqlKey $ fromIntegral $ workQueueId)::WorkQueue_Id)
+                                              _ <- mapM (createUpdateWorkOrderSubTask workOrderEntityId workQueueEntityId)  workOrderSubTasks
+                                              return True
 
 workOrderChangeStatusResolver :: (MonadTrans t) => EntityChangeStatusArg -> t Handler Bool
 workOrderChangeStatusResolver workOrderRequestStatus = lift $ do

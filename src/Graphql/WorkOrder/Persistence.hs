@@ -18,6 +18,7 @@ module Graphql.WorkOrder.Persistence (
       , workOrderQuery
       , createUpdateWorkOrderPersistent
       , changeWorkOrderStatus
+      , createUpdateWorkOrderSubTask
 ) where
 
 import Import hiding (union)
@@ -145,6 +146,31 @@ createUpdateWorkOrderResource workOrderId resource = do
                                else do
                                   workOrderResourceKey <- runDB $ insert $ fromWorkOrderResourceQL workOrderId resource now Nothing
                                   return workOrderResourceKey
+                return entityId
+
+createUpdateWorkOrderSubTask :: WorkOrder_Id -> WorkQueue_Id -> WorkOrderSubTaskArg -> Handler WorkOrderSubTask_Id
+createUpdateWorkOrderSubTask workOrderId workQueueId WorkOrderSubTaskArg{..} = do
+                now <- liftIO getCurrentTime
+                entityId <- if workOrderSubTaskId > 0 then
+                                do
+                                  let workOrderSubTaskKey = (toSqlKey $ fromIntegral $ workOrderSubTaskId)::WorkOrderSubTask_Id
+                                  _ <- runDB $ update workOrderSubTaskKey [ WorkOrderSubTask_SubTaskId =. ((toSqlKey $ fromIntegral subTaskId)::SubTask_Id)
+                                                                          , WorkOrderSubTask_Value =. value
+                                                                          , WorkOrderSubTask_WorkOrderId =. workOrderId
+                                                                          , WorkOrderSubTask_WorkQueueId =. workQueueId
+                                                                          , WorkOrderSubTask_ModifiedDate =. Just now
+                                                                          ]
+                                  return workOrderSubTaskKey
+                               else do
+                                  let newWOSubTask = WorkOrderSubTask_{ workOrderSubTask_SubTaskId = (toSqlKey $ fromIntegral subTaskId)::SubTask_Id
+                                                                     , workOrderSubTask_Value = value
+                                                                     , workOrderSubTask_WorkOrderId = workOrderId
+                                                                     , workOrderSubTask_WorkQueueId = workQueueId
+                                                                     , workOrderSubTask_CreatedDate = now
+                                                                     , workOrderSubTask_ModifiedDate = Nothing
+                                                                     }
+                                  workOrderSubTaskKey <- runDB $ insert newWOSubTask
+                                  return workOrderSubTaskKey
                 return entityId
 
 changeWorkOrderStatus :: EntityChangeStatusArg -> Handler Bool
