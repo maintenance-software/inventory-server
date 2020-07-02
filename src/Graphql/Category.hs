@@ -31,6 +31,7 @@ import Enums (readCategoryScope)
 
 data Category = Category { categoryId :: Int
                          , name :: Text
+                         , key :: Maybe Text
                          , scope :: Text
                          , description :: Text
                          , createdDate :: Text
@@ -40,6 +41,7 @@ data Category = Category { categoryId :: Int
 -- Mutation
 data CategoryArg = CategoryArg { categoryId :: Int
                                , name :: Text
+                               , key :: Maybe Text
                                , scope :: Text
                                , description :: Text
                                } deriving (Generic)
@@ -72,6 +74,7 @@ createOrUpdateCategory category = do
                                   let categoryKey = (toSqlKey $ fromIntegral $ categoryId)::Category_Id
                                   _ <- runDB $ update categoryKey [ Category_Name =. name
                                                                   , Category_Description =. description
+                                                                  , Category_Key =. key
                                                                   , Category_Scope =. (readCategoryScope scope)
                                                                   , Category_ModifiedDate =. Just now
                                                                   ]
@@ -85,6 +88,7 @@ createOrUpdateCategory category = do
 toCategoryQL :: Entity Category_ -> Category
 toCategoryQL (Entity categoryId category) = Category { categoryId = fromIntegral $ fromSqlKey categoryId
                                                      , name = category_Name
+                                                     , key = category_Key
                                                      , description = category_Description
                                                      , scope = T.pack $ show category_Scope
                                                      , createdDate = fromString $ show category_CreatedDate
@@ -98,11 +102,12 @@ toCategoryQL (Entity categoryId category) = Category { categoryId = fromIntegral
 
 fromCategoryQL :: CategoryArg -> UTCTime -> Maybe UTCTime -> Category_
 fromCategoryQL (CategoryArg {..}) cd md = Category_ { category_Name = name
-                                                 , category_Description = description
-                                                 , category_Scope = (readCategoryScope scope)
-                                                 , category_CreatedDate = cd
-                                                 , category_ModifiedDate = md
-                                                 }
+                                                    , category_Key = key
+                                                    , category_Description = description
+                                                    , category_Scope = (readCategoryScope scope)
+                                                    , category_CreatedDate = cd
+                                                    , category_ModifiedDate = md
+                                                    }
 
 {-
 query {

@@ -103,6 +103,7 @@ ContactInfo_ json sql=t_contact_info
 Category_ sql=t_category
     Id sql=category_id
     name Text
+    key Text Maybe
     description Text
     scope CategoryScope
     createdDate UTCTime
