@@ -290,6 +290,7 @@ WorkQueue_ sql=t_work_queue
     incidentDate UTCTime Maybe
     startWorkDate UTCTime Maybe
     finishedWorkDate UTCTime Maybe
+    notes Text Maybe
     outOfServiceInterval Int
     workType Text
     status Text

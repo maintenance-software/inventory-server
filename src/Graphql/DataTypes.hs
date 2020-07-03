@@ -51,6 +51,10 @@ data WorkQueue o = WorkQueue { workQueueId :: Int
                              , rescheduledDate :: Maybe Text
                              , scheduledDate :: Text
                              , incidentDate :: Maybe Text
+                             , startWorkDate :: Maybe Text
+                             , finishedWorkDate :: Maybe Text
+                             , notes :: Maybe Text
+                             , outOfServiceInterval :: Int
                              , status :: Text
                              , workType :: Text
                              , task :: () -> o () Handler (Task o)

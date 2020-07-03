@@ -32,7 +32,7 @@ data WorkOrders o = WorkOrders { workOrder :: EntityIdArg ->  o () Handler (Work
                                , page :: PageArg -> o () Handler (Page (WorkOrder o))
                                , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
                                , changeStatus :: EntityChangeStatusArg -> o () Handler Bool
-                               , addWorkOrderSubTasks :: WorkOrderSubTasksArg -> o () Handler Bool
+                               , saveWorkOrderProgress :: WorkOrderProgressArg -> o () Handler Bool
                                } deriving (Generic, GQLType)
 
 data WorkOrder o = WorkOrder { workOrderId :: Int
@@ -108,8 +108,11 @@ instance GQLType WorkOrderResourceArg where
     type  KIND WorkOrderResourceArg = INPUT
     description = const $ Just $ pack "The item that holds the WorkOrderResourceArg information"
 
-data WorkOrderSubTasksArg = WorkOrderSubTasksArg { workOrderId :: Int
-                                                 , workQueueId :: Int
+data WorkOrderProgressArg = WorkOrderProgressArg { workQueueId :: Int
+                                                 , workOrderId :: Int
+                                                 , startWorkDate :: Text
+                                                 , finishedWorkDate :: Text
+                                                 , notes :: Text
                                                  , workOrderSubTasks :: [WorkOrderSubTaskArg]
                                                  } deriving (Generic)
 

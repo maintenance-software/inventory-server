@@ -18,6 +18,7 @@ module Graphql.WorkOrder.Resolvers (
 import Import
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
+import qualified Data.Text as T
 import Enums ()
 import Graphql.Utils
 import Graphql.WorkOrder.DataTypes
@@ -35,7 +36,7 @@ workOrderResolver _ = pure WorkOrders { workOrder = getWorkOrderByIdResolver
                                        , createUpdateWorkOrder = createUpdateWorkOrderResolver
                                        , page = workOrderPageResolver
                                        , changeStatus = workOrderChangeStatusResolver
-                                       , addWorkOrderSubTasks = addWorkOrderSubTasksResolver
+                                       , saveWorkOrderProgress = saveWorkOrderProgressResolver
                                        }
 
 getWorkOrderByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (WorkOrder o)
@@ -89,10 +90,16 @@ createUpdateWorkOrderResolver arg = lift $ do
                          workOrder <-  runDB $ getJustEntity workOrderId
                          return $ toWorkOrderQL workOrder
 
-addWorkOrderSubTasksResolver :: (MonadTrans t) => WorkOrderSubTasksArg -> t Handler Bool
-addWorkOrderSubTasksResolver WorkOrderSubTasksArg{..} = lift $ do
+saveWorkOrderProgressResolver :: (MonadTrans t) => WorkOrderProgressArg -> t Handler Bool
+saveWorkOrderProgressResolver WorkOrderProgressArg{..} = lift $ do
+                                              now <- liftIO getCurrentTime
                                               let workOrderEntityId = ((toSqlKey $ fromIntegral $ workOrderId)::WorkOrder_Id)
                                               let workQueueEntityId = ((toSqlKey $ fromIntegral $ workQueueId)::WorkQueue_Id)
+                                              _ <- runDB $ update workQueueEntityId [ WorkQueue_StartWorkDate =. Just ((read $ T.unpack startWorkDate)::UTCTime)
+                                                                                    , WorkQueue_FinishedWorkDate =. Just ((read $ T.unpack finishedWorkDate)::UTCTime)
+                                                                                    , WorkQueue_Notes =. (Just notes)
+                                                                                    , WorkQueue_ModifiedDate =. Just now
+                                                                                    ]
                                               _ <- mapM (createUpdateWorkOrderSubTask workOrderEntityId workQueueEntityId)  workOrderSubTasks
                                               return True
 

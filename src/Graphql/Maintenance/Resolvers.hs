@@ -176,6 +176,10 @@ toWorkQueueQL (Entity workQueueId workQueue) = WorkQueue { workQueueId = fromInt
                                                          , rescheduledDate = case workQueue_RescheduledDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
                                                          , scheduledDate = fromString $ show workQueue_ScheduledDate
                                                          , incidentDate = case workQueue_IncidentDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                         , startWorkDate = case workQueue_StartWorkDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                         , finishedWorkDate = case workQueue_FinishedWorkDate of Nothing -> Nothing; Just d -> Just $ fromString $ show d
+                                                         , notes = workQueue_Notes
+                                                         , outOfServiceInterval = workQueue_OutOfServiceInterval
                                                          , status = workQueue_Status
                                                          , workType = workQueue_WorkType
                                                          , task = getTaskByIdResolver_ workQueue_TaskId

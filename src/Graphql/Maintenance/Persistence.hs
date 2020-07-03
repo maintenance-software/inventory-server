@@ -299,6 +299,7 @@ addEventWorkQueuePersistent WorkQueueEventArg {..} = do
                     let newWorkQueue = WorkQueue_ { workQueue_RescheduledDate = Nothing
                                                      , workQueue_ScheduledDate = now
                                                      , workQueue_IncidentDate = incidentUtcDate
+                                                     , workQueue_Notes = Nothing
                                                      , workQueue_TaskId = taskEntityId
                                                      , workQueue_TaskTriggerId = taskTriggerEntityId
                                                      , workQueue_Status = "PENDING"
@@ -354,22 +355,23 @@ createWorkQueueForDate maintenanceId assetId maintenanceUtcDate (h:hs) = do
                                           MONTH -> firstDayOfCurrentMonth
                                           YEAR -> firstDayOfCurrentYear
                     let newWorkQueue = WorkQueue_ { workQueue_RescheduledDate = Nothing
-                                                     , workQueue_ScheduledDate = UTCTime calculatedDate 0
-                                                     , workQueue_IncidentDate = Nothing
-                                                     , workQueue_TaskId = taskTrigger_TaskId
-                                                     , workQueue_TaskTriggerId = taskTriggerId
-                                                     , workQueue_Status = "PENDING"
-                                                     , workQueue_WorkType = "PLAN"
-                                                     , workQueue_MaintenanceId = (Just maintenanceId)
-                                                     , workQueue_EquipmentId = assetId
-                                                     , workQueue_WorkOrderId = Nothing
-                                                     , workQueue_ReportedById = Nothing
-                                                     , workQueue_StartWorkDate = Nothing
-                                                     , workQueue_FinishedWorkDate = Nothing
-                                                     , workQueue_OutOfServiceInterval = 0
-                                                     , workQueue_ModifiedDate = Nothing
-                                                     , workQueue_CreatedDate = now
-                                                     }
+                                                  , workQueue_ScheduledDate = UTCTime calculatedDate 0
+                                                  , workQueue_IncidentDate = Nothing
+                                                  , workQueue_Notes = Nothing
+                                                  , workQueue_TaskId = taskTrigger_TaskId
+                                                  , workQueue_TaskTriggerId = taskTriggerId
+                                                  , workQueue_Status = "PENDING"
+                                                  , workQueue_WorkType = "PLAN"
+                                                  , workQueue_MaintenanceId = (Just maintenanceId)
+                                                  , workQueue_EquipmentId = assetId
+                                                  , workQueue_WorkOrderId = Nothing
+                                                  , workQueue_ReportedById = Nothing
+                                                  , workQueue_StartWorkDate = Nothing
+                                                  , workQueue_FinishedWorkDate = Nothing
+                                                  , workQueue_OutOfServiceInterval = 0
+                                                  , workQueue_ModifiedDate = Nothing
+                                                  , workQueue_CreatedDate = now
+                                                  }
                     workQueueEntityId <- runDB $ insert $ newWorkQueue
                     workQueueEntityIds <- createWorkQueueForDate maintenanceId assetId maintenanceUtcDate hs
                     return (workQueueEntityId:workQueueEntityIds)
