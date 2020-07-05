@@ -98,9 +98,14 @@ saveWorkOrderProgressResolver WorkOrderProgressArg{..} = lift $ do
                                               _ <- runDB $ update workQueueEntityId [ WorkQueue_StartWorkDate =. Just ((read $ T.unpack startWorkDate)::UTCTime)
                                                                                     , WorkQueue_FinishedWorkDate =. Just ((read $ T.unpack finishedWorkDate)::UTCTime)
                                                                                     , WorkQueue_Notes =. (Just notes)
+                                                                                    , WorkQueue_Status =. status
                                                                                     , WorkQueue_ModifiedDate =. Just now
                                                                                     ]
                                               _ <- mapM (createUpdateWorkOrderSubTask workOrderEntityId workQueueEntityId)  workOrderSubTasks
+                                              workOrderQueues <-  runDB $ selectList [WorkQueue_WorkOrderId ==. Just workOrderEntityId] []
+                                              let tasksCompleted = P.filter (\(Entity _ WorkQueue_{..}) -> workQueue_Status == "WO_TASK_COMPLETED") workOrderQueues
+                                              let p = 100 * (fromIntegral $ P.length tasksCompleted) / (fromIntegral $ P.length  workOrderQueues)
+                                              _ <- runDB $ update workOrderEntityId [ WorkOrder_Percentage =. p, WorkOrder_ModifiedDate =. Just now]
                                               return True
 
 workOrderChangeStatusResolver :: (MonadTrans t) => EntityChangeStatusArg -> t Handler Bool

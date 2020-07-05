@@ -113,6 +113,7 @@ data WorkOrderProgressArg = WorkOrderProgressArg { workQueueId :: Int
                                                  , startWorkDate :: Text
                                                  , finishedWorkDate :: Text
                                                  , notes :: Text
+                                                 , status :: Text
                                                  , workOrderSubTasks :: [WorkOrderSubTaskArg]
                                                  } deriving (Generic)
 
