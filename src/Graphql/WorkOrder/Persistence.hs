@@ -33,7 +33,7 @@ import Prelude as P
 import qualified Data.Text as T
 import Graphql.Utils
 import Data.Time ()
-import Graphql.WorkOrder.DataTypes
+import Graphql.DataTypes (WorkOrderResourceArg(..), WorkOrderArg(..), WorkOrderSubTaskArg(..))
 
 workOrderPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 workOrderPredicate workOrder Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
@@ -117,19 +117,19 @@ createUpdateWorkOrderPersistent arg = do
                                else do
                                   workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
-                _ <- saveWorkOrderResource entityId resources
+                _ <- saveWorkOrderResource resources
                 _ <- runDB $ updateWhere  [WorkQueue_Id <-. P.map (\wqId -> (toSqlKey $ fromIntegral $ wqId)) workQueueIds] [WorkQueue_WorkOrderId =. Just entityId, WorkQueue_Status =. "WO_CREATED"]
                 return entityId
 
-saveWorkOrderResource :: WorkOrder_Id -> [WorkOrderResourceArg] -> Handler [WorkOrderResource_Id]
-saveWorkOrderResource _ [] = pure []
-saveWorkOrderResource workOrderId (x:xs) = do
-                                  resourceId <-  createUpdateWorkOrderResource workOrderId x
-                                  resourceIds <- saveWorkOrderResource workOrderId xs
+saveWorkOrderResource :: [WorkOrderResourceArg] -> Handler [WorkOrderResource_Id]
+saveWorkOrderResource [] = pure []
+saveWorkOrderResource (x:xs) = do
+                                  resourceId <-  createUpdateWorkOrderResource x
+                                  resourceIds <- saveWorkOrderResource xs
                                   return (resourceId:resourceIds)
 
-createUpdateWorkOrderResource :: WorkOrder_Id -> WorkOrderResourceArg -> Handler WorkOrderResource_Id
-createUpdateWorkOrderResource workOrderId resource = do
+createUpdateWorkOrderResource :: WorkOrderResourceArg -> Handler WorkOrderResource_Id
+createUpdateWorkOrderResource resource = do
                 let WorkOrderResourceArg {..} = resource
                 now <- liftIO getCurrentTime
                 entityId <- if workOrderResourceId > 0 then
@@ -138,25 +138,23 @@ createUpdateWorkOrderResource workOrderId resource = do
                                   _ <- runDB $ update workOrderResourceKey [ WorkOrderResource_HumanResourceId =. (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
                                                                            , WorkOrderResource_Amount =. amount
                                                                            , WorkOrderResource_InventoryItemId =. (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
-                                                                           , WorkOrderResource_WorkOrderId =. workOrderId
                                                                            , WorkOrderResource_WorkQueueId =. ((toSqlKey $ fromIntegral $ workQueueTaskId)::WorkQueue_Id)
                                                                            , WorkOrderResource_ModifiedDate =. Just now
                                                                           ]
                                   return workOrderResourceKey
                                else do
-                                  workOrderResourceKey <- runDB $ insert $ fromWorkOrderResourceQL workOrderId resource now Nothing
+                                  workOrderResourceKey <- runDB $ insert $ fromWorkOrderResourceQL resource now Nothing
                                   return workOrderResourceKey
                 return entityId
 
-createUpdateWorkOrderSubTask :: WorkOrder_Id -> WorkQueue_Id -> WorkOrderSubTaskArg -> Handler WorkOrderSubTask_Id
-createUpdateWorkOrderSubTask workOrderId workQueueId WorkOrderSubTaskArg{..} = do
+createUpdateWorkOrderSubTask :: WorkQueue_Id -> WorkOrderSubTaskArg -> Handler WorkOrderSubTask_Id
+createUpdateWorkOrderSubTask workQueueId WorkOrderSubTaskArg{..} = do
                 now <- liftIO getCurrentTime
                 entityId <- if workOrderSubTaskId > 0 then
                                 do
                                   let workOrderSubTaskKey = (toSqlKey $ fromIntegral $ workOrderSubTaskId)::WorkOrderSubTask_Id
                                   _ <- runDB $ update workOrderSubTaskKey [ WorkOrderSubTask_SubTaskId =. ((toSqlKey $ fromIntegral subTaskId)::SubTask_Id)
                                                                           , WorkOrderSubTask_Value =. value
-                                                                          , WorkOrderSubTask_WorkOrderId =. workOrderId
                                                                           , WorkOrderSubTask_WorkQueueId =. workQueueId
                                                                           , WorkOrderSubTask_ModifiedDate =. Just now
                                                                           ]
@@ -164,7 +162,6 @@ createUpdateWorkOrderSubTask workOrderId workQueueId WorkOrderSubTaskArg{..} = d
                                else do
                                   let newWOSubTask = WorkOrderSubTask_{ workOrderSubTask_SubTaskId = (toSqlKey $ fromIntegral subTaskId)::SubTask_Id
                                                                      , workOrderSubTask_Value = value
-                                                                     , workOrderSubTask_WorkOrderId = workOrderId
                                                                      , workOrderSubTask_WorkQueueId = workQueueId
                                                                      , workOrderSubTask_CreatedDate = now
                                                                      , workOrderSubTask_ModifiedDate = Nothing
@@ -199,12 +196,11 @@ fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrde
                                                             , workOrder_ModifiedDate = md
                                                             }
 
-fromWorkOrderResourceQL :: WorkOrder_Id -> WorkOrderResourceArg -> UTCTime -> Maybe UTCTime -> WorkOrderResource_
-fromWorkOrderResourceQL workOrderId (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
+fromWorkOrderResourceQL :: WorkOrderResourceArg -> UTCTime -> Maybe UTCTime -> WorkOrderResource_
+fromWorkOrderResourceQL (WorkOrderResourceArg {..}) cd md = WorkOrderResource_ { workOrderResource_HumanResourceId = (case humanResourceId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::Person_Id))
                                                                                            , workOrderResource_Amount = amount
                                                                                            , workOrderResource_InventoryItemId =  (case inventoryItemId of Nothing -> Nothing; Just a -> Just ((toSqlKey $ fromIntegral a)::InventoryItem_Id))
                                                                                            , workOrderResource_WorkQueueId = (toSqlKey $ fromIntegral workQueueTaskId)::WorkQueue_Id
-                                                                                           , workOrderResource_WorkOrderId = workOrderId
                                                                                            , workOrderResource_CreatedDate = cd
                                                                                            , workOrderResource_ModifiedDate = md
                                                                                            }

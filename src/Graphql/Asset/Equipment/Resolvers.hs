@@ -13,6 +13,7 @@
 
 module Graphql.Asset.Equipment.Resolvers (
       equipmentResolver
+    , getEquipmentByIdResolver_
     , toEquipmentQL
 ) where
 
@@ -25,10 +26,10 @@ import Graphql.Asset.DataTypes
 import Graphql.Category
 import Graphql.DataTypes (Equipment(..))
 import Graphql.Asset.Item.Persistence
-import Graphql.Asset.Equipment.DataTypes
 import Graphql.Asset.Equipment.Persistence
-import Graphql.Maintenance.Persistence (fetchPendingWorkQueueQueryCount, fetchPendingWorkQueueQuery)
-import {-# SOURCE #-}Graphql.Maintenance.Resolvers (workQueueByEquipmentIdResolver_)
+import Graphql.DataTypes (EquipmentArg(..), SetMaintenanceArg(..), Equipments(..))
+--import Graphql.Maintenance.Persistence (fetchPendingWorkQueueQueryCount, fetchPendingWorkQueueQuery)
+--import {-# SOURCE #-}Graphql.Maintenance.Resolvers (workQueueByEquipmentIdResolver_)
 
 --inventoryResolver :: () -> Res e Handler Inventories
 equipmentResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (Equipments o)
@@ -36,7 +37,7 @@ equipmentResolver _ = pure Equipments { equipment = getEquipmentByIdResolver
                                       , page = equipmentsPageResolver
                                       , saveEquipment = saveEquipmentResolver
                                       , setMaintenance = setMaintenanceResolver
-                                      , fetchWorkQueues = fetchWorkQueuesResolver
+--                                      , fetchWorkQueues = fetchWorkQueuesResolver
                                       }
 
 --getInventoryByIdResolver :: EntityIdArg -> Res e Handler (Inventory Res)
@@ -91,23 +92,23 @@ childrenResolver itemId page = lift $ do
                             pageIndex_ = case pageIndex of Just  x  -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
-fetchWorkQueuesResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Equipment o))
-fetchWorkQueuesResolver page = lift $ do
-                        countItems <- fetchPendingWorkQueueQueryCount page
-                        queryResult <- fetchPendingWorkQueueQuery page
-                        let result = P.map (\ (e, i) -> toEquipmentQL e i) queryResult
-                        return Page { totalCount = countItems
-                                    , content = result
-                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
-                                                          , hasPreview = pageIndex_ * pageSize_ > 0
-                                                          , pageSize = pageSize_
-                                                          , pageIndex = pageIndex_
-                                    }
-                        }
-                         where
-                            PageArg {..} = page
-                            pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
-                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
+--fetchWorkQueuesResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => PageArg -> t Handler (Page (Equipment o))
+--fetchWorkQueuesResolver page = lift $ do
+--                        countItems <- fetchPendingWorkQueueQueryCount page
+--                        queryResult <- fetchPendingWorkQueueQuery page
+--                        let result = P.map (\ (e, i) -> toEquipmentQL e i) queryResult
+--                        return Page { totalCount = countItems
+--                                    , content = result
+--                                    , pageInfo = PageInfo { hasNext = (pageIndex_ * pageSize_ + pageSize_ < countItems)
+--                                                          , hasPreview = pageIndex_ * pageSize_ > 0
+--                                                          , pageSize = pageSize_
+--                                                          , pageIndex = pageIndex_
+--                                    }
+--                        }
+--                         where
+--                            PageArg {..} = page
+--                            pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
+--                            pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
 saveEquipmentResolver :: (Typeable o, MonadTrans t, MonadTrans (o ())) => EquipmentArg -> t Handler (Equipment o)
 saveEquipmentResolver arg = lift $ do
@@ -156,7 +157,7 @@ toEquipmentQL equipmentEntity itemEntity = Equipment { equipmentId = fromIntegra
                                                      , purchaseDate  = pd
                                                      , parent = case equipment_ParentId of Nothing -> Nothing; Just parentId -> Just $ getEquipmentByIdResolver_ parentId
                                                      , children = childrenResolver itemId
-                                                     , workQueues = workQueueByEquipmentIdResolver_ itemId
+--                                                     , workQueues = workQueueByEquipmentIdResolver_ itemId
                                                      , category = case item_CategoryId of Nothing -> Nothing; Just c -> Just $ getCategoryByIdResolver_ c
                                                      , createdDate = fromString $ show equipment_CreatedDate
                                                      , modifiedDate = m

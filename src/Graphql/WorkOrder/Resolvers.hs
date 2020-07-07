@@ -21,18 +21,19 @@ import Prelude as P
 import qualified Data.Text as T
 import Enums ()
 import Graphql.Utils
-import Graphql.WorkOrder.DataTypes
-import Graphql.Maintenance.Resolvers (getWorkQueueByIdResolver_)
+--import Graphql.Maintenance.Resolvers (getWorkQueueByIdResolver_)
 import Graphql.WorkOrder.Persistence
-import Graphql.Maintenance.Persistence (fetchWorkQueuesByWorkOrderIdQuery)
+--import Graphql.Maintenance.Persistence (fetchWorkQueuesByWorkOrderIdQuery)
 import Graphql.DataTypes (Equipment(..))
 import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
 import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
 import Graphql.Maintenance.SubTask.Resolvers (getSubTaskByIdResolver_)
+import Graphql.DataTypes (WorkQueue, WorkOrders(..), WorkOrder(..), WorkOrderProgressArg(..), WorkOrderArg)
+import Graphql.WorkQueue.Resolvers (toWorkQueueQL)
 
 workOrderResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (WorkOrders o)
-workOrderResolver _ = pure WorkOrders { workOrder = getWorkOrderByIdResolver
+workOrderResolver _ = pure WorkOrders {  workOrder = getWorkOrderByIdResolver
                                        , createUpdateWorkOrder = createUpdateWorkOrderResolver
                                        , page = workOrderPageResolver
                                        , changeStatus = workOrderChangeStatusResolver
@@ -68,21 +69,21 @@ workOrderPageResolver page = lift $ do
                             pageIndex_ = case pageIndex of Just x -> x; Nothing -> 0
                             pageSize_ = case pageSize of Just y -> y; Nothing -> 10
 
-fetchEquipmentsByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [Equipment o]
-fetchEquipmentsByWorkOrderIdResolver_ workOrderId _ = lift $ do
-                              workQueues <- fetchWorkQueuesByWorkOrderIdQuery workOrderId
-                              let result = P.map (\ (e, i) -> toEquipmentQL e i) workQueues
+fetchWorkQueuesByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [WorkQueue o]
+fetchWorkQueuesByWorkOrderIdResolver_ workOrderId _ = lift $ do
+                              workQueues <- runDB $ selectList [WorkQueue_WorkOrderId ==. Just workOrderId] []
+                              let result = P.map (\ wq -> toWorkQueueQL wq) workQueues
                               return result
 
-fetchWorkResourcesByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [WorkOrderResource o]
-fetchWorkResourcesByWorkOrderIdResolver_ workOrderId _ = lift $ do
-                              workOrderResources <-  runDB $ selectList [WorkOrderResource_WorkOrderId ==. workOrderId] []
-                              return $ P.map (\ r -> toWorkOrderResourceQL r) workOrderResources
-
-fetchWorkOrderSubtaskByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [WorkOrderSubTask o]
-fetchWorkOrderSubtaskByWorkOrderIdResolver_ workOrderId _ = lift $ do
-                              workOrderSubtask <-  runDB $ selectList [WorkOrderSubTask_WorkOrderId ==. workOrderId] []
-                              return $ P.map (\ r -> toWorkOrderSubTaskQL r) workOrderSubtask
+--fetchWorkResourcesByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [WorkOrderResource o]
+--fetchWorkResourcesByWorkOrderIdResolver_ workOrderId _ = lift $ do
+--                              workOrderResources <-  runDB $ selectList [WorkOrderResource_WorkOrderId ==. workOrderId] []
+--                              return $ P.map (\ r -> toWorkOrderResourceQL r) workOrderResources
+--
+--fetchWorkOrderSubtaskByWorkOrderIdResolver_ :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrder_Id -> () -> o () Handler [WorkOrderSubTask o]
+--fetchWorkOrderSubtaskByWorkOrderIdResolver_ workOrderId _ = lift $ do
+--                              workOrderSubtask <-  runDB $ selectList [WorkOrderSubTask_WorkOrderId ==. workOrderId] []
+--                              return $ P.map (\ r -> toWorkOrderSubTaskQL r) workOrderSubtask
 
 createUpdateWorkOrderResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => WorkOrderArg -> o () Handler (WorkOrder o)
 createUpdateWorkOrderResolver arg = lift $ do
@@ -101,7 +102,7 @@ saveWorkOrderProgressResolver WorkOrderProgressArg{..} = lift $ do
                                                                                     , WorkQueue_Status =. status
                                                                                     , WorkQueue_ModifiedDate =. Just now
                                                                                     ]
-                                              _ <- mapM (createUpdateWorkOrderSubTask workOrderEntityId workQueueEntityId)  workOrderSubTasks
+                                              _ <- mapM (createUpdateWorkOrderSubTask workQueueEntityId)  workOrderSubTasks
                                               workOrderQueues <-  runDB $ selectList [WorkQueue_WorkOrderId ==. Just workOrderEntityId] []
                                               let tasksCompleted = P.filter (\(Entity _ WorkQueue_{..}) -> workQueue_Status == "WO_TASK_COMPLETED") workOrderQueues
                                               let p = 100 * (fromIntegral $ P.length tasksCompleted) / (fromIntegral $ P.length  workOrderQueues)
@@ -127,9 +128,9 @@ toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromInt
                                                          , generatedBy = getPersonByIdResolver_ workOrder_GeneratedById
                                                          , responsible = getPersonByIdResolver_ workOrder_ResponsibleId
                                                          , parent = (case workOrder_ParentId of Nothing -> Nothing; Just a -> Just $ getWorkOrderByIdResolver_ a)
-                                                         , equipments = fetchEquipmentsByWorkOrderIdResolver_ workOrderId
-                                                         , workOrderResources = fetchWorkResourcesByWorkOrderIdResolver_ workOrderId
-                                                         , workOrderSubTask = fetchWorkOrderSubtaskByWorkOrderIdResolver_ workOrderId
+                                                         , workQueues = fetchWorkQueuesByWorkOrderIdResolver_ workOrderId
+--                                                         , workOrderResources = fetchWorkResourcesByWorkOrderIdResolver_ workOrderId
+--                                                         , workOrderSubTask = fetchWorkOrderSubtaskByWorkOrderIdResolver_ workOrderId
                                                          , createdDate = fromString $ show workOrder_CreatedDate
                                                          , modifiedDate = m
                                                          }
@@ -138,36 +139,6 @@ toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromInt
                                             m = case workOrder_ModifiedDate of
                                                   Just d -> Just $ fromString $ show d
                                                   Nothing -> Nothing
-
-
-toWorkOrderResourceQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrderResource_ -> WorkOrderResource o
-toWorkOrderResourceQL (Entity workOrderResourceId workOrderResource) = WorkOrderResource { workOrderResourceId = fromIntegral $ fromSqlKey workOrderResourceId
-                                                                                         , amount = workOrderResource_Amount
-                                                                                         , humanResource =  (case workOrderResource_HumanResourceId of Nothing -> Nothing; Just a -> Just $ getPersonByIdResolver_ a)
-                                                                                         , inventoryItem =  (case workOrderResource_InventoryItemId of Nothing -> Nothing; Just a -> Just $ getInventoryItemByIdResolver_ a)
-                                                                                         , workQueue = getWorkQueueByIdResolver_ workOrderResource_WorkQueueId
-                                                                                         , createdDate = fromString $ show workOrderResource_CreatedDate
-                                                                                         , modifiedDate = m
-                                                                                         }
-                                                                        where
-                                                                          WorkOrderResource_ {..} = workOrderResource
-                                                                          m = case workOrderResource_ModifiedDate of
-                                                                                Just d -> Just $ fromString $ show d
-                                                                                Nothing -> Nothing
-
-toWorkOrderSubTaskQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrderSubTask_ -> WorkOrderSubTask o
-toWorkOrderSubTaskQL (Entity workOrderSubTaskId workOrderSubTask) = WorkOrderSubTask { workOrderSubTaskId = fromIntegral $ fromSqlKey workOrderSubTaskId
-                                                                                     , value = workOrderSubTask_Value
-                                                                                     , subTask = getSubTaskByIdResolver_ workOrderSubTask_SubTaskId
-                                                                                     , workQueue = getWorkQueueByIdResolver_ workOrderSubTask_WorkQueueId
-                                                                                     , createdDate = fromString $ show workOrderSubTask_CreatedDate
-                                                                                     , modifiedDate = m
-                                                                                     }
-                                                                        where
-                                                                          WorkOrderSubTask_ {..} = workOrderSubTask
-                                                                          m = case workOrderSubTask_ModifiedDate of
-                                                                                Just d -> Just $ fromString $ show d
-                                                                                Nothing -> Nothing
 
 {-
 query {

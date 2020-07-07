@@ -330,7 +330,7 @@ WorkOrderResource_ sql=t_work_order_resource
     humanResourceId Person_Id Maybe
     inventoryItemId InventoryItem_Id Maybe
     workQueueId WorkQueue_Id
-    workOrderId WorkOrder_Id
+--    workOrderId WorkOrder_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show
@@ -339,7 +339,7 @@ WorkOrderSubTask_ sql=t_work_order_sub_task
     Id sql=work_order_sub_task_id
     subTaskId SubTask_Id
     workQueueId WorkQueue_Id
-    workOrderId WorkOrder_Id
+--    workOrderId WorkOrder_Id
     value Text
     createdDate UTCTime
     modifiedDate UTCTime Maybe

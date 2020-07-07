@@ -37,12 +37,12 @@ import           Graphql.Asset.Inventory.Resolvers
 import           Graphql.Maintenance.Resolvers
 import           Graphql.Maintenance.DataTypes
 import           Graphql.Asset.Equipment.Resolvers
-import           Graphql.Asset.Equipment.DataTypes
 import           Graphql.Asset.InventoryItem.Resolvers
 import           Graphql.Utils ()
 import           Graphql.Asset.DataTypes
-import           Graphql.WorkOrder.DataTypes (WorkOrders)
+import           Graphql.DataTypes
 import           Graphql.WorkOrder.Resolvers (workOrderResolver)
+import           Graphql.WorkQueue.Resolvers (workQueueResolver)
 import           Graphql.Asset.Human.Resolvers
 import           Graphql.Asset.Human.DataTypes
 --import           Graphql.Asset.Human.EmployeeJob
@@ -64,6 +64,7 @@ data QueryQL m = QueryQL { -- deity :: DeityArgs -> m Deity
                          , employees :: () -> Res () Handler (Employees Res)
                          , inventoryItems :: () -> Res () Handler (InventoryItems Res)
                          , maintenances :: () -> Res () Handler (Maintenances Res)
+                         , workQueues :: () -> Res () Handler (WorkQueues Res)
                          , workOrders :: () -> Res () Handler (WorkOrders Res)
                          } deriving (Generic, GQLType)
 
@@ -86,6 +87,7 @@ data Mutation m = Mutation { savePrivilege :: PrivilegeArg -> m Privilege
                            , employees :: () -> MutRes () Handler (Employees MutRes)
                            , inventories :: () -> MutRes () Handler (Inventories MutRes)
                            , maintenances :: () -> MutRes () Handler (Maintenances MutRes)
+                           , workQueues :: () -> MutRes () Handler (WorkQueues MutRes)
                            , workOrders :: () -> MutRes () Handler (WorkOrders MutRes)
                            } deriving (Generic, GQLType)
 
@@ -110,6 +112,7 @@ resolveQuery = QueryQL { --deity = resolveDeity
                        , items = itemResolver
                        , equipments = equipmentResolver
                        , inventoryItems = inventoryItemsResolver
+                       , workQueues = workQueueResolver
                        , workOrders = workOrderResolver
                        }
 -- | The mutation resolver
@@ -133,6 +136,7 @@ resolveMutation = Mutation { savePrivilege = resolveSavePrivilege
                            , items = itemResolver
                            , equipments = equipmentResolver
                            , inventoryItems = inventoryItemsResolver
+                           , workQueues = workQueueResolver
                            , workOrders = workOrderResolver
                            }
 

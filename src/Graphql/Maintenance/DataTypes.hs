@@ -19,7 +19,6 @@ import GHC.Generics ()
 import Data.Morpheus.Types (GQLType(..))
 import Graphql.Utils (EntityIdArg, Page, PageArg)
 import Graphql.Maintenance.Task.DataTypes
-import Graphql.Asset.Equipment.DataTypes ()
 import Graphql.Asset.DataTypes ()
 import Graphql.Category ()
 import Graphql.Utils ()
@@ -38,8 +37,6 @@ data Maintenance o = Maintenance { maintenanceId :: Int
 data Maintenances o = Maintenances { maintenance :: EntityIdArg ->  o () Handler (Maintenance o)
                                    , page :: PageArg -> o () Handler (Page (Maintenance o))
                                    , availableEquipments :: PageArg -> o () Handler (Page (Equipment o))
-                                   , addWorkQueueDate :: WorkQueueDateArg -> o () Handler Bool
-                                   , addWorkQueueEvent :: WorkQueueEventArg -> o () Handler Bool
                                    , saveMaintenance :: MaintenanceArg -> o () Handler (Maintenance o)
                                    , createUpdateTasks :: MaintenanceTaskArg -> o () Handler [Task o]
                                    , task :: EntityIdArg -> o () Handler (Task o)
@@ -56,16 +53,4 @@ data MaintenanceTaskArg = MaintenanceTaskArg { maintenanceId :: Maybe Int
                                              , tasks :: [TaskArg]
                                              } deriving (Generic)
 
-data WorkQueueDateArg = WorkQueueDateArg { lastMaintenanceDate :: Text
-                                         , assetId :: Int
-                                         , maintenanceId :: Int
-                                         } deriving (Generic)
 
-data WorkQueueEventArg = WorkQueueEventArg { assetId :: Int
-                                           , taskId :: Int
-                                           , taskTriggerId :: Int
-                                           , maintenanceId :: Maybe Int
-                                           , reportedById :: Int
-                                           , hasAssetFailure :: Bool
-                                           , incidentDate :: Maybe Text
-                                           } deriving (Generic)

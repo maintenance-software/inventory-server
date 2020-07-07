@@ -34,7 +34,7 @@ import Graphql.Asset.DataTypes ()
 import Data.Time ()
 import Graphql.Asset.Item.Resolvers ()
 import Graphql.Category ()
-import Graphql.Asset.Equipment.DataTypes
+import Graphql.DataTypes (EquipmentArg(..), SetMaintenanceArg(..))
 
 getPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 getPredicate item Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
