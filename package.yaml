@@ -73,6 +73,7 @@ library:
       ghc-options:
       - -Wall
       - -fwarn-tabs
+      - -O0
 #      - -O2
 
 # Runnable executable for our application
