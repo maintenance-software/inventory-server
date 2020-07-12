@@ -327,10 +327,12 @@ WorkOrder_ sql=t_work_order
 WorkOrderResource_ sql=t_work_order_resource
     Id sql=work_order_resource_id
     amount Int
+    resourceType Text
+    employeeCategoryId Category_Id Maybe
     humanResourceId Person_Id Maybe
+    itemId Item_Id Maybe
     inventoryItemId InventoryItem_Id Maybe
     workQueueId WorkQueue_Id
---    workOrderId WorkOrder_Id
     createdDate UTCTime
     modifiedDate UTCTime Maybe
     deriving Typeable Show

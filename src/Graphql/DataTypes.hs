@@ -108,6 +108,9 @@ data WorkQueue o = WorkQueue { workQueueId :: Int
 
 data WorkOrderResource o = WorkOrderResource { workOrderResourceId :: Int
                                              , amount :: Int
+                                             , resourceType :: Text
+                                             , employeeCategoryId :: Maybe Int
+                                             , itemId :: Maybe Int
                                              , humanResource :: Maybe (() -> o () Handler (Person o))
                                              , inventoryItem :: Maybe (() -> o () Handler (InventoryItem o))
                                              , workQueue :: () -> o () Handler (WorkQueue o)
@@ -181,7 +184,10 @@ data WorkOrderArg = WorkOrderArg { workOrderId :: Int
 
 data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
                                                  , amount :: Int
+                                                 , resourceType :: Text
+                                                 , employeeCategoryId :: Maybe Int
                                                  , humanResourceId :: Maybe Int
+                                                 , itemId :: Maybe Int
                                                  , inventoryItemId :: Maybe Int
                                                  , workQueueTaskId :: Int
                                                  } deriving (Generic)

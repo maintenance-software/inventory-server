@@ -130,6 +130,9 @@ toWorkQueueQL (Entity workQueueId workQueue) = WorkQueue { workQueueId = fromInt
 toWorkOrderResourceQL :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => Entity WorkOrderResource_ -> WorkOrderResource o
 toWorkOrderResourceQL (Entity workOrderResourceId workOrderResource) = WorkOrderResource { workOrderResourceId = fromIntegral $ fromSqlKey workOrderResourceId
                                                                                          , amount = workOrderResource_Amount
+                                                                                         , resourceType = workOrderResource_ResourceType
+                                                                                         , employeeCategoryId = (case workOrderResource_EmployeeCategoryId of Nothing -> Nothing; Just a -> Just $ fromIntegral $ fromSqlKey a)
+                                                                                         , itemId = (case workOrderResource_ItemId of Nothing -> Nothing; Just a -> Just $ fromIntegral $ fromSqlKey a)
                                                                                          , humanResource =  (case workOrderResource_HumanResourceId of Nothing -> Nothing; Just a -> Just $ getPersonByIdResolver_ a)
                                                                                          , inventoryItem =  (case workOrderResource_InventoryItemId of Nothing -> Nothing; Just a -> Just $ getInventoryItemByIdResolver_ a)
                                                                                          , workQueue = getWorkQueueByIdResolver_ workOrderResource_WorkQueueId
