@@ -19,6 +19,7 @@ module Graphql.WorkOrder.Persistence (
       , createUpdateWorkOrderPersistent
       , changeWorkOrderStatus
       , createUpdateWorkOrderSubTask
+      , saveWorkOrderResource
 ) where
 
 import Import hiding (union)
@@ -117,7 +118,7 @@ createUpdateWorkOrderPersistent arg = do
                                else do
                                   workOrderKey <- runDB $ insert $ fromWorkOrderQL arg now Nothing randomCode
                                   return workOrderKey
-                _ <- saveWorkOrderResource resources
+--                _ <- saveWorkOrderResource resources
                 _ <- runDB $ updateWhere  [WorkQueue_Id <-. P.map (\wqId -> (toSqlKey $ fromIntegral $ wqId)) workQueueIds] [WorkQueue_WorkOrderId =. Just entityId, WorkQueue_Status =. "WO_CREATED"]
                 return entityId
 

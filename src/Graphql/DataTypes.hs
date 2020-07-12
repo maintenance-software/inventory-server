@@ -19,7 +19,7 @@ import Import
 import GHC.Generics ()
 import Data.Morpheus.Types (GQLType(..))
 import Data.Morpheus.Kind (INPUT)
-import Graphql.Utils (Page, PageArg, EntityIdArg, EntityChangeStatusArg)
+import Graphql.Utils (Page, PageArg, EntityIdArg, EntityChangeStatusArg, EntityArg)
 import Graphql.Category
 import Graphql.Admin.Privilege ()
 import Graphql.Admin.Role ()
@@ -148,6 +148,7 @@ data WorkOrders o = WorkOrders { workOrder :: EntityIdArg ->  o () Handler (Work
                                , createUpdateWorkOrder :: WorkOrderArg -> o () Handler (WorkOrder o)
                                , changeStatus :: EntityChangeStatusArg -> o () Handler Bool
                                , saveWorkOrderProgress :: WorkOrderProgressArg -> o () Handler Bool
+                               , saveWorkOrderResources :: EntityArg [WorkOrderResourceArg] -> o () Handler Bool
                                } deriving (Generic, GQLType)
 
 data WorkOrder o = WorkOrder { workOrderId :: Int
@@ -179,18 +180,21 @@ data WorkOrderArg = WorkOrderArg { workOrderId :: Int
                                  , responsibleId :: Int
                                  , parentId :: Maybe Int
                                  , workQueueIds :: [Int]
-                                 , resources :: [WorkOrderResourceArg]
                                  } deriving (Generic, GQLType)
 
+--data WorkOrderResourceArg = WorkOrderResourceArg { workOrderId :: Int
+--                                                 , resources :: [ResourceArg]
+--                                                 } deriving (Generic, GQLType)
+
 data WorkOrderResourceArg = WorkOrderResourceArg { workOrderResourceId :: Int
-                                                 , amount :: Int
-                                                 , resourceType :: Text
-                                                 , employeeCategoryId :: Maybe Int
-                                                 , humanResourceId :: Maybe Int
-                                                 , itemId :: Maybe Int
-                                                 , inventoryItemId :: Maybe Int
-                                                 , workQueueTaskId :: Int
-                                                 } deriving (Generic)
+                               , amount :: Int
+                               , resourceType :: Text
+                               , employeeCategoryId :: Maybe Int
+                               , humanResourceId :: Maybe Int
+                               , itemId :: Maybe Int
+                               , inventoryItemId :: Maybe Int
+                               , workQueueTaskId :: Int
+                               } deriving (Generic)
 
 instance GQLType WorkOrderResourceArg where
     type  KIND WorkOrderResourceArg = INPUT

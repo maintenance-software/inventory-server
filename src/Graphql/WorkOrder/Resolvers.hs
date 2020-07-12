@@ -29,7 +29,7 @@ import Graphql.Admin.Person (getPersonByIdResolver_)
 import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
 import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
 import Graphql.Maintenance.SubTask.Resolvers (getSubTaskByIdResolver_)
-import Graphql.DataTypes (WorkQueue, WorkOrders(..), WorkOrder(..), WorkOrderProgressArg(..), WorkOrderArg)
+import Graphql.DataTypes (WorkQueue, WorkOrders(..), WorkOrder(..), WorkOrderProgressArg(..), WorkOrderArg, WorkOrderResourceArg)
 import Graphql.WorkQueue.Resolvers (toWorkQueueQL)
 
 workOrderResolver :: (Applicative f, Typeable o, MonadTrans (o ())) => () -> f (WorkOrders o)
@@ -38,6 +38,7 @@ workOrderResolver _ = pure WorkOrders {  workOrder = getWorkOrderByIdResolver
                                        , page = workOrderPageResolver
                                        , changeStatus = workOrderChangeStatusResolver
                                        , saveWorkOrderProgress = saveWorkOrderProgressResolver
+                                       , saveWorkOrderResources = saveWorkOrderResourcesResolver
                                        }
 
 getWorkOrderByIdResolver :: forall (o :: * -> (* -> *) -> * -> *).(Typeable o, MonadTrans (o ())) => EntityIdArg -> o () Handler (WorkOrder o)
@@ -90,6 +91,11 @@ createUpdateWorkOrderResolver arg = lift $ do
                          workOrderId <- createUpdateWorkOrderPersistent arg
                          workOrder <-  runDB $ getJustEntity workOrderId
                          return $ toWorkOrderQL workOrder
+
+saveWorkOrderResourcesResolver :: (MonadTrans t) => EntityArg [WorkOrderResourceArg] -> t Handler Bool
+saveWorkOrderResourcesResolver EntityArg{..} = lift $ do
+                                              _ <- saveWorkOrderResource arg
+                                              return True
 
 saveWorkOrderProgressResolver :: (MonadTrans t) => WorkOrderProgressArg -> t Handler Bool
 saveWorkOrderProgressResolver WorkOrderProgressArg{..} = lift $ do
