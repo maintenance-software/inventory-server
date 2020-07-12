@@ -315,8 +315,8 @@ WorkOrder_ sql=t_work_order
     totalCost Double
     percentage Double
     notes Text
-    generatedById Person_Id
-    responsibleId Person_Id
+    generatedById Person_Id Maybe
+    responsibleId Person_Id Maybe
     canceledById Person_Id Maybe
     parentId WorkOrder_Id Maybe
     closeDate UTCTime Maybe

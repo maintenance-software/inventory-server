@@ -24,11 +24,11 @@ import Graphql.Utils
 --import Graphql.Maintenance.Resolvers (getWorkQueueByIdResolver_)
 import Graphql.WorkOrder.Persistence
 --import Graphql.Maintenance.Persistence (fetchWorkQueuesByWorkOrderIdQuery)
-import Graphql.DataTypes (Equipment(..))
+--import Graphql.DataTypes (Equipment(..))
 import Graphql.Admin.Person (getPersonByIdResolver_)
-import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
-import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
-import Graphql.Maintenance.SubTask.Resolvers (getSubTaskByIdResolver_)
+--import Graphql.Asset.Equipment.Resolvers (toEquipmentQL)
+--import Graphql.Asset.InventoryItem.Resolvers (getInventoryItemByIdResolver_)
+--import Graphql.Maintenance.SubTask.Resolvers (getSubTaskByIdResolver_)
 import Graphql.DataTypes (WorkQueue, WorkOrders(..), WorkOrder(..), WorkOrderProgressArg(..), WorkOrderArg, WorkOrderResourceArg)
 import Graphql.WorkQueue.Resolvers (toWorkQueueQL)
 
@@ -131,8 +131,8 @@ toWorkOrderQL (Entity workOrderId workOrder) = WorkOrder { workOrderId = fromInt
                                                          , totalCost = realToFrac workOrder_TotalCost
                                                          , percentage = realToFrac workOrder_Percentage
                                                          , notes = workOrder_Notes
-                                                         , generatedBy = getPersonByIdResolver_ workOrder_GeneratedById
-                                                         , responsible = getPersonByIdResolver_ workOrder_ResponsibleId
+                                                         , generatedBy = (case workOrder_GeneratedById of Nothing -> Nothing; Just a -> Just $ getPersonByIdResolver_ a)
+                                                         , responsible = (case workOrder_ResponsibleId of Nothing -> Nothing; Just a -> Just $ getPersonByIdResolver_ a)
                                                          , parent = (case workOrder_ParentId of Nothing -> Nothing; Just a -> Just $ getWorkOrderByIdResolver_ a)
                                                          , workQueues = fetchWorkQueuesByWorkOrderIdResolver_ workOrderId
 --                                                         , workOrderResources = fetchWorkResourcesByWorkOrderIdResolver_ workOrderId

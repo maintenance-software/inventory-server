@@ -160,8 +160,8 @@ data WorkOrder o = WorkOrder { workOrderId :: Int
                              , totalCost :: Float
                              , percentage :: Float
                              , notes :: Text
-                             , generatedBy :: () -> o () Handler (Person o)
-                             , responsible :: () -> o () Handler (Person o)
+                             , generatedBy :: Maybe(() -> o () Handler (Person o))
+                             , responsible :: Maybe(() -> o () Handler (Person o))
                              , parent :: Maybe (() -> o () Handler (WorkOrder o))
                              , workQueues :: () -> o () Handler [WorkQueue o]
 --                             , equipments :: () -> o () Handler [Equipment o]
@@ -176,8 +176,8 @@ data WorkOrderArg = WorkOrderArg { workOrderId :: Int
                                  , estimateDuration :: Int
                                  , rate :: Int
                                  , notes :: Text
-                                 , generatedById :: Int
-                                 , responsibleId :: Int
+                                 , generatedById :: Maybe Int
+                                 , responsibleId :: Maybe Int
                                  , parentId :: Maybe Int
                                  , workQueueIds :: [Int]
                                  } deriving (Generic, GQLType)
