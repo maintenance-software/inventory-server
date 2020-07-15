@@ -35,6 +35,7 @@ import qualified Data.Text as T
 import Graphql.Utils
 import Data.Time ()
 import Graphql.DataTypes (WorkOrderResourceArg(..), WorkOrderArg(..), WorkOrderSubTaskArg(..))
+import Graphql.WorkQueue.Persistence (addDateWorkQueuePersistent)
 
 workOrderPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
 workOrderPredicate workOrder Predicate {..} | T.strip field == "" || (T.strip operator) `P.elem` ["", "in", "like"] || T.strip value == "" = []
@@ -177,7 +178,16 @@ changeWorkOrderStatus EntityChangeStatusArg{..} = do
                                           let workOrderId = (toSqlKey $ fromIntegral $ entityId)::WorkOrder_Id
                                           now <- liftIO getCurrentTime
                                           _ <- runDB $ update workOrderId [WorkOrder_WorkOrderStatus =. status, WorkOrder_ModifiedDate =. Just now]
+                                          workQueues <- runDB $ selectList [WorkQueue_WorkOrderId ==. Just workOrderId, WorkQueue_MaintenanceId !=. Nothing] []
+                                          _ <- case status of
+                                                 "COMPLETED" -> do
+                                                                  _ <- mapM (\ (Entity _ WorkQueue_{..}) -> addDateWorkQueuePersistent (getMaintenanceId workQueue_MaintenanceId) workQueue_EquipmentId now)  workQueues
+                                                                  return ()
+                                                 _ -> return ()
                                           return True
+                                     where
+                                        getMaintenanceId (Just a) = a
+                                        getMaintenanceId _ = (toSqlKey $ fromIntegral $ 0)::Maintenance_Id
 
 fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> Text -> WorkOrder_
 fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrderCode = code

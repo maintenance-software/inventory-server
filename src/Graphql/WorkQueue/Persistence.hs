@@ -225,12 +225,12 @@ addEventWorkQueuePersistent WorkQueueEventArg {..} = do
 --                    _ <- runDB $ update equipmentKey [ Equipment_MaintenanceId =. maintenanceEntityId, Equipment_ModifiedDate =. Just now ]
                     return True
 
-addDateWorkQueuePersistent :: WorkQueueDateArg -> Handler Bool
-addDateWorkQueuePersistent WorkQueueDateArg {..} = do
+addDateWorkQueuePersistent :: Maintenance_Id -> Item_Id -> UTCTime -> Handler Bool
+addDateWorkQueuePersistent maintenanceEntityId assetEntityId maintenanceUtcDate = do
 --                    now <- liftIO getCurrentTime
-                    let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
-                    let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
-                    let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
+--                    let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
+--                    let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
+--                    let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
                     tasks <- taskQuery maintenanceEntityId
                     let taskIds = P.map (\(Entity taskId _) -> taskId) tasks
                     triggers <-  runDB $ selectList [TaskTrigger_TaskId <-. taskIds, TaskTrigger_TriggerType ==. "DATE"] []

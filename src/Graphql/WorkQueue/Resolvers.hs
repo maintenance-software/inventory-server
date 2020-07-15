@@ -19,7 +19,7 @@ module Graphql.WorkQueue.Resolvers (
 ) where
 
 import Import
-import Database.Persist.Sql (fromSqlKey)
+import Database.Persist.Sql (fromSqlKey, toSqlKey)
 import Prelude as P
 import qualified Data.Text as T
 import Enums ()
@@ -91,9 +91,12 @@ fetchWorkOrderSubTaskByWorkQueueIdResolver_ workQueueId _ = lift $ do
 --                              return result
 
 addWorkQueueDateResolver :: (MonadTrans t) => WorkQueueDateArg -> t Handler Bool
-addWorkQueueDateResolver arg = lift $ do
-                         workQueueSuccess <- addDateWorkQueuePersistent arg
-                         return $ workQueueSuccess
+addWorkQueueDateResolver WorkQueueDateArg{..} = lift $ do
+                          let maintenanceUtcDate = (read $ T.unpack lastMaintenanceDate)::UTCTime
+                          let maintenanceEntityId = ((toSqlKey $ fromIntegral $ maintenanceId)::Maintenance_Id)
+                          let assetEntityId = ((toSqlKey $ fromIntegral $ assetId)::Item_Id)
+                          workQueueSuccess <- addDateWorkQueuePersistent maintenanceEntityId assetEntityId maintenanceUtcDate
+                          return $ workQueueSuccess
 
 addWorkQueueEventResolver :: (MonadTrans t) => WorkQueueEventArg -> t Handler Bool
 addWorkQueueEventResolver arg = lift $ do
