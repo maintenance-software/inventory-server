@@ -181,13 +181,18 @@ changeWorkOrderStatus EntityChangeStatusArg{..} = do
                                           workQueues <- runDB $ selectList [WorkQueue_WorkOrderId ==. Just workOrderId, WorkQueue_MaintenanceId !=. Nothing] []
                                           _ <- case status of
                                                  "CLOSED" -> do
+                                                              _ <- mapM (\ (Entity _ WorkQueue_{..}) -> addDateWorkQueuePersistent (getMaintenanceId workQueue_MaintenanceId) workQueue_EquipmentId now)  workQueues
+                                                              _ <- runDB $ updateWhere  [WorkQueue_WorkOrderId ==. Just workOrderId] [WorkQueue_Status =. "WO_CLOSED"]
+                                                              return ()
+                                                 "CANCELLED" -> do
                                                                   _ <- mapM (\ (Entity _ WorkQueue_{..}) -> addDateWorkQueuePersistent (getMaintenanceId workQueue_MaintenanceId) workQueue_EquipmentId now)  workQueues
+                                                                  _ <- runDB $ updateWhere  [WorkQueue_WorkOrderId ==. Just workOrderId] [WorkQueue_Status =. "WO_CANCELLED"]
                                                                   return ()
                                                  _ -> return ()
                                           return True
                                      where
                                         getMaintenanceId (Just a) = a
-                                        getMaintenanceId _ = (toSqlKey $ fromIntegral $ 0)::Maintenance_Id
+                                        getMaintenanceId _ = (toSqlKey $ 0)::Maintenance_Id
 
 fromWorkOrderQL :: WorkOrderArg -> UTCTime -> Maybe UTCTime -> Text -> WorkOrder_
 fromWorkOrderQL (WorkOrderArg {..}) cd md code = WorkOrder_ { workOrder_WorkOrderCode = code
