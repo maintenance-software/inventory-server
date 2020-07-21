@@ -180,7 +180,7 @@ changeWorkOrderStatus EntityChangeStatusArg{..} = do
                                           _ <- runDB $ update workOrderId [WorkOrder_WorkOrderStatus =. status, WorkOrder_ModifiedDate =. Just now]
                                           workQueues <- runDB $ selectList [WorkQueue_WorkOrderId ==. Just workOrderId, WorkQueue_MaintenanceId !=. Nothing] []
                                           _ <- case status of
-                                                 "COMPLETED" -> do
+                                                 "CLOSED" -> do
                                                                   _ <- mapM (\ (Entity _ WorkQueue_{..}) -> addDateWorkQueuePersistent (getMaintenanceId workQueue_MaintenanceId) workQueue_EquipmentId now)  workQueues
                                                                   return ()
                                                  _ -> return ()
