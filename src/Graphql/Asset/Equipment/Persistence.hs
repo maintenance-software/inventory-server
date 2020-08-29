@@ -62,7 +62,7 @@ getInPredicate item Predicate {..} | T.strip operator /= "in" || T.strip value =
                                    | otherwise = []
 
 getNotInPredicate :: E.SqlExpr (Entity Item_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
-getNotInPredicate item Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+getNotInPredicate item Predicate {..} | T.strip operator /= "notIn" || T.strip value == "" = []
                                       | T.strip field == "name" = [(item ^. Item_Name) `notIn` (E.valList $ fromText P.id value)]
                                       | T.strip field == "code" = [(item ^. Item_Code) `notIn` (E.valList $ fromText P.id value)]
                                       | T.strip field == "status" = [(item ^. Item_Status) `notIn` (E.valList $ fromText readEntityStatus value)]

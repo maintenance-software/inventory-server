@@ -48,17 +48,18 @@ data InventoryArg = InventoryArg { inventoryId :: Int
                                  } deriving (Generic)
 
 data InventoryItem o = InventoryItem { inventoryItemId :: Int
-                                   , level :: Int
-                                   , maxLevelAllowed :: Int
-                                   , minLevelAllowed :: Int
-                                   , price :: Float
-                                   , location :: Text
-                                   , dateExpiry :: Maybe Text
-                                   , inventory :: () -> o () Handler (Inventory o)
-                                   , item :: () -> o () Handler (Item o)
-                                   , createdDate :: Text
-                                   , modifiedDate :: Maybe Text
-                                   } deriving (Generic, GQLType)
+                                     , status :: Text
+                                     , level :: Int
+                                     , maxLevelAllowed :: Int
+                                     , minLevelAllowed :: Int
+                                     , price :: Float
+                                     , location :: Text
+                                     , dateExpiry :: Maybe Text
+                                     , inventory :: () -> o () Handler (Inventory o)
+                                     , item :: () -> o () Handler (Item o)
+                                     , createdDate :: Text
+                                     , modifiedDate :: Maybe Text
+                                     } deriving (Generic, GQLType)
 
 data InventoryItems o = InventoryItems { inventoryItem :: EntityIdArg -> o () Handler (InventoryItem o)
                                        , page :: PageArg -> o () Handler (Page (InventoryItem o))
@@ -66,6 +67,7 @@ data InventoryItems o = InventoryItems { inventoryItem :: EntityIdArg -> o () Ha
                                        } deriving (Generic, GQLType)
 
 data InventoryItemArg = InventoryItemArg { inventoryItemId :: Int
+                                         , status :: Text
                                          , level :: Int
                                          , maxLevelAllowed :: Int
                                          , minLevelAllowed :: Int

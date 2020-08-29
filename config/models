@@ -150,6 +150,7 @@ Unit_ json sql=t_unit
 
 InventoryItem_ sql=t_inventory_item
     Id sql=inventory_item_id
+    status EntityStatus
     level Int
     maxLevelAllowed Int
     minLevelAllowed Int

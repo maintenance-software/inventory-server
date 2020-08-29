@@ -54,7 +54,7 @@ getMaintenanceInPredicate maintenance Predicate {..} | T.strip operator /= "in" 
                                                      | otherwise = []
 
 getMaintenanceNotInPredicate :: E.SqlExpr (Entity Maintenance_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
-getMaintenanceNotInPredicate maintenance Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+getMaintenanceNotInPredicate maintenance Predicate {..} | T.strip operator /= "notIn" || T.strip value == "" = []
                                                         | T.strip field == "name" = [(maintenance ^. Maintenance_Name) `notIn` (E.valList $ fromText P.id value)]
                                                         | T.strip field == "status" = [(maintenance ^. Maintenance_Status) `notIn` (E.valList $ fromText readEntityStatus value)]
                                                         | otherwise = []

@@ -49,7 +49,7 @@ import Data.Time
 --                                           | T.strip field == "categoryId" = [(person ^. Employee_CategoryId) `in_` (E.valList $ fromText (\ e -> Just $ toSqlKey $ fromIntegral $ parseToInteger $ T.strip e) value)]
 --                                           | otherwise = []
 --
---getPersonNotInPredicate person Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+--getPersonNotInPredicate person Predicate {..} | T.strip operator /= "notIn" || T.strip value == "" = []
 --                                              | T.strip field == "name" = [(person ^. Employee_Name) `notIn` (E.valList $ fromText P.id value)]
 --                                              | T.strip field == "code" = [(person ^. Employee_Code) `notIn` (E.valList $ fromText P.id value)]
 --                                              | T.strip field == "status" = [(person ^. Employee_Status) `notIn` (E.valList $ fromText readEntityStatus value)]

@@ -24,6 +24,7 @@ module Graphql.Asset.InventoryItem.Resolvers (
 import Import
 import Database.Persist.Sql (toSqlKey, fromSqlKey)
 import Prelude as P
+import qualified Data.Text as T
 import Graphql.Utils
 import {-# SOURCE #-} Graphql.Asset.Item.Resolvers
 import {-# SOURCE #-} Graphql.Asset.Inventory.Resolvers
@@ -52,9 +53,9 @@ getInventoryItemByIdResolver_ inventoryItemId _ = lift $ do
                                               return $ toInventoryItemQL inventoryItem
 
 inventoryItemsPageResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Inventory_Id -> PageArg -> t Handler (Page (InventoryItem o))
-inventoryItemsPageResolver_ inventoryId (PageArg {..}) = lift $ do
-                                    countItems <- runDB $ count ([InventoryItem_InventoryId ==. inventoryId] :: [Filter InventoryItem_])
-                                    items <- runDB $ selectList [InventoryItem_InventoryId ==. inventoryId] [Asc InventoryItem_Id, LimitTo pageSize', OffsetBy $ pageIndex' * pageSize']
+inventoryItemsPageResolver_ inventoryId page = lift $ do
+                                    countItems <- inventoryItemQueryCount page
+                                    items <- inventoryItemQuery page
                                     let itemsQL = P.map (\r -> toInventoryItemQL r) items
                                     return Page { totalCount = countItems
                                                 , content = itemsQL
@@ -65,12 +66,9 @@ inventoryItemsPageResolver_ inventoryId (PageArg {..}) = lift $ do
                                                 }
                                     }
                                      where
-                                      pageIndex' = case pageIndex of
-                                                    Just  x  -> x
-                                                    Nothing -> 0
-                                      pageSize' = case pageSize of
-                                                      Just y -> y
-                                                      Nothing -> 10
+                                       PageArg {..} = page
+                                       pageIndex' = case pageIndex of Just  x  -> x; Nothing -> 0
+                                       pageSize' = case pageSize of Just y -> y; Nothing -> 10
 
 inventoryItemsItemPageResolver_ :: (Typeable o, MonadTrans t, MonadTrans (o ())) => Item_Id -> PageArg -> t Handler (Page (InventoryItem o))
 inventoryItemsItemPageResolver_ itemId (PageArg {..}) = lift $ do
@@ -145,7 +143,7 @@ toInventoryItemQL (Entity inventoryItemId inventoryItem) = InventoryItem { inven
                                                                          , minLevelAllowed = inventoryItem_MinLevelAllowed
                                                                          , price = realToFrac inventoryItem_Price
                                                                          , location = inventoryItem_Location
---                                                                         , status = T.pack $ show inventoryItem_Status
+                                                                         , status = T.pack $ show inventoryItem_Status
                                                                          , dateExpiry = de
                                                                          , inventory = getInventoryByIdResolver_ inventoryItem_InventoryId
                                                                          , item = getItemByIdResolver_ inventoryItem_ItemId

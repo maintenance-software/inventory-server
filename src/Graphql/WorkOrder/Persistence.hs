@@ -50,7 +50,7 @@ workOrderInPredicate workOrder Predicate {..} | T.strip operator /= "in" || T.st
                                               | otherwise = []
 
 workOrderNotInPredicate :: E.SqlExpr (Entity WorkOrder_) -> Predicate -> [E.SqlExpr (E.Value Bool)]
-workOrderNotInPredicate workOrder Predicate {..} | T.strip operator /= "not in" || T.strip value == "" = []
+workOrderNotInPredicate workOrder Predicate {..} | T.strip operator /= "notIn" || T.strip value == "" = []
                                                  | T.strip field == "workOrderCode" = [(workOrder ^. WorkOrder_WorkOrderCode) `notIn` (E.valList $ fromText P.id value)]
                                                  | T.strip field == "workOrderStatus" = [(workOrder ^. WorkOrder_WorkOrderStatus) `notIn` (E.valList $ fromText P.id value)]
                                                  | otherwise = []
