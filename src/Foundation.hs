@@ -108,7 +108,7 @@ instance Yesod App where
     isAuthorized GraphqlR _ = do
                                 muid <- maybeAuthId
                                 return $ case muid of
-                                          Nothing -> Unauthorized "You must login to access this page"
+                                          Nothing -> Authorized--Unauthorized "You must login to access this page"
                                           Just _ -> Authorized
     isAuthorized RemoteLoginR _ = return Authorized
     isAuthorized ForwardAdminR _ = isAuthenticated
